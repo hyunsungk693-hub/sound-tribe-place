@@ -1,4 +1,4 @@
-import { Home, Briefcase, MapPin, MessageCircle } from "lucide-react";
+import { Home, Briefcase, MapPin, MessageCircle, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const navItems = [
@@ -6,6 +6,7 @@ const navItems = [
   { path: "/jobs", icon: Briefcase, label: "구인구직" },
   { path: "/rooms", icon: MapPin, label: "연습실" },
   { path: "/community", icon: MessageCircle, label: "커뮤니티" },
+  { path: "/profile", icon: User, label: "프로필" },
 ];
 
 const BottomNav = () => {
@@ -21,7 +22,7 @@ const BottomNav = () => {
             <button
               key={path}
               onClick={() => navigate(path)}
-              className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-all duration-200 active:scale-95 ${
+              className={`relative flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all duration-200 active:scale-95 ${
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"

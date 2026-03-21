@@ -6,40 +6,38 @@
 
 @layer base {
   :root {
-    --background: 220 16% 8%;
-    --foreground: 40 20% 92%;
+    --background: 0 0% 98%;
+    --foreground: 220 20% 12%;
 
-    --card: 220 14% 12%;
-    --card-foreground: 40 20% 92%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 12%;
 
-    --popover: 220 14% 12%;
-    --popover-foreground: 40 20% 92%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 12%;
 
-    --primary: 38 92% 55%;
-    --primary-foreground: 220 16% 8%;
+    --primary: 220 65% 42%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 12% 18%;
-    --secondary-foreground: 40 15% 80%;
+    --secondary: 220 14% 94%;
+    --secondary-foreground: 220 20% 30%;
 
-    --muted: 220 12% 16%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 220 14% 95%;
+    --muted-foreground: 220 10% 46%;
 
-    --accent: 38 92% 55%;
-    --accent-foreground: 220 16% 8%;
+    --accent: 220 14% 94%;
+    --accent-foreground: 220 20% 12%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 12% 20%;
-    --input: 220 12% 20%;
-    --ring: 38 92% 55%;
+    --border: 220 14% 90%;
+    --input: 220 14% 90%;
+    --ring: 220 65% 42%;
 
     --radius: 0.75rem;
 
-    --surface-elevated: 220 14% 14%;
-    --surface-hover: 220 12% 22%;
-    --amber-glow: 38 92% 55%;
-    --amber-soft: 38 60% 30%;
+    --surface-elevated: 0 0% 100%;
+    --surface-hover: 220 14% 96%;
   }
 }
 
@@ -59,11 +57,7 @@
   }
 
   .glass-card {
-    @apply bg-card/80 backdrop-blur-md border border-border/50 rounded-xl;
-  }
-
-  .glow-amber {
-    box-shadow: 0 0 20px hsl(38 92% 55% / 0.15);
+    @apply bg-card border border-border/60 rounded-xl shadow-sm;
   }
 
   .scroll-reveal {
