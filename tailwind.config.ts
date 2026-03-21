@@ -12,8 +12,15 @@ export default {
         "2xl": "1400px",
       },
     },
+    fontFamily: {
+      outfit: ['Outfit', 'sans-serif'],
+    },
     extend: {
       colors: {
+        "surface-elevated": "hsl(var(--surface-elevated))",
+        "surface-hover": "hsl(var(--surface-hover))",
+        "amber-glow": "hsl(var(--amber-glow))",
+        "amber-soft": "hsl(var(--amber-soft))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
