@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 
 const quickActions = [
-  { icon: Briefcase, label: "구인구직", desc: "음악 관련 일자리 탐색", path: "/jobs", color: "from-amber-500/20 to-amber-600/5" },
-  { icon: MapPin, label: "연습실", desc: "가까운 연습실 찾기", path: "/rooms", color: "from-emerald-500/20 to-emerald-600/5" },
-  { icon: MessageCircle, label: "커뮤니티", desc: "음악인과 소통", path: "/community", color: "from-sky-500/20 to-sky-600/5" },
+  { icon: Briefcase, label: "구인구직", desc: "음악 관련 일자리 탐색", path: "/jobs", color: "from-blue-500/10 to-blue-600/5" },
+  { icon: MapPin, label: "연습실", desc: "가까운 연습실 찾기", path: "/rooms", color: "from-emerald-500/10 to-emerald-600/5" },
+  { icon: MessageCircle, label: "커뮤니티", desc: "음악인과 소통", path: "/community", color: "from-orange-500/10 to-orange-600/5" },
 ];
 
 const recentJobs = [
@@ -22,7 +22,7 @@ const Index = () => {
       {/* Hero */}
       <div className="pt-6 pb-8">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center glow-amber">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
             <Music className="w-5 h-5 text-primary" />
           </div>
           <div>
@@ -45,7 +45,7 @@ const Index = () => {
             className="w-full glass-card p-4 flex items-center gap-4 hover:bg-surface-hover transition-colors duration-200 active:scale-[0.98] text-left"
           >
             <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shrink-0`}>
-              <Icon className="w-5 h-5 text-foreground" />
+              <Icon className="w-5 h-5 text-foreground/70" />
             </div>
             <div className="flex-1 min-w-0">
               <span className="font-semibold text-sm">{label}</span>
