@@ -74,9 +74,8 @@ const MapPage = () => {
 
     const filtered = markers.filter((m) => filter === "all" || m.type === filter);
     filtered.forEach((m) => {
-      const marker = L.marker([m.lat, m.lng], {
-        icon: m.type === "job" ? jobIcon : roomIcon,
-      })
+      const icon = m.type === "job" ? jobIcon : m.type === "room" ? roomIcon : shopIcon;
+      const marker = L.marker([m.lat, m.lng], { icon })
         .bindPopup(`<b>${m.name}</b><br/><span style="color:#888;font-size:12px">${m.desc}</span>`)
         .addTo(mapRef.current!);
       markersRef.current.push(marker);
