@@ -111,28 +111,8 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Quick Actions */}
-      <section className="space-y-3 mb-6" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.15s both" }}>
-        {quickActions.map(({ icon: Icon, label, desc, path, color }) => (
-          <button
-            key={path}
-            onClick={() => navigate(path)}
-            className="w-full glass-card p-4 flex items-center gap-4 hover:bg-surface-hover transition-colors duration-200 active:scale-[0.98] text-left"
-          >
-            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shrink-0`}>
-              <Icon className="w-5 h-5 text-foreground/70" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <span className="font-semibold text-sm">{label}</span>
-              <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-          </button>
-        ))}
-      </section>
-
       {/* Recent Jobs */}
-      <section style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.3s both" }}>
+      <section className="mb-6" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.15s both" }}>
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-sm">최근 구인글</h2>
           <button onClick={() => navigate("/jobs")} className="text-xs text-primary font-medium active:scale-95 transition-transform">
@@ -152,6 +132,26 @@ const Index = () => {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Quick Actions */}
+      <section className="space-y-3 mb-6" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.2s both" }}>
+        {quickActions.map(({ icon: Icon, label, desc, path, color }) => (
+          <button
+            key={path}
+            onClick={() => navigate(path)}
+            className="w-full glass-card p-4 flex items-center gap-4 hover:bg-surface-hover transition-colors duration-200 active:scale-[0.98] text-left"
+          >
+            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shrink-0`}>
+              <Icon className="w-5 h-5 text-foreground/70" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="font-semibold text-sm">{label}</span>
+              <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+          </button>
+        ))}
       </section>
     </PageShell>
   );
