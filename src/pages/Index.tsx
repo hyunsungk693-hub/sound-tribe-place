@@ -1,5 +1,6 @@
-import { Briefcase, MapPin, MessageCircle, Music, ChevronRight } from "lucide-react";
+import { Briefcase, MapPin, MessageCircle, Music, ChevronRight, Megaphone, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import PageShell from "@/components/PageShell";
 
 const quickActions = [
@@ -14,14 +15,35 @@ const recentJobs = [
   { title: "웨딩 싱어 구함", venue: "서울 전 지역", tag: "행사" },
 ];
 
+const adBanners = [
+  { title: "🎸 악기 할인 대전", desc: "최대 50% 할인! 봄맞이 특별 세일", bg: "from-primary/10 to-primary/5" },
+  { title: "🎵 뮤직 페스티벌 2026", desc: "서울 올림픽공원 · 4월 12~13일", bg: "from-blue-500/10 to-blue-400/5" },
+  { title: "🎧 온라인 믹싱 클래스", desc: "프로 엔지니어에게 배우는 믹싱 노하우", bg: "from-emerald-500/10 to-emerald-400/5" },
+];
+
+const promotions = [
+  { title: "홍대 재즈바 오픈 기념 공연", author: "블루노트 서울", date: "3일 전", hot: true },
+  { title: "신촌 버스킹 팀원 모집", author: "스트릿뮤직", date: "5일 전", hot: false },
+  { title: "인디밴드 새 앨범 발매 기념 공연", author: "에코사운드", date: "1주 전", hot: true },
+  { title: "음악 장비 중고 마켓 오픈", author: "기어마켓", date: "1주 전", hot: false },
+];
+
 const Index = () => {
   const navigate = useNavigate();
+  const [currentBanner, setCurrentBanner] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentBanner((prev) => (prev + 1) % adBanners.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <PageShell>
       {/* Hero */}
-      <div className="pt-6 pb-8">
-        <div className="flex items-center gap-3 mb-6">
+      <div className="pt-6 pb-6">
+        <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
             <Music className="w-5 h-5 text-primary" />
           </div>
@@ -30,14 +52,41 @@ const Index = () => {
             <p className="text-xs text-muted-foreground">음악인을 위한 플랫폼</p>
           </div>
         </div>
-        <p className="text-muted-foreground text-sm leading-relaxed">
-          구인구직부터 연습실 탐색, 커뮤니티까지<br />
-          음악 활동에 필요한 모든 것을 한 곳에서.
-        </p>
       </div>
 
+      {/* Ad Banner Carousel */}
+      <section className="mb-6" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.05s both" }}>
+        <div className="relative overflow-hidden rounded-2xl">
+          <div
+            className="flex transition-transform duration-500 ease-out"
+            style={{ transform: `translateX(-${currentBanner * 100}%)` }}
+          >
+            {adBanners.map((banner, i) => (
+              <div
+                key={i}
+                className={`w-full shrink-0 bg-gradient-to-br ${banner.bg} p-5 cursor-pointer active:scale-[0.98] transition-transform`}
+              >
+                <p className="font-bold text-base mb-1">{banner.title}</p>
+                <p className="text-xs text-muted-foreground">{banner.desc}</p>
+              </div>
+            ))}
+          </div>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+            {adBanners.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentBanner(i)}
+                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                  i === currentBanner ? "bg-primary w-4" : "bg-muted-foreground/30"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Quick Actions */}
-      <section className="space-y-3 mb-8" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s both" }}>
+      <section className="space-y-3 mb-6" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s both" }}>
         {quickActions.map(({ icon: Icon, label, desc, path, color }) => (
           <button
             key={path}
@@ -56,8 +105,34 @@ const Index = () => {
         ))}
       </section>
 
+      {/* Promotion Board */}
+      <section className="mb-6" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.2s both" }}>
+        <div className="flex items-center gap-2 mb-3">
+          <Megaphone className="w-4 h-4 text-primary" />
+          <h2 className="font-semibold text-sm">홍보 게시판</h2>
+        </div>
+        <div className="space-y-2">
+          {promotions.map((promo, i) => (
+            <div
+              key={i}
+              className="glass-card p-3.5 flex items-start justify-between hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  {promo.hot && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
+                  <p className="text-sm font-medium truncate">{promo.title}</p>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {promo.author} · {promo.date}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Recent Jobs */}
-      <section style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.25s both" }}>
+      <section style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.3s both" }}>
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-sm">최근 구인글</h2>
           <button onClick={() => navigate("/jobs")} className="text-xs text-primary font-medium active:scale-95 transition-transform">
