@@ -1,26 +1,7 @@
-import { useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { useState, useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import PageShell from "@/components/PageShell";
-
-const jobMarkerIcon = new L.DivIcon({
-  className: "",
-  html: `<div style="width:28px;height:28px;border-radius:50%;background:#3b82f6;border:3px solid #fff;box-shadow:0 2px 8px rgba(59,130,246,0.5);display:flex;align-items:center;justify-content:center">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
-  </div>`,
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
-});
-
-const roomMarkerIcon = new L.DivIcon({
-  className: "",
-  html: `<div style="width:28px;height:28px;border-radius:50%;background:#10b981;border:3px solid #fff;box-shadow:0 2px 8px rgba(16,185,129,0.5);display:flex;align-items:center;justify-content:center">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-  </div>`,
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
-});
 
 type MarkerData = {
   id: number;
@@ -44,16 +25,60 @@ const markers: MarkerData[] = [
   { id: 10, type: "room", name: "리듬스페이스", desc: "신촌역 4분 · 시간당 1.3만원", lat: 37.5551, lng: 126.9369 },
 ];
 
+const createIcon = (color: string) =>
+  L.divIcon({
+    className: "",
+    html: `<div style="width:28px;height:28px;border-radius:50%;background:${color};border:3px solid #fff;box-shadow:0 2px 8px ${color}80;"></div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  });
+
+const jobIcon = createIcon("#3b82f6");
+const roomIcon = createIcon("#10b981");
+
 type Filter = "all" | "job" | "room";
 
 const MapPage = () => {
   const [filter, setFilter] = useState<Filter>("all");
+  const mapRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const filtered = markers.filter((m) => filter === "all" || m.type === filter);
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
+    mapRef.current = L.map(containerRef.current, {
+      center: [37.5505, 126.968],
+      zoom: 12,
+      zoomControl: false,
+    });
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(mapRef.current);
+
+    return () => {
+      mapRef.current?.remove();
+      mapRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = [];
+
+    const filtered = markers.filter((m) => filter === "all" || m.type === filter);
+    filtered.forEach((m) => {
+      const marker = L.marker([m.lat, m.lng], {
+        icon: m.type === "job" ? jobIcon : roomIcon,
+      })
+        .bindPopup(`<b>${m.name}</b><br/><span style="color:#888;font-size:12px">${m.desc}</span>`)
+        .addTo(mapRef.current!);
+      markersRef.current.push(marker);
+    });
+  }, [filter]);
 
   return (
     <PageShell title="지도">
-      {/* Filter */}
       <div className="flex gap-2 mb-4">
         {([
           { key: "all" as Filter, label: "전체" },
@@ -66,7 +91,7 @@ const MapPage = () => {
             className={`flex items-center gap-1.5 shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 active:scale-95 ${
               filter === key
                 ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+                : "bg-secondary text-secondary-foreground"
             }`}
           >
             {color && <span className={`w-2 h-2 rounded-full ${color}`} />}
@@ -75,46 +100,22 @@ const MapPage = () => {
         ))}
       </div>
 
-      {/* Legend */}
       <div className="flex items-center gap-4 mb-3 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-blue-500 border-2 border-white shadow-sm" />
+          <span className="w-3 h-3 rounded-full bg-blue-500" />
           구인구직
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm" />
+          <span className="w-3 h-3 rounded-full bg-emerald-500" />
           연습실
         </span>
       </div>
 
-      {/* Map */}
-      <div className="rounded-2xl overflow-hidden border border-border/50 shadow-sm" style={{ height: "calc(100vh - 280px)" }}>
-        <MapContainer
-          center={[37.5505, 126.9680]}
-          zoom={12}
-          style={{ height: "100%", width: "100%" }}
-          zoomControl={false}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          {filtered.map((m) => (
-            <Marker
-              key={m.id}
-              position={[m.lat, m.lng]}
-              icon={m.type === "job" ? jobMarkerIcon : roomMarkerIcon}
-            >
-              <Popup>
-                <div className="text-sm">
-                  <p className="font-semibold">{m.name}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{m.desc}</p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-      </div>
+      <div
+        ref={containerRef}
+        className="rounded-2xl overflow-hidden border border-border/50 shadow-sm"
+        style={{ height: "calc(100vh - 280px)" }}
+      />
     </PageShell>
   );
 };
