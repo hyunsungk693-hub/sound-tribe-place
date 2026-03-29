@@ -89,6 +89,7 @@ const MapPage = () => {
           { key: "all" as Filter, label: "전체" },
           { key: "job" as Filter, label: "구인구직", color: "bg-blue-500" },
           { key: "room" as Filter, label: "연습실", color: "bg-emerald-500" },
+          { key: "shop" as Filter, label: "악기사", color: "bg-amber-500" },
         ]).map(({ key, label, color }) => (
           <button
             key={key}
