@@ -5,7 +5,7 @@ import PageShell from "@/components/PageShell";
 
 type MarkerData = {
   id: number;
-  type: "job" | "room";
+  type: "job" | "room" | "shop";
   name: string;
   desc: string;
   lat: number;
@@ -23,6 +23,11 @@ const markers: MarkerData[] = [
   { id: 8, type: "room", name: "비트룸", desc: "합정역 2분 · 시간당 1.2만원", lat: 37.5495, lng: 126.9137 },
   { id: 9, type: "room", name: "멜로디하우스", desc: "건대입구역 7분 · 시간당 1.8만원", lat: 37.5404, lng: 127.0696 },
   { id: 10, type: "room", name: "리듬스페이스", desc: "신촌역 4분 · 시간당 1.3만원", lat: 37.5551, lng: 126.9369 },
+  { id: 11, type: "shop", name: "뮤직랜드 홍대점", desc: "기타·베이스·이펙터 전문", lat: 37.5575, lng: 126.9260 },
+  { id: 12, type: "shop", name: "세광악기", desc: "피아노·건반·관악기 종합", lat: 37.5690, lng: 126.9920 },
+  { id: 13, type: "shop", name: "낙원악기상가", desc: "국내 최대 악기 상가", lat: 37.5720, lng: 126.9870 },
+  { id: 14, type: "shop", name: "코스모스악기", desc: "드럼·퍼커션 전문", lat: 37.5010, lng: 127.0300 },
+  { id: 15, type: "shop", name: "사운드기어", desc: "음향장비·레코딩 장비", lat: 37.5450, lng: 126.9520 },
 ];
 
 const createIcon = (color: string) =>
@@ -35,8 +40,9 @@ const createIcon = (color: string) =>
 
 const jobIcon = createIcon("#3b82f6");
 const roomIcon = createIcon("#10b981");
+const shopIcon = createIcon("#f59e0b");
 
-type Filter = "all" | "job" | "room";
+type Filter = "all" | "job" | "room" | "shop";
 
 const MapPage = () => {
   const [filter, setFilter] = useState<Filter>("all");
@@ -68,9 +74,8 @@ const MapPage = () => {
 
     const filtered = markers.filter((m) => filter === "all" || m.type === filter);
     filtered.forEach((m) => {
-      const marker = L.marker([m.lat, m.lng], {
-        icon: m.type === "job" ? jobIcon : roomIcon,
-      })
+      const icon = m.type === "job" ? jobIcon : m.type === "room" ? roomIcon : shopIcon;
+      const marker = L.marker([m.lat, m.lng], { icon })
         .bindPopup(`<b>${m.name}</b><br/><span style="color:#888;font-size:12px">${m.desc}</span>`)
         .addTo(mapRef.current!);
       markersRef.current.push(marker);
@@ -84,6 +89,7 @@ const MapPage = () => {
           { key: "all" as Filter, label: "전체" },
           { key: "job" as Filter, label: "구인구직", color: "bg-blue-500" },
           { key: "room" as Filter, label: "연습실", color: "bg-emerald-500" },
+          { key: "shop" as Filter, label: "악기사", color: "bg-amber-500" },
         ]).map(({ key, label, color }) => (
           <button
             key={key}
@@ -108,6 +114,10 @@ const MapPage = () => {
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-full bg-emerald-500" />
           연습실
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-amber-500" />
+          악기사
         </span>
       </div>
 
