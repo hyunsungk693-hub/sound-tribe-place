@@ -1,9 +1,10 @@
-import { Home, Briefcase, Map, MessageCircle, User } from "lucide-react";
+import { Home, Briefcase, Map, MapPin, MessageCircle, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const navItems = [
   { path: "/", icon: Home, label: "홈" },
   { path: "/jobs", icon: Briefcase, label: "구인구직" },
+  { path: "/rooms", icon: MapPin, label: "연습실" },
   { path: "/map", icon: Map, label: "지도" },
   { path: "/community", icon: MessageCircle, label: "커뮤니티" },
   { path: "/profile", icon: User, label: "프로필" },
