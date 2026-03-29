@@ -40,8 +40,9 @@ const createIcon = (color: string) =>
 
 const jobIcon = createIcon("#3b82f6");
 const roomIcon = createIcon("#10b981");
+const shopIcon = createIcon("#f59e0b");
 
-type Filter = "all" | "job" | "room";
+type Filter = "all" | "job" | "room" | "shop";
 
 const MapPage = () => {
   const [filter, setFilter] = useState<Filter>("all");
