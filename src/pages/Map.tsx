@@ -46,7 +46,7 @@ const markers: MarkerData[] = [
 
 type Filter = "all" | "job" | "room";
 
-const Map = () => {
+const MapPage = () => {
   const [filter, setFilter] = useState<Filter>("all");
 
   const filtered = markers.filter((m) => filter === "all" || m.type === filter);
