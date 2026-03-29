@@ -54,8 +54,34 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Ad Banner Carousel */}
+      {/* Promotion Board */}
       <section className="mb-6" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.05s both" }}>
+        <div className="flex items-center gap-2 mb-3">
+          <Megaphone className="w-4 h-4 text-primary" />
+          <h2 className="font-semibold text-sm">홍보 게시판</h2>
+        </div>
+        <div className="space-y-2">
+          {promotions.map((promo, i) => (
+            <div
+              key={i}
+              className="glass-card p-3.5 flex items-start justify-between hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  {promo.hot && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
+                  <p className="text-sm font-medium truncate">{promo.title}</p>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {promo.author} · {promo.date}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Ad Banner Carousel */}
+      <section className="mb-6" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s both" }}>
         <div className="relative overflow-hidden rounded-2xl">
           <div
             className="flex transition-transform duration-500 ease-out"
@@ -86,7 +112,7 @@ const Index = () => {
       </section>
 
       {/* Quick Actions */}
-      <section className="space-y-3 mb-6" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s both" }}>
+      <section className="space-y-3 mb-6" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.15s both" }}>
         {quickActions.map(({ icon: Icon, label, desc, path, color }) => (
           <button
             key={path}
@@ -103,32 +129,6 @@ const Index = () => {
             <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
           </button>
         ))}
-      </section>
-
-      {/* Promotion Board */}
-      <section className="mb-6" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.2s both" }}>
-        <div className="flex items-center gap-2 mb-3">
-          <Megaphone className="w-4 h-4 text-primary" />
-          <h2 className="font-semibold text-sm">홍보 게시판</h2>
-        </div>
-        <div className="space-y-2">
-          {promotions.map((promo, i) => (
-            <div
-              key={i}
-              className="glass-card p-3.5 flex items-start justify-between hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  {promo.hot && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
-                  <p className="text-sm font-medium truncate">{promo.title}</p>
-                </div>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {promo.author} · {promo.date}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
       </section>
 
       {/* Recent Jobs */}
