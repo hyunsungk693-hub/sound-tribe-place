@@ -56,14 +56,21 @@ const Auth = () => {
       const result = await lovable.auth.signInWithOAuth(provider, {
         redirect_uri: window.location.origin,
       });
-      if (result.error) throw result.error;
+      // If redirected, don't reset loading (page is navigating away)
+      if (result.redirected) return;
+      if (result.error) {
+        console.error("Social login error:", result.error);
+        throw result.error;
+      }
+      // Login successful, navigate
+      navigate("/");
     } catch (error: any) {
+      console.error("Social login catch:", error);
       toast({
-        title: "오류",
-        description: error.message,
+        title: "로그인 오류",
+        description: error?.message || "소셜 로그인 중 오류가 발생했습니다. 다시 시도해주세요.",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };
