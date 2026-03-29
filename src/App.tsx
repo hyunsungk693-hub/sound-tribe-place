@@ -8,6 +8,7 @@ import Index from "./pages/Index.tsx";
 import Profile from "./pages/Profile.tsx";
 import Jobs from "./pages/Jobs.tsx";
 import Rooms from "./pages/Rooms.tsx";
+import MapPage from "./pages/Map.tsx";
 import Community from "./pages/Community.tsx";
 import Auth from "./pages/Auth.tsx";
 import NotFound from "./pages/NotFound.tsx";
