@@ -5,7 +5,7 @@ import PageShell from "@/components/PageShell";
 
 type MarkerData = {
   id: number;
-  type: "job" | "room";
+  type: "job" | "room" | "shop";
   name: string;
   desc: string;
   lat: number;
