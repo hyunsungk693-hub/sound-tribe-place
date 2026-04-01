@@ -350,156 +350,158 @@ const MapPage = () => {
           </div>
         </div>
 
-        {/* Detail panel */}
-        {selected && (
-          <div className="absolute bottom-0 left-0 right-0 z-[1001] animate-in slide-in-from-bottom duration-300">
-            <div className="bg-background border-t border-border rounded-t-2xl shadow-2xl max-h-[60vh] overflow-y-auto">
-              <div className="flex justify-center pt-2 pb-1">
-                <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+      </div>
+
+      {/* Detail panel - portal to body to avoid overflow clipping */}
+      {selected && createPortal(
+        <div className="fixed inset-x-0 bottom-0 z-[9999] animate-in slide-in-from-bottom duration-300">
+          <div className="bg-background border-t border-border rounded-t-2xl shadow-2xl max-h-[60vh] overflow-y-auto">
+            <div className="flex justify-center pt-2 pb-1">
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+            </div>
+
+            <div className="px-4 pb-4">
+              {/* Header */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: typeColor[selected.type] }}>
+                      {typeLabel[selected.type]}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold text-foreground leading-tight">{selected.name}</h3>
+                  <p className="text-sm text-muted-foreground mt-0.5">{selected.desc}</p>
+                </div>
+                <button
+                  onClick={() => { setSelected(null); setShowReviewForm(false); }}
+                  className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0 ml-2 hover:bg-muted active:scale-95 transition-all"
+                >
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
               </div>
 
-              <div className="px-4 pb-4">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: typeColor[selected.type] }}>
-                        {typeLabel[selected.type]}
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-bold text-foreground leading-tight">{selected.name}</h3>
-                    <p className="text-sm text-muted-foreground mt-0.5">{selected.desc}</p>
-                  </div>
-                  <button
-                    onClick={() => { setSelected(null); setShowReviewForm(false); }}
-                    className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0 ml-2 hover:bg-muted active:scale-95 transition-all"
-                  >
-                    <X className="w-4 h-4 text-muted-foreground" />
-                  </button>
-                </div>
+              {/* Rating */}
+              <div className="flex items-center gap-2 mb-3">
+                <StarRating rating={avgRating} />
+                <span className="text-sm font-semibold text-foreground">{avgRating}</span>
+                <span className="text-xs text-muted-foreground">리뷰 {combinedReviews.length}개</span>
+              </div>
 
-                {/* Rating */}
-                <div className="flex items-center gap-2 mb-3">
-                  <StarRating rating={avgRating} />
-                  <span className="text-sm font-semibold text-foreground">{avgRating}</span>
-                  <span className="text-xs text-muted-foreground">리뷰 {combinedReviews.length}개</span>
-                </div>
-
-                {/* Info */}
-                <div className="space-y-2 mb-4">
-                  {selected.address && (
-                    <div className="flex items-center gap-2 text-sm text-foreground">
-                      <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
-                      {selected.address}
-                    </div>
-                  )}
-                  {selected.hours && (
-                    <div className="flex items-center gap-2 text-sm text-foreground">
-                      <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-                      {selected.hours}
-                    </div>
-                  )}
-                  {selected.phone && (
-                    <div className="flex items-center gap-2 text-sm text-foreground">
-                      <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
-                      {selected.phone}
-                    </div>
-                  )}
-                </div>
-
-                {/* Write review button */}
-                {!showReviewForm && (
-                  <button
-                    onClick={() => {
-                      if (!user) {
-                        toast.error("리뷰를 작성하려면 로그인이 필요합니다.");
-                        return;
-                      }
-                      setShowReviewForm(true);
-                    }}
-                    className="w-full mb-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all"
-                  >
-                    ✏️ 리뷰 작성하기
-                  </button>
-                )}
-
-                {/* Review form */}
-                {showReviewForm && (
-                  <div className="mb-4 p-3 rounded-xl border border-border bg-secondary/30 space-y-3">
-                    <h4 className="text-sm font-bold text-foreground">리뷰 작성</h4>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">별점</label>
-                      <InteractiveStarRating rating={newRating} onRate={setNewRating} />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">닉네임 (선택)</label>
-                      <input
-                        type="text"
-                        value={newUserName}
-                        onChange={(e) => setNewUserName(e.target.value)}
-                        placeholder="익명"
-                        maxLength={20}
-                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">내용</label>
-                      <textarea
-                        value={newContent}
-                        onChange={(e) => setNewContent(e.target.value)}
-                        placeholder="리뷰를 작성해주세요..."
-                        maxLength={500}
-                        rows={3}
-                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-                      />
-                      <div className="text-right text-[11px] text-muted-foreground mt-0.5">{newContent.length}/500</div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => { setShowReviewForm(false); setNewRating(0); setNewContent(""); setNewUserName(""); }}
-                        className="flex-1 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary active:scale-[0.98] transition-all"
-                      >
-                        취소
-                      </button>
-                      <button
-                        onClick={handleSubmitReview}
-                        disabled={submitting}
-                        className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        {submitting ? "등록 중..." : "등록"}
-                      </button>
-                    </div>
+              {/* Info */}
+              <div className="space-y-2 mb-4">
+                {selected.address && (
+                  <div className="flex items-center gap-2 text-sm text-foreground">
+                    <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+                    {selected.address}
                   </div>
                 )}
+                {selected.hours && (
+                  <div className="flex items-center gap-2 text-sm text-foreground">
+                    <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                    {selected.hours}
+                  </div>
+                )}
+                {selected.phone && (
+                  <div className="flex items-center gap-2 text-sm text-foreground">
+                    <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
+                    {selected.phone}
+                  </div>
+                )}
+              </div>
 
-                {/* Reviews list */}
-                {combinedReviews.length > 0 ? (
+              {/* Write review button */}
+              {!showReviewForm && (
+                <button
+                  onClick={() => {
+                    if (!user) {
+                      toast.error("리뷰를 작성하려면 로그인이 필요합니다.");
+                      return;
+                    }
+                    setShowReviewForm(true);
+                  }}
+                  className="w-full mb-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all"
+                >
+                  ✏️ 리뷰 작성하기
+                </button>
+              )}
+
+              {/* Review form */}
+              {showReviewForm && (
+                <div className="mb-4 p-3 rounded-xl border border-border bg-secondary/30 space-y-3">
+                  <h4 className="text-sm font-bold text-foreground">리뷰 작성</h4>
                   <div>
-                    <h4 className="text-sm font-bold text-foreground mb-2">리뷰</h4>
-                    <div className="space-y-3">
-                      {combinedReviews.map((r, i) => (
-                        <div key={i} className="bg-secondary/50 rounded-xl p-3">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-semibold text-foreground">{r.user}</span>
-                              <StarRating rating={r.rating} />
-                            </div>
-                            <span className="text-[11px] text-muted-foreground">{r.date}</span>
-                          </div>
-                          <p className="text-sm text-foreground/80 leading-relaxed">{r.text}</p>
-                        </div>
-                      ))}
-                    </div>
+                    <label className="text-xs text-muted-foreground mb-1 block">별점</label>
+                    <InteractiveStarRating rating={newRating} onRate={setNewRating} />
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">아직 리뷰가 없습니다.</p>
-                )}
-              </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">닉네임 (선택)</label>
+                    <input
+                      type="text"
+                      value={newUserName}
+                      onChange={(e) => setNewUserName(e.target.value)}
+                      placeholder="익명"
+                      maxLength={20}
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">내용</label>
+                    <textarea
+                      value={newContent}
+                      onChange={(e) => setNewContent(e.target.value)}
+                      placeholder="리뷰를 작성해주세요..."
+                      maxLength={500}
+                      rows={3}
+                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                    />
+                    <div className="text-right text-[11px] text-muted-foreground mt-0.5">{newContent.length}/500</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setShowReviewForm(false); setNewRating(0); setNewContent(""); setNewUserName(""); }}
+                      className="flex-1 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary active:scale-[0.98] transition-all"
+                    >
+                      취소
+                    </button>
+                    <button
+                      onClick={handleSubmitReview}
+                      disabled={submitting}
+                      className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      {submitting ? "등록 중..." : "등록"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Reviews list */}
+              {combinedReviews.length > 0 ? (
+                <div>
+                  <h4 className="text-sm font-bold text-foreground mb-2">리뷰</h4>
+                  <div className="space-y-3">
+                    {combinedReviews.map((r, i) => (
+                      <div key={i} className="bg-secondary/50 rounded-xl p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-foreground">{r.user}</span>
+                            <StarRating rating={r.rating} />
+                          </div>
+                          <span className="text-[11px] text-muted-foreground">{r.date}</span>
+                        </div>
+                        <p className="text-sm text-foreground/80 leading-relaxed">{r.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">아직 리뷰가 없습니다.</p>
+              )}
             </div>
           </div>
-        )}
-      </div>
+        </div>,
+        document.body
+      )}
     </PageShell>
   );
 };
