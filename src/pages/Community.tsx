@@ -17,7 +17,8 @@ const communityFields = [
 ];
 
 type PostItem = {
-  id: string | null; // null for sample posts
+  id: string | null;
+  user_id: string | null;
   author: string;
   time: string;
   tab: string;
