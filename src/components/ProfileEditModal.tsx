@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { X, Camera } from "lucide-react";
+import { useState, useRef, useMemo } from "react";
+import { X, Camera, Search, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -19,7 +19,25 @@ interface Props {
   onSaved: (updated: ProfileData) => void;
 }
 
-const INSTRUMENT_OPTIONS = ["기타", "베이스", "드럼", "키보드", "보컬", "바이올린", "첼로", "플루트", "색소폰", "트럼펫", "피아노", "우쿨렐레"];
+const INSTRUMENT_OPTIONS = [
+  // 현악기
+  "기타", "어쿠스틱 기타", "일렉트릭 기타", "클래식 기타", "베이스", "베이스 기타",
+  "바이올린", "비올라", "첼로", "콘트라베이스", "하프", "우쿨렐레", "만돌린", "반조",
+  "가야금", "거문고", "해금", "아쟁", "시타르", "에르후",
+  // 건반
+  "피아노", "키보드", "신디사이저", "오르간", "아코디언", "하모니카",
+  // 관악기
+  "플루트", "클라리넷", "오보에", "바순", "색소폰", "알토 색소폰", "테너 색소폰",
+  "소프라노 색소폰", "바리톤 색소폰", "리코더", "피콜로", "대금", "소금", "단소",
+  "트럼펫", "트롬본", "호른", "프렌치 호른", "튜바", "유포니움", "코넷",
+  // 타악기
+  "드럼", "드럼세트", "카혼", "콩가", "봉고", "젬베", "탬버린", "마림바",
+  "실로폰", "비브라폰", "팀파니", "심벌즈", "트라이앵글", "장구", "꽹과리", "북",
+  // 보컬/전자
+  "보컬", "DJ", "턴테이블", "샘플러", "드럼머신", "MPC",
+  // 기타
+  "하모니카", "오카리나", "칼림바", "디저리두", "백파이프", "밴드네온",
+];
 const GENRE_OPTIONS = ["록", "팝", "재즈", "클래식", "인디", "R&B", "힙합", "일렉트로닉", "포크", "메탈", "블루스", "펑크"];
 
 const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
@@ -31,7 +49,23 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [instrumentSearch, setInstrumentSearch] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uniqueInstrumentOptions = useMemo(() => [...new Set(INSTRUMENT_OPTIONS)], []);
+
+  const filteredInstruments = useMemo(() => {
+    if (!instrumentSearch.trim()) return uniqueInstrumentOptions.filter((i) => !instruments.includes(i)).slice(0, 12);
+    const q = instrumentSearch.trim().toLowerCase();
+    return uniqueInstrumentOptions.filter((i) => i.toLowerCase().includes(q) && !instruments.includes(i));
+  }, [instrumentSearch, instruments, uniqueInstrumentOptions]);
+
+  const addCustomInstrument = () => {
+    const name = instrumentSearch.trim();
+    if (!name || instruments.includes(name)) return;
+    setInstruments([...instruments, name]);
+    setInstrumentSearch("");
+  };
 
   const toggleItem = (list: string[], setList: (v: string[]) => void, item: string) => {
     setList(list.includes(item) ? list.filter((i) => i !== item) : [...list, item]);
@@ -196,21 +230,60 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
           {/* Instruments */}
           <div>
             <label className="text-xs font-semibold mb-2 block">악기</label>
-            <div className="flex flex-wrap gap-1.5">
-              {INSTRUMENT_OPTIONS.map((inst) => (
+            {/* Selected instruments */}
+            {instruments.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {instruments.map((inst) => (
+                  <button
+                    key={inst}
+                    type="button"
+                    onClick={() => setInstruments(instruments.filter((i) => i !== inst))}
+                    className="text-[11px] font-medium px-2.5 py-1.5 rounded-full bg-primary text-primary-foreground flex items-center gap-1 transition-colors"
+                  >
+                    {inst}
+                    <X className="w-3 h-3" />
+                  </button>
+                ))}
+              </div>
+            )}
+            {/* Search input */}
+            <div className="relative mb-2">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <input
+                value={instrumentSearch}
+                onChange={(e) => setInstrumentSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); addCustomInstrument(); }
+                }}
+                className="w-full h-9 pl-8 pr-3 rounded-lg border border-input bg-background text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                placeholder="악기 검색 또는 직접 입력 후 Enter"
+              />
+            </div>
+            {/* Suggestions */}
+            <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto">
+              {filteredInstruments.map((inst) => (
                 <button
                   key={inst}
                   type="button"
-                  onClick={() => toggleItem(instruments, setInstruments, inst)}
-                  className={`text-[11px] font-medium px-2.5 py-1.5 rounded-full transition-colors ${
-                    instruments.includes(inst)
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
-                  }`}
+                  onClick={() => { setInstruments([...instruments, inst]); setInstrumentSearch(""); }}
+                  className="text-[11px] font-medium px-2.5 py-1.5 rounded-full bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
                 >
                   {inst}
                 </button>
               ))}
+              {instrumentSearch.trim() && !uniqueInstrumentOptions.includes(instrumentSearch.trim()) && !instruments.includes(instrumentSearch.trim()) && (
+                <button
+                  type="button"
+                  onClick={addCustomInstrument}
+                  className="text-[11px] font-medium px-2.5 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" />
+                  "{instrumentSearch.trim()}" 추가
+                </button>
+              )}
+              {filteredInstruments.length === 0 && !instrumentSearch.trim() && (
+                <p className="text-[10px] text-muted-foreground">모든 악기가 선택되었습니다</p>
+              )}
             </div>
           </div>
 
