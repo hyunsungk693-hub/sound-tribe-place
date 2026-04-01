@@ -1,4 +1,5 @@
-import { Home, Briefcase, Map, MapPin, MessageCircle, Mail, User, Bell } from "lucide-react";
+import { Home, Briefcase, Map, MapPin, MessageCircle, Mail, User, Bell, Heart, MessageSquare } from "lucide-react";
+import { toast } from "sonner";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,12 +59,39 @@ const BottomNav = () => {
 
     const msgChannel = supabase
       .channel("unread-msg-badge")
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => fetchUnreadMessages())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload: any) => {
+        fetchUnreadMessages();
+        // Show toast for new messages from others
+        if (payload.new && payload.new.sender_id !== user.id) {
+          toast("💬 새 메시지가 도착했습니다", {
+            description: payload.new.content?.slice(0, 50) || "새 메시지",
+            duration: 4000,
+            action: {
+              label: "확인",
+              onClick: () => navigate("/messages"),
+            },
+          });
+        }
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages" }, () => fetchUnreadMessages())
       .subscribe();
 
     const notiChannel = supabase
       .channel("unread-noti-badge")
-      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, () => fetchUnreadNotifications())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, (payload: any) => {
+        fetchUnreadNotifications();
+        const n = payload.new;
+        if (n) {
+          const icon = n.type === "like" ? "❤️" : "💬";
+          const action = n.type === "like" ? "좋아요를 눌렀습니다" : "댓글을 달았습니다";
+          toast(`${icon} ${n.actor_name || "누군가"}님이 ${action}`, {
+            description: n.post_title ? `"${n.post_title}"` : undefined,
+            duration: 5000,
+          });
+        }
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, () => fetchUnreadNotifications())
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, () => fetchUnreadNotifications())
       .subscribe();
 
     return () => {
