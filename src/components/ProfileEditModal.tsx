@@ -38,7 +38,13 @@ const INSTRUMENT_OPTIONS = [
   // 기타
   "하모니카", "오카리나", "칼림바", "디저리두", "백파이프", "밴드네온",
 ];
-const GENRE_OPTIONS = ["록", "팝", "재즈", "클래식", "인디", "R&B", "힙합", "일렉트로닉", "포크", "메탈", "블루스", "펑크"];
+const GENRE_OPTIONS = [
+  "록", "팝", "재즈", "클래식", "인디", "R&B", "힙합", "일렉트로닉", "포크", "메탈", "블루스", "펑크",
+  "소울", "레게", "컨트리", "얼터너티브", "그런지", "프로그레시브", "퓨전", "보사노바",
+  "라틴", "월드뮤직", "앰비언트", "트랩", "디스코", "펑키", "가스펠", "뉴에이지",
+  "포스트록", "슈게이징", "트로트", "발라드", "CCM", "국악", "EDM", "하우스", "테크노",
+  "드럼앤베이스", "덥스텝", "K-POP", "J-POP", "시티팝",
+];
 
 const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
   const [displayName, setDisplayName] = useState(profile.display_name || "");
@@ -50,6 +56,7 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [instrumentSearch, setInstrumentSearch] = useState("");
+  const [genreSearch, setGenreSearch] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uniqueInstrumentOptions = useMemo(() => [...new Set(INSTRUMENT_OPTIONS)], []);
@@ -65,6 +72,21 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
     if (!name || instruments.includes(name)) return;
     setInstruments([...instruments, name]);
     setInstrumentSearch("");
+  };
+
+  const uniqueGenreOptions = useMemo(() => [...new Set(GENRE_OPTIONS)], []);
+
+  const filteredGenres = useMemo(() => {
+    if (!genreSearch.trim()) return uniqueGenreOptions.filter((g) => !genres.includes(g)).slice(0, 12);
+    const q = genreSearch.trim().toLowerCase();
+    return uniqueGenreOptions.filter((g) => g.toLowerCase().includes(q) && !genres.includes(g));
+  }, [genreSearch, genres, uniqueGenreOptions]);
+
+  const addCustomGenre = () => {
+    const name = genreSearch.trim();
+    if (!name || genres.includes(name)) return;
+    setGenres([...genres, name]);
+    setGenreSearch("");
   };
 
   const toggleItem = (list: string[], setList: (v: string[]) => void, item: string) => {
@@ -290,21 +312,57 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
           {/* Genres */}
           <div>
             <label className="text-xs font-semibold mb-2 block">장르</label>
-            <div className="flex flex-wrap gap-1.5">
-              {GENRE_OPTIONS.map((genre) => (
+            {genres.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {genres.map((genre) => (
+                  <button
+                    key={genre}
+                    type="button"
+                    onClick={() => setGenres(genres.filter((g) => g !== genre))}
+                    className="text-[11px] font-medium px-2.5 py-1.5 rounded-full bg-primary text-primary-foreground flex items-center gap-1 transition-colors"
+                  >
+                    {genre}
+                    <X className="w-3 h-3" />
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="relative mb-2">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <input
+                value={genreSearch}
+                onChange={(e) => setGenreSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); addCustomGenre(); }
+                }}
+                className="w-full h-9 pl-8 pr-3 rounded-lg border border-input bg-background text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                placeholder="장르 검색 또는 직접 입력 후 Enter"
+              />
+            </div>
+            <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto">
+              {filteredGenres.map((genre) => (
                 <button
                   key={genre}
                   type="button"
-                  onClick={() => toggleItem(genres, setGenres, genre)}
-                  className={`text-[11px] font-medium px-2.5 py-1.5 rounded-full transition-colors ${
-                    genres.includes(genre)
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
-                  }`}
+                  onClick={() => { setGenres([...genres, genre]); setGenreSearch(""); }}
+                  className="text-[11px] font-medium px-2.5 py-1.5 rounded-full bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
                 >
                   {genre}
                 </button>
               ))}
+              {genreSearch.trim() && !uniqueGenreOptions.includes(genreSearch.trim()) && !genres.includes(genreSearch.trim()) && (
+                <button
+                  type="button"
+                  onClick={addCustomGenre}
+                  className="text-[11px] font-medium px-2.5 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" />
+                  "{genreSearch.trim()}" 추가
+                </button>
+              )}
+              {filteredGenres.length === 0 && !genreSearch.trim() && (
+                <p className="text-[10px] text-muted-foreground">모든 장르가 선택되었습니다</p>
+              )}
             </div>
           </div>
         </div>
