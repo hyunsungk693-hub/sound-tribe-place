@@ -47,6 +47,7 @@ const Community = () => {
   ];
 
   const filtered = selectedTab === "전체" ? allPosts : allPosts.filter((p) => p.tab === selectedTab);
+  const topPost = [...allPosts].sort((a, b) => b.likes - a.likes)[0];
 
   return (
     <PageShell title="커뮤니티">
