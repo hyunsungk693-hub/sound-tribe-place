@@ -488,6 +488,13 @@ const Messages = () => {
           </div>
         )}
 
+        {/* Emoji Picker */}
+        {showEmoji && (
+          <div ref={emojiRef} className="border-t border-border/30 bg-card/95 backdrop-blur-lg">
+            <EmojiPicker onSelect={(emoji) => { setNewMsg((prev) => prev + emoji); }} />
+          </div>
+        )}
+
         {/* Input */}
         <div className="p-3 border-t border-border/50 bg-card/80 backdrop-blur-lg pb-safe">
           <div className="flex items-center gap-2">
@@ -504,10 +511,17 @@ const Messages = () => {
             >
               <Paperclip className="w-5 h-5 text-muted-foreground" />
             </button>
+            <button
+              onClick={() => setShowEmoji((v) => !v)}
+              className={`w-10 h-10 rounded-full flex items-center justify-center hover:bg-secondary transition-colors shrink-0 ${showEmoji ? "bg-secondary" : ""}`}
+            >
+              <Smile className="w-5 h-5 text-muted-foreground" />
+            </button>
             <input
               value={newMsg}
               onChange={(e) => setNewMsg(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+              onFocus={() => setShowEmoji(false)}
               placeholder="메시지를 입력하세요..."
               className="flex-1 bg-secondary rounded-full px-4 py-2.5 text-sm outline-none placeholder:text-muted-foreground"
             />
