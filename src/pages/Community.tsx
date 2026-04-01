@@ -314,6 +314,22 @@ const Community = () => {
                             <span className="text-[10px] text-muted-foreground">
                               {new Date(c.created_at).toLocaleDateString("ko-KR")}
                             </span>
+                            {user && c.user_id === user.id && (
+                              <button
+                                onClick={async () => {
+                                  if (!confirm("댓글을 삭제하시겠습니까?")) return;
+                                  await supabase.from("post_comments").delete().eq("id", c.id);
+                                  toast.success("댓글이 삭제되었습니다");
+                                  await fetchComments(selectedPost!.id!);
+                                  const ids = dbPosts.map((p) => p.id);
+                                  await fetchLikesAndComments(ids);
+                                  setSelectedPost((prev) => prev ? { ...prev, commentCount: prev.commentCount - 1 } : null);
+                                }}
+                                className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+                              >
+                                삭제
+                              </button>
+                            )}
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5">{c.content}</p>
                         </div>

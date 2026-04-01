@@ -202,6 +202,18 @@ const ProfilePage = () => {
                     <span className="text-[10px] text-muted-foreground">
                       {new Date(comment.created_at).toLocaleDateString("ko-KR")}
                     </span>
+                    <button
+                      onClick={async () => {
+                        if (!confirm("댓글을 삭제하시겠습니까?")) return;
+                        const { error } = await supabase.from("post_comments").delete().eq("id", comment.id);
+                        if (error) { toast.error("삭제에 실패했습니다"); return; }
+                        toast.success("댓글이 삭제되었습니다");
+                        setMyComments((prev) => prev.filter((c) => c.id !== comment.id));
+                      }}
+                      className="ml-auto p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                   <p className="text-sm text-foreground">{comment.content}</p>
                 </div>
