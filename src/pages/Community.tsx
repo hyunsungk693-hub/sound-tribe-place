@@ -68,12 +68,14 @@ const Community = () => {
   const [savingEdit, setSavingEdit] = useState(false);
 
   const fetchPosts = useCallback(async () => {
+    setLoadingPosts(true);
     const { data } = await supabase
       .from("posts")
       .select("*")
       .eq("post_type", "community")
       .order("created_at", { ascending: false });
     setDbPosts(data || []);
+    setLoadingPosts(false);
   }, []);
 
   const fetchLikesAndComments = useCallback(async (postIds: string[]) => {
