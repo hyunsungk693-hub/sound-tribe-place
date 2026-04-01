@@ -20,6 +20,7 @@ const roomFields = [
   { key: "hours", label: "운영시간", placeholder: "예: 24시간" },
   { key: "instruments", label: "보유 장비 (쉼표 구분)", placeholder: "예: 드럼, 앰프, PA" },
   { key: "author_name", label: "작성자명", placeholder: "닉네임" },
+  { key: "location", label: "지도 위치 (선택)", placeholder: "", type: "location" as const },
 ];
 
 const Rooms = () => {

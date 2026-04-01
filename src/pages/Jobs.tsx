@@ -22,6 +22,7 @@ const jobFields = [
   { key: "venue", label: "장소", placeholder: "예: 홍대 라이브클럽" },
   { key: "pay", label: "급여/페이", placeholder: "예: 회당 15만원" },
   { key: "author_name", label: "작성자명", placeholder: "닉네임" },
+  { key: "location", label: "지도 위치 (선택)", placeholder: "", type: "location" as const },
 ];
 
 const Jobs = () => {
