@@ -145,7 +145,8 @@ const Jobs = () => {
       </div>
 
       <div className="space-y-3">
-        {filtered.map((job, i) => (
+        {loadingJobs ? [...Array(4)].map((_, i) => <JobCardSkeleton key={i} />) : null}
+        {!loadingJobs && filtered.map((job, i) => (
           <div
             key={job.id || `sample-${i}`}
             onClick={() => { setSelectedJob(job); setEditing(false); }}
