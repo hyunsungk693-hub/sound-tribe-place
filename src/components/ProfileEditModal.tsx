@@ -49,7 +49,23 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [instrumentSearch, setInstrumentSearch] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uniqueInstrumentOptions = useMemo(() => [...new Set(INSTRUMENT_OPTIONS)], []);
+
+  const filteredInstruments = useMemo(() => {
+    if (!instrumentSearch.trim()) return uniqueInstrumentOptions.filter((i) => !instruments.includes(i)).slice(0, 12);
+    const q = instrumentSearch.trim().toLowerCase();
+    return uniqueInstrumentOptions.filter((i) => i.toLowerCase().includes(q) && !instruments.includes(i));
+  }, [instrumentSearch, instruments, uniqueInstrumentOptions]);
+
+  const addCustomInstrument = () => {
+    const name = instrumentSearch.trim();
+    if (!name || instruments.includes(name)) return;
+    setInstruments([...instruments, name]);
+    setInstrumentSearch("");
+  };
 
   const toggleItem = (list: string[], setList: (v: string[]) => void, item: string) => {
     setList(list.includes(item) ? list.filter((i) => i !== item) : [...list, item]);
