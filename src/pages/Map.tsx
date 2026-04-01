@@ -145,6 +145,7 @@ const MapPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selected, setSelected] = useState<MarkerData | null>(null);
   const [dbReviews, setDbReviews] = useState<Record<string, Review[]>>({});
+  const [dbMarkers, setDbMarkers] = useState<MarkerData[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newRating, setNewRating] = useState(0);
   const [newContent, setNewContent] = useState("");
@@ -153,6 +154,33 @@ const MapPage = () => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Fetch posts from DB that have lat/lng
+  const fetchDbMarkers = useCallback(async () => {
+    const { data } = await supabase
+      .from("posts")
+      .select("*")
+      .not("lat", "is", null)
+      .not("lng", "is", null);
+    if (data) {
+      const mapped: MarkerData[] = data.map((p: any, idx: number) => ({
+        id: 10000 + idx,
+        type: p.post_type === "room" ? "room" as const : p.post_type === "job" ? "job" as const : "shop" as const,
+        name: p.title,
+        desc: [p.venue || p.area, p.pay || p.price].filter(Boolean).join(" · ") || p.content?.slice(0, 40),
+        lat: p.lat,
+        lng: p.lng,
+        address: p.venue || p.area || "",
+        hours: p.hours || undefined,
+        rating: 0,
+        reviewCount: 0,
+        reviews: [],
+      }));
+      setDbMarkers(mapped);
+    }
+  }, []);
+
+  useEffect(() => { fetchDbMarkers(); }, [fetchDbMarkers]);
 
   // Fetch DB reviews for a place
   const fetchReviews = useCallback(async (placeId: number, placeType: string) => {
