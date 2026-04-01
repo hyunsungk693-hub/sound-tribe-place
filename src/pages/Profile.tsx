@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Settings, ChevronRight, Music, Award, Edit3, Bell, Shield, HelpCircle, LogOut, Heart, MessageSquare } from "lucide-react";
+import { Settings, ChevronRight, Music, Award, Edit3, Bell, Shield, HelpCircle, LogOut, Heart, MessageSquare, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -159,6 +160,19 @@ const ProfilePage = () => {
                     <span className="text-[10px] text-muted-foreground ml-auto">
                       {new Date(post.created_at).toLocaleDateString("ko-KR")}
                     </span>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (!confirm("정말 삭제하시겠습니까?")) return;
+                        const { error } = await supabase.from("posts").delete().eq("id", post.id);
+                        if (error) { toast.error("삭제에 실패했습니다"); return; }
+                        toast.success("게시물이 삭제되었습니다");
+                        setMyPosts((prev) => prev.filter((p) => p.id !== post.id));
+                      }}
+                      className="p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                   <h4 className="text-sm font-semibold truncate">{post.title}</h4>
                   <p className="text-xs text-muted-foreground truncate mt-0.5">{post.content}</p>
