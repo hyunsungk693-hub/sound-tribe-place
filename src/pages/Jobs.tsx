@@ -58,8 +58,10 @@ const Jobs = () => {
   const [savingEdit, setSavingEdit] = useState(false);
 
   const fetchJobs = async () => {
+    setLoadingJobs(true);
     const { data } = await supabase.from("posts").select("*").eq("post_type", "job").order("created_at", { ascending: false });
     setDbJobs(data || []);
+    setLoadingJobs(false);
   };
 
   useEffect(() => { fetchJobs(); }, []);
