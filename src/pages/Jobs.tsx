@@ -164,6 +164,7 @@ const Jobs = () => {
             </div>
           </div>
         ))}
+        {!loadingJobs && filtered.length === 0 && <div className="text-center py-10 text-muted-foreground text-sm">구인글이 없습니다</div>}
       </div>
 
       <CreatePostDialog postType="job" fields={jobFields} onCreated={fetchJobs} />
