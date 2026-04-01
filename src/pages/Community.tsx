@@ -10,7 +10,7 @@ const samplePosts = [
   { author: "김재현", time: "2시간 전", tab: "자유", title: "오늘 라이브 후기", content: "홍대에서 첫 라이브 했는데 긴장돼서 손이 떨렸지만 나름 잘 마무리한 것 같아요 ㅎㅎ", likes: 24, comments: 8 },
   { author: "박소연", time: "5시간 전", tab: "질문", title: "이어폰 모니터링 추천", content: "라이브 공연할 때 쓸 인이어 모니터 추천 부탁드립니다. 예산은 30만원 정도예요.", likes: 12, comments: 15 },
   { author: "이동건", time: "1일 전", tab: "합주모집", title: "주말 합주 멤버 구합니다", content: "토요일 오후 합정에서 합주할 보컬, 기타 구합니다. 장르는 인디록이고 커버 위주예요.", likes: 31, comments: 22 },
-  { author: "최유진", time: "3시간 전", tab: "장비거래", title: "펜더 텔레캐스터 판매", content: "2022년 구매한 펜더 플레이어 텔레캐스터 판매합니다. 상태 A급, 케이스 포함.", likes: 18, comments: 6 },
+  { author: "최유진", time: "3시간 전", tab: "거래", title: "펜더 텔레캐스터 판매", content: "2022년 구매한 펜더 플레이어 텔레캐스터 판매합니다. 상태 A급, 케이스 포함.", likes: 18, comments: 6 },
   { author: "정민호", time: "6시간 전", tab: "자유", title: "녹음 스튜디오 추천", content: "강남 쪽에 가성비 좋은 녹음 스튜디오 아시는 분? 보컬 녹음 위주입니다.", likes: 9, comments: 11 },
 ];
 
