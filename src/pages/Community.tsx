@@ -147,6 +147,13 @@ const Community = () => {
     ? allPosts.filter((p) => p.title.toLowerCase().includes(query) || p.content.toLowerCase().includes(query) || p.author.toLowerCase().includes(query))
     : allPosts;
   const filtered = selectedTab === "전체" ? searched : searched.filter((p) => p.tab === selectedTab);
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === "likes") return b.likeCount - a.likeCount;
+    if (sortBy === "comments") return b.commentCount - a.commentCount;
+    return 0; // latest is already default order
+  });
+
   const topPost = [...allPosts].sort((a, b) => b.likeCount - a.likeCount)[0];
 
   // Toggle like
