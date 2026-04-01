@@ -56,6 +56,7 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [instrumentSearch, setInstrumentSearch] = useState("");
+  const [genreSearch, setGenreSearch] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uniqueInstrumentOptions = useMemo(() => [...new Set(INSTRUMENT_OPTIONS)], []);
