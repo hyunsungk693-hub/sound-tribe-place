@@ -33,6 +33,8 @@ const ProfilePage = () => {
   const [myPosts, setMyPosts] = useState<any[]>([]);
   const [myComments, setMyComments] = useState<any[]>([]);
   const [editOpen, setEditOpen] = useState(false);
+  const [notiOpen, setNotiOpen] = useState(false);
+  const { count: unreadCount } = useUnreadCount();
 
   useEffect(() => {
     if (!user) return;
