@@ -5,6 +5,7 @@ import PageShell from "@/components/PageShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import ProfileEditModal from "@/components/ProfileEditModal";
 
 interface Profile {
   display_name: string | null;
@@ -15,7 +16,6 @@ interface Profile {
 }
 
 const menuItems = [
-  { icon: Edit3, label: "프로필 수정" },
   { icon: Bell, label: "알림 설정" },
   { icon: Shield, label: "개인정보 보호" },
   { icon: HelpCircle, label: "고객센터" },
@@ -30,6 +30,7 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState("내 게시물");
   const [myPosts, setMyPosts] = useState<any[]>([]);
   const [myComments, setMyComments] = useState<any[]>([]);
+  const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -83,8 +84,11 @@ const ProfilePage = () => {
               {profile?.location || "위치를 설정해주세요"}
             </p>
           </div>
-          <button className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center hover:bg-surface-hover transition-colors active:scale-95">
-            <Settings className="w-4 h-4 text-muted-foreground" />
+          <button
+            onClick={() => setEditOpen(true)}
+            className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center hover:bg-surface-hover transition-colors active:scale-95"
+          >
+            <Edit3 className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
 
@@ -230,6 +234,15 @@ const ProfilePage = () => {
           로그아웃
         </span>
       </button>
+
+      {editOpen && profile && user && (
+        <ProfileEditModal
+          userId={user.id}
+          profile={profile}
+          onClose={() => setEditOpen(false)}
+          onSaved={(updated) => setProfile(updated)}
+        />
+      )}
     </PageShell>
   );
 };
