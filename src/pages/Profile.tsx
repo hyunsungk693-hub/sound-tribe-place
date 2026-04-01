@@ -36,6 +36,13 @@ const ProfilePage = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [notiOpen, setNotiOpen] = useState(false);
   const { count: unreadCount } = useUnreadCount();
+  const { theme, setTheme } = useTheme();
+
+  const themeOptions: { value: "light" | "dark" | "system"; icon: typeof Sun; label: string }[] = [
+    { value: "light", icon: Sun, label: "라이트" },
+    { value: "dark", icon: Moon, label: "다크" },
+    { value: "system", icon: Monitor, label: "시스템" },
+  ];
 
   useEffect(() => {
     if (!user) return;
