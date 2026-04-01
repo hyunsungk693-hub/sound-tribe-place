@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { X, Plus } from "lucide-react";
+import { useState, useRef } from "react";
+import { X, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -9,6 +9,7 @@ interface ProfileData {
   instruments: string[] | null;
   genres: string[] | null;
   bio: string | null;
+  avatar_url: string | null;
 }
 
 interface Props {
@@ -27,10 +28,50 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
   const [bio, setBio] = useState(profile.bio || "");
   const [instruments, setInstruments] = useState<string[]>(profile.instruments || []);
   const [genres, setGenres] = useState<string[]>(profile.genres || []);
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || "");
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleItem = (list: string[], setList: (v: string[]) => void, item: string) => {
     setList(list.includes(item) ? list.filter((i) => i !== item) : [...list, item]);
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("이미지 파일만 업로드 가능합니다");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("파일 크기는 5MB 이하여야 합니다");
+      return;
+    }
+
+    setUploading(true);
+    const fileExt = file.name.split(".").pop();
+    const filePath = `${userId}/avatar.${fileExt}`;
+
+    const { error } = await supabase.storage
+      .from("avatars")
+      .upload(filePath, file, { upsert: true });
+
+    if (error) {
+      toast.error("사진 업로드에 실패했습니다");
+      setUploading(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(filePath);
+
+    const newUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+    setAvatarUrl(newUrl);
+    toast.success("사진이 업로드되었습니다");
+    setUploading(false);
   };
 
   const handleSave = async () => {
@@ -39,12 +80,13 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
     if (bio.length > 300) { toast.error("소개는 300자 이내로 입력해주세요"); return; }
 
     setSaving(true);
-    const updated = {
+    const updated: ProfileData = {
       display_name: displayName.trim(),
       location: location.trim() || null,
       bio: bio.trim() || null,
       instruments,
       genres,
+      avatar_url: avatarUrl || null,
     };
 
     const { error } = await supabase
@@ -62,6 +104,8 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
     setSaving(false);
   };
 
+  const initials = (displayName || "U").charAt(0).toUpperCase();
+
   return (
     <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end justify-center" onClick={onClose}>
       <div
@@ -78,6 +122,39 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
 
         {/* Form */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          {/* Avatar */}
+          <div className="flex flex-col items-center gap-2">
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="relative w-20 h-20 rounded-2xl overflow-hidden cursor-pointer group"
+            >
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-2xl font-bold text-primary">
+                  {initials}
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Camera className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="text-xs text-primary font-medium"
+            >
+              {uploading ? "업로드 중..." : "사진 변경"}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              className="hidden"
+            />
+          </div>
+
           {/* Display Name */}
           <div>
             <label className="text-xs font-semibold mb-1.5 block">닉네임</label>

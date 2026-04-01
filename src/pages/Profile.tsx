@@ -13,6 +13,7 @@ interface Profile {
   instruments: string[] | null;
   genres: string[] | null;
   bio: string | null;
+  avatar_url: string | null;
 }
 
 const menuItems = [
@@ -36,7 +37,7 @@ const ProfilePage = () => {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("display_name, location, instruments, genres, bio")
+      .select("display_name, location, instruments, genres, bio, avatar_url")
       .eq("user_id", user.id)
       .single()
       .then(({ data }) => {
@@ -75,9 +76,13 @@ const ProfilePage = () => {
       {/* Profile Card */}
       <div className="glass-card p-5 mb-4" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) both" }}>
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-xl font-bold text-primary">
-            {initials}
-          </div>
+          {profile?.avatar_url ? (
+            <img src={profile.avatar_url} alt="avatar" className="w-16 h-16 rounded-2xl object-cover" />
+          ) : (
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-xl font-bold text-primary">
+              {initials}
+            </div>
+          )}
           <div className="flex-1">
             <h2 className="text-lg font-bold">{displayName}</h2>
             <p className="text-xs text-muted-foreground mt-0.5">
