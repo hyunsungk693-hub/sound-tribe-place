@@ -1,4 +1,4 @@
-import { Heart, MessageSquare, Share2, TrendingUp } from "lucide-react";
+import { Heart, MessageSquare, Share2, TrendingUp, X, ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import PageShell from "@/components/PageShell";
 import CreatePostDialog from "@/components/CreatePostDialog";
@@ -24,6 +24,7 @@ const communityFields = [
 const Community = () => {
   const [dbPosts, setDbPosts] = useState<any[]>([]);
   const [selectedTab, setSelectedTab] = useState("전체");
+  const [selectedPost, setSelectedPost] = useState<any>(null);
 
   const fetchPosts = async () => {
     const { data } = await supabase.from("posts").select("*").eq("post_type", "community").order("created_at", { ascending: false });
@@ -46,6 +47,7 @@ const Community = () => {
   ];
 
   const filtered = selectedTab === "전체" ? allPosts : allPosts.filter((p) => p.tab === selectedTab);
+  const topPost = [...allPosts].sort((a, b) => b.likes - a.likes)[0];
 
   return (
     <PageShell title="커뮤니티">
@@ -63,17 +65,23 @@ const Community = () => {
         ))}
       </div>
 
-      <div className="glass-card p-3.5 mb-5 flex items-center gap-3" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) both" }}>
-        <TrendingUp className="w-4 h-4 text-primary shrink-0" />
-        <div className="overflow-hidden">
-          <p className="text-[10px] text-primary font-medium mb-0.5">인기글</p>
-          <p className="text-xs truncate">주말 합주 멤버 구합니다 — 댓글 22개</p>
+      {topPost && (
+        <div
+          className="glass-card p-3.5 mb-5 flex items-center gap-3 cursor-pointer hover:bg-surface-hover active:scale-[0.98] transition-all"
+          style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) both" }}
+          onClick={() => setSelectedPost(topPost)}
+        >
+          <TrendingUp className="w-4 h-4 text-primary shrink-0" />
+          <div className="overflow-hidden">
+            <p className="text-[10px] text-primary font-medium mb-0.5">인기글</p>
+            <p className="text-xs truncate">{topPost.title} — ♥ {topPost.likes} · 댓글 {topPost.comments}개</p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="space-y-3">
         {filtered.map((post, i) => (
-          <div key={i} className="glass-card p-4 hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]" style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${0.1 + i * 0.06}s both` }}>
+          <div key={i} onClick={() => setSelectedPost(post)} className="glass-card p-4 hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]" style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${0.1 + i * 0.06}s both` }}>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-[10px] font-bold">{post.author[0]}</div>
               <span className="text-xs font-medium">{post.author}</span>
@@ -92,6 +100,46 @@ const Community = () => {
       </div>
 
       <CreatePostDialog postType="community" fields={communityFields} onCreated={fetchPosts} />
+
+      {/* Post Detail Modal */}
+      {selectedPost && (
+        <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end justify-center" onClick={() => setSelectedPost(null)}>
+          <div
+            className="w-full max-w-lg bg-background rounded-t-2xl p-5 pb-8 max-h-[80vh] overflow-y-auto animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <button onClick={() => setSelectedPost(null)} className="p-1 rounded-full hover:bg-secondary">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">{selectedPost.tab}</span>
+            </div>
+
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-xs font-bold">{selectedPost.author[0]}</div>
+              <div>
+                <p className="text-sm font-medium">{selectedPost.author}</p>
+                <p className="text-[10px] text-muted-foreground">{selectedPost.time}</p>
+              </div>
+            </div>
+
+            <h2 className="text-base font-bold mb-3">{selectedPost.title}</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{selectedPost.content}</p>
+
+            <div className="flex items-center gap-4 mt-5 pt-4 border-t border-border/30">
+              <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
+                <Heart className="w-4 h-4" /> {selectedPost.likes}
+              </button>
+              <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
+                <MessageSquare className="w-4 h-4" /> {selectedPost.comments}
+              </button>
+              <button className="ml-auto text-muted-foreground hover:text-primary transition-colors">
+                <Share2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageShell>
   );
 };
