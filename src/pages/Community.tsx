@@ -341,10 +341,22 @@ const Community = () => {
 
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-xs font-bold">{selectedPost.author[0]}</div>
-                <div>
+                <div className="flex-1">
                   <p className="text-sm font-medium">{selectedPost.author}</p>
                   <p className="text-[10px] text-muted-foreground">{selectedPost.time}</p>
                 </div>
+                {selectedPost.user_id && selectedPost.user_id !== user?.id && (
+                  <button
+                    onClick={() => {
+                      setSelectedPost(null);
+                      navigate(`/messages?to=${selectedPost.user_id}`);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    메시지
+                  </button>
+                )}
               </div>
 
               <h2 className="text-base font-bold mb-3">{selectedPost.title}</h2>
