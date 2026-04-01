@@ -6,6 +6,7 @@ import CreatePostDialog from "@/components/CreatePostDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { PostCardSkeleton } from "@/components/skeletons/PostSkeleton";
 
 const tabs = ["전체", "자유", "질문", "거래"];
 
@@ -42,6 +43,7 @@ const Community = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [dbPosts, setDbPosts] = useState<any[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(true);
   const [selectedTab, setSelectedTab] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
@@ -66,12 +68,14 @@ const Community = () => {
   const [savingEdit, setSavingEdit] = useState(false);
 
   const fetchPosts = useCallback(async () => {
+    setLoadingPosts(true);
     const { data } = await supabase
       .from("posts")
       .select("*")
       .eq("post_type", "community")
       .order("created_at", { ascending: false });
     setDbPosts(data || []);
+    setLoadingPosts(false);
   }, []);
 
   const fetchLikesAndComments = useCallback(async (postIds: string[]) => {
@@ -356,12 +360,14 @@ const Community = () => {
       )}
 
       <div className="space-y-3">
-        {sorted.length === 0 && (
+        {loadingPosts ? (
+          [...Array(4)].map((_, i) => <PostCardSkeleton key={i} />)
+        ) : sorted.length === 0 ? (
           <div className="text-center py-10 text-muted-foreground text-sm">
             {searchQuery ? `"${searchQuery}"에 대한 검색 결과가 없습니다` : "게시물이 없습니다"}
           </div>
-        )}
-        {sorted.map((post, i) => (
+        ) : null}
+        {!loadingPosts && sorted.map((post, i) => (
           <div key={post.id || `sample-${i}`} onClick={() => openPost(post)} className="glass-card p-4 hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]" style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${0.1 + i * 0.06}s both` }}>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-[10px] font-bold">{post.author[0]}</div>

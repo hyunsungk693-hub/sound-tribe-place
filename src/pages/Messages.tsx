@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowLeft, Send, Paperclip, X, FileText, Film, Image as ImageIcon, Smile } from "lucide-react";
+import { ConversationSkeleton } from "@/components/skeletons/PostSkeleton";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -589,8 +590,8 @@ const Messages = () => {
   return (
     <PageShell title="메시지">
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="space-y-1">
+          {[...Array(5)].map((_, i) => <ConversationSkeleton key={i} />)}
         </div>
       ) : conversations.length === 0 ? (
         <div className="text-center py-20 text-muted-foreground text-sm">

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import PageShell from "@/components/PageShell";
 import CreatePostDialog from "@/components/CreatePostDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { HomeSkeleton } from "@/components/skeletons/PostSkeleton";
 
 const quickActions = [
   { icon: Briefcase, label: "구인구직", desc: "음악 관련 일자리 탐색", path: "/jobs", color: "from-blue-500/10 to-blue-600/5" },
@@ -41,14 +42,17 @@ const Index = () => {
   const [currentBanner, setCurrentBanner] = useState(0);
   const [dbPromos, setDbPromos] = useState<any[]>([]);
   const [dbRecentJobs, setDbRecentJobs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
+    setLoading(true);
     const [promoRes, jobRes] = await Promise.all([
       supabase.from("posts").select("*").eq("post_type", "promotion").order("created_at", { ascending: false }).limit(5),
       supabase.from("posts").select("*").eq("post_type", "job").order("created_at", { ascending: false }).limit(3),
     ]);
     setDbPromos(promoRes.data || []);
     setDbRecentJobs(jobRes.data || []);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -93,6 +97,7 @@ const Index = () => {
         </div>
       </div>
 
+      {loading ? <HomeSkeleton /> : <>
       {/* Ad Banner Carousel */}
       <section className="mb-6" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.05s both" }}>
         <div className="relative overflow-hidden rounded-2xl">
@@ -169,6 +174,7 @@ const Index = () => {
       </section>
 
       <CreatePostDialog postType="promotion" fields={promoFields} onCreated={fetchData} />
+      </>}
     </PageShell>
   );
 };

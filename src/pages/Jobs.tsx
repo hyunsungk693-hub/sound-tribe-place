@@ -6,6 +6,7 @@ import CreatePostDialog from "@/components/CreatePostDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { JobCardSkeleton } from "@/components/skeletons/PostSkeleton";
 
 const categories = ["전체", "공연", "녹음", "레슨", "행사", "기타"];
 
@@ -43,6 +44,7 @@ const Jobs = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [dbJobs, setDbJobs] = useState<any[]>([]);
+  const [loadingJobs, setLoadingJobs] = useState(true);
   const [selectedCat, setSelectedCat] = useState("전체");
   const [selectedJob, setSelectedJob] = useState<JobItem | null>(null);
 
@@ -56,8 +58,10 @@ const Jobs = () => {
   const [savingEdit, setSavingEdit] = useState(false);
 
   const fetchJobs = async () => {
+    setLoadingJobs(true);
     const { data } = await supabase.from("posts").select("*").eq("post_type", "job").order("created_at", { ascending: false });
     setDbJobs(data || []);
+    setLoadingJobs(false);
   };
 
   useEffect(() => { fetchJobs(); }, []);
@@ -141,7 +145,8 @@ const Jobs = () => {
       </div>
 
       <div className="space-y-3">
-        {filtered.map((job, i) => (
+        {loadingJobs ? [...Array(4)].map((_, i) => <JobCardSkeleton key={i} />) : null}
+        {!loadingJobs && filtered.map((job, i) => (
           <div
             key={job.id || `sample-${i}`}
             onClick={() => { setSelectedJob(job); setEditing(false); }}
@@ -159,6 +164,7 @@ const Jobs = () => {
             </div>
           </div>
         ))}
+        {!loadingJobs && filtered.length === 0 && <div className="text-center py-10 text-muted-foreground text-sm">구인글이 없습니다</div>}
       </div>
 
       <CreatePostDialog postType="job" fields={jobFields} onCreated={fetchJobs} />

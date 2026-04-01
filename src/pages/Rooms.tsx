@@ -5,6 +5,7 @@ import CreatePostDialog from "@/components/CreatePostDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { RoomCardSkeleton } from "@/components/skeletons/PostSkeleton";
 
 const sampleRooms = [
   { id: null, user_id: null, name: "사운드팩토리", area: "홍대입구역 3분", price: "시간당 1.5만원", rating: 4.8, instruments: ["드럼", "앰프", "PA"], hours: "24시간", content: "" },
@@ -40,6 +41,7 @@ type RoomItem = {
 const Rooms = () => {
   const { user } = useAuth();
   const [dbRooms, setDbRooms] = useState<any[]>([]);
+  const [loadingRooms, setLoadingRooms] = useState(true);
   const [selectedRoom, setSelectedRoom] = useState<RoomItem | null>(null);
 
   // Edit state
@@ -53,8 +55,10 @@ const Rooms = () => {
   const [savingEdit, setSavingEdit] = useState(false);
 
   const fetchRooms = async () => {
+    setLoadingRooms(true);
     const { data } = await supabase.from("posts").select("*").eq("post_type", "room").order("created_at", { ascending: false });
     setDbRooms(data || []);
+    setLoadingRooms(false);
   };
 
   useEffect(() => { fetchRooms(); }, []);
@@ -122,7 +126,8 @@ const Rooms = () => {
       </div>
 
       <div className="space-y-3">
-        {allRooms.map((room, i) => (
+        {loadingRooms ? [...Array(4)].map((_, i) => <RoomCardSkeleton key={i} />) : null}
+        {!loadingRooms && allRooms.map((room, i) => (
           <div
             key={room.id || `sample-${i}`}
             onClick={() => { setSelectedRoom(room); setEditing(false); }}
@@ -158,6 +163,7 @@ const Rooms = () => {
             )}
           </div>
         ))}
+        {!loadingRooms && allRooms.length === 0 && <div className="text-center py-10 text-muted-foreground text-sm">연습실이 없습니다</div>}
       </div>
 
       <CreatePostDialog postType="room" fields={roomFields} onCreated={fetchRooms} />
