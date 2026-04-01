@@ -1,4 +1,4 @@
-import { Heart, MessageSquare, Share2, TrendingUp, ArrowLeft, Send, Search, X, Mail, Pencil, Trash2 } from "lucide-react";
+import { Heart, MessageSquare, Share2, TrendingUp, ArrowLeft, Send, Search, X, Mail, Pencil, Trash2, ArrowUpDown } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
@@ -46,6 +46,7 @@ const Community = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [selectedPost, setSelectedPost] = useState<PostItem | null>(null);
+  const [sortBy, setSortBy] = useState<"latest" | "likes" | "comments">("latest");
 
   // Like/comment counts from DB
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
@@ -146,6 +147,13 @@ const Community = () => {
     ? allPosts.filter((p) => p.title.toLowerCase().includes(query) || p.content.toLowerCase().includes(query) || p.author.toLowerCase().includes(query))
     : allPosts;
   const filtered = selectedTab === "전체" ? searched : searched.filter((p) => p.tab === selectedTab);
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === "likes") return b.likeCount - a.likeCount;
+    if (sortBy === "comments") return b.commentCount - a.commentCount;
+    return 0; // latest is already default order
+  });
+
   const topPost = [...allPosts].sort((a, b) => b.likeCount - a.likeCount)[0];
 
   // Toggle like
@@ -317,6 +325,22 @@ const Community = () => {
         ))}
       </div>
 
+      {/* Sort */}
+      <div className="flex items-center gap-1.5 mb-4">
+        <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground" />
+        {([["latest", "최신순"], ["likes", "인기순"], ["comments", "댓글순"]] as const).map(([value, label]) => (
+          <button
+            key={value}
+            onClick={() => setSortBy(value)}
+            className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all active:scale-95 ${
+              sortBy === value ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {topPost && (
         <div
           className="glass-card p-3.5 mb-5 flex items-center gap-3 cursor-pointer hover:bg-surface-hover active:scale-[0.98] transition-all"
@@ -332,12 +356,12 @@ const Community = () => {
       )}
 
       <div className="space-y-3">
-        {filtered.length === 0 && (
+        {sorted.length === 0 && (
           <div className="text-center py-10 text-muted-foreground text-sm">
             {searchQuery ? `"${searchQuery}"에 대한 검색 결과가 없습니다` : "게시물이 없습니다"}
           </div>
         )}
-        {filtered.map((post, i) => (
+        {sorted.map((post, i) => (
           <div key={post.id || `sample-${i}`} onClick={() => openPost(post)} className="glass-card p-4 hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]" style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${0.1 + i * 0.06}s both` }}>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-[10px] font-bold">{post.author[0]}</div>
