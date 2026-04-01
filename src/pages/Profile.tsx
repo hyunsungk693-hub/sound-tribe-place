@@ -16,7 +16,6 @@ interface Profile {
 }
 
 const menuItems = [
-  { icon: Edit3, label: "프로필 수정" },
   { icon: Bell, label: "알림 설정" },
   { icon: Shield, label: "개인정보 보호" },
   { icon: HelpCircle, label: "고객센터" },
