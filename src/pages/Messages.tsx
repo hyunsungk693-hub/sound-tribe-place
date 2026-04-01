@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, Paperclip, X, FileText, Film, Image as ImageIcon } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 
 type Conversation = {
   id: string;
@@ -21,6 +22,17 @@ type Message = {
   content: string;
   created_at: string;
   is_read: boolean;
+  file_url?: string | null;
+  file_type?: string | null;
+  file_name?: string | null;
+};
+
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+
+const getFileCategory = (mimeType: string): "image" | "video" | "file" => {
+  if (mimeType.startsWith("image/")) return "image";
+  if (mimeType.startsWith("video/")) return "video";
+  return "file";
 };
 
 const Messages = () => {
@@ -34,7 +46,11 @@ const Messages = () => {
   const [newMsg, setNewMsg] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchConversations = useCallback(async () => {
     if (!user) return;
@@ -66,7 +82,6 @@ const Messages = () => {
       profileMap[p.user_id] = p;
     });
 
-    // Fetch last messages
     const convIds = convs.map((c: any) => c.id);
     const { data: allMsgs } = await supabase
       .from("messages")
@@ -89,12 +104,15 @@ const Messages = () => {
       const otherId = c.user1_id === user.id ? c.user2_id : c.user1_id;
       const profile = profileMap[otherId];
       const lastMsg = lastMsgMap[c.id];
+      const lastContent = lastMsg?.file_url
+        ? lastMsg?.file_type?.startsWith("image/") ? "📷 사진" : lastMsg?.file_type?.startsWith("video/") ? "🎬 영상" : "📎 파일"
+        : lastMsg?.content || "";
       return {
         id: c.id,
         otherUserId: otherId,
         otherUserName: profile?.display_name || "사용자",
         otherUserAvatar: profile?.avatar_url || null,
-        lastMessage: lastMsg?.content || "",
+        lastMessage: lastContent,
         lastMessageAt: lastMsg?.created_at || c.created_at,
         unreadCount: unreadMap[c.id] || 0,
       };
@@ -114,7 +132,6 @@ const Messages = () => {
     if (existingConv) {
       setSelectedConv(existingConv);
     } else {
-      // Create new conversation
       const createConv = async () => {
         const sorted = [user.id, targetUserId].sort();
         const { data, error } = await supabase
@@ -124,7 +141,6 @@ const Messages = () => {
           .single();
 
         if (error && error.code === "23505") {
-          // Already exists, fetch it
           const { data: existing } = await supabase
             .from("conversations")
             .select("*")
@@ -173,7 +189,6 @@ const Messages = () => {
     fetchConversations();
   }, [fetchConversations]);
 
-  // Fetch messages for selected conversation
   const fetchMessages = useCallback(async () => {
     if (!selectedConv) return;
     const { data } = await supabase
@@ -183,7 +198,6 @@ const Messages = () => {
       .order("created_at", { ascending: true });
     setMessages((data as Message[]) || []);
 
-    // Mark as read
     if (user) {
       await supabase
         .from("messages")
@@ -198,7 +212,6 @@ const Messages = () => {
     fetchMessages();
   }, [fetchMessages]);
 
-  // Realtime subscription
   useEffect(() => {
     if (!selectedConv) return;
     const channel = supabase
@@ -214,7 +227,6 @@ const Messages = () => {
         (payload) => {
           const newMessage = payload.new as Message;
           setMessages((prev) => [...prev, newMessage]);
-          // Mark as read if from other user
           if (user && newMessage.sender_id !== user.id) {
             supabase
               .from("messages")
@@ -230,29 +242,101 @@ const Messages = () => {
     };
   }, [selectedConv, user]);
 
-  // Auto scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("파일 크기는 20MB 이하만 가능합니다");
+      return;
+    }
+
+    setSelectedFile(file);
+
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setFilePreview(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    } else if (file.type.startsWith("video/")) {
+      setFilePreview("video");
+    } else {
+      setFilePreview("file");
+    }
+
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const clearFile = () => {
+    setSelectedFile(null);
+    setFilePreview(null);
+  };
+
+  const uploadFile = async (file: File): Promise<{ url: string; type: string; name: string } | null> => {
+    if (!user) return null;
+    const ext = file.name.split(".").pop() || "bin";
+    const path = `${user.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from("message-files")
+      .upload(path, file, { contentType: file.type });
+
+    if (error) {
+      toast.error("파일 업로드 실패");
+      console.error(error);
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("message-files")
+      .getPublicUrl(path);
+
+    return {
+      url: urlData.publicUrl,
+      type: file.type,
+      name: file.name,
+    };
+  };
+
   const handleSend = async () => {
-    if (!user || !selectedConv || !newMsg.trim() || sending) return;
+    if (!user || !selectedConv || sending) return;
+    if (!newMsg.trim() && !selectedFile) return;
+
     setSending(true);
+    setUploading(!!selectedFile);
+
+    let fileData: { url: string; type: string; name: string } | null = null;
+    if (selectedFile) {
+      fileData = await uploadFile(selectedFile);
+      if (!fileData) {
+        setSending(false);
+        setUploading(false);
+        return;
+      }
+    }
 
     await supabase.from("messages").insert({
       conversation_id: selectedConv.id,
       sender_id: user.id,
-      content: newMsg.trim(),
+      content: newMsg.trim() || (fileData ? fileData.name : ""),
+      file_url: fileData?.url || null,
+      file_type: fileData?.type || null,
+      file_name: fileData?.name || null,
     } as any);
 
-    // Update conversation timestamp
     await supabase
       .from("conversations")
       .update({ updated_at: new Date().toISOString() } as any)
       .eq("id", selectedConv.id);
 
     setNewMsg("");
+    clearFile();
     setSending(false);
+    setUploading(false);
   };
 
   const formatTime = (dateStr: string) => {
@@ -263,6 +347,49 @@ const Messages = () => {
     if (diff < 3600000) return `${Math.floor(diff / 60000)}분 전`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)}시간 전`;
     return d.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
+  };
+
+  const renderMessageContent = (msg: Message, isMine: boolean) => {
+    const category = msg.file_type ? getFileCategory(msg.file_type) : null;
+
+    return (
+      <>
+        {msg.file_url && category === "image" && (
+          <a href={msg.file_url} target="_blank" rel="noopener noreferrer" className="block mb-1.5">
+            <img
+              src={msg.file_url}
+              alt={msg.file_name || "이미지"}
+              className="max-w-full rounded-lg max-h-60 object-cover"
+              loading="lazy"
+            />
+          </a>
+        )}
+        {msg.file_url && category === "video" && (
+          <video
+            src={msg.file_url}
+            controls
+            className="max-w-full rounded-lg max-h-60 mb-1.5"
+            preload="metadata"
+          />
+        )}
+        {msg.file_url && category === "file" && (
+          <a
+            href={msg.file_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`flex items-center gap-2 mb-1.5 px-3 py-2 rounded-lg text-xs ${
+              isMine ? "bg-primary-foreground/10" : "bg-background/50"
+            }`}
+          >
+            <FileText className="w-4 h-4 shrink-0" />
+            <span className="truncate">{msg.file_name || "파일"}</span>
+          </a>
+        )}
+        {msg.content && !(msg.file_url && msg.content === msg.file_name) && (
+          <span>{msg.content}</span>
+        )}
+      </>
+    );
   };
 
   // Chat view
@@ -311,7 +438,7 @@ const Messages = () => {
                       : "bg-secondary text-secondary-foreground rounded-bl-md"
                   }`}
                 >
-                  {msg.content}
+                  {renderMessageContent(msg, isMine)}
                   <div
                     className={`text-[10px] mt-1 ${
                       isMine ? "text-primary-foreground/60" : "text-muted-foreground"
@@ -326,9 +453,50 @@ const Messages = () => {
           <div ref={bottomRef} />
         </div>
 
+        {/* File Preview */}
+        {selectedFile && (
+          <div className="px-3 pt-2 border-t border-border/30 bg-card/60">
+            <div className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-2">
+              {filePreview && filePreview !== "video" && filePreview !== "file" ? (
+                <img src={filePreview} alt="미리보기" className="w-12 h-12 rounded object-cover" />
+              ) : filePreview === "video" ? (
+                <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
+                  <Film className="w-5 h-5 text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-muted-foreground" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium truncate">{selectedFile.name}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {(selectedFile.size / 1024 / 1024).toFixed(1)} MB
+                </p>
+              </div>
+              <button onClick={clearFile} className="p-1 rounded-full hover:bg-background/50">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Input */}
         <div className="p-3 border-t border-border/50 bg-card/80 backdrop-blur-lg pb-safe">
           <div className="flex items-center gap-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-secondary transition-colors shrink-0"
+            >
+              <Paperclip className="w-5 h-5 text-muted-foreground" />
+            </button>
             <input
               value={newMsg}
               onChange={(e) => setNewMsg(e.target.value)}
@@ -338,10 +506,14 @@ const Messages = () => {
             />
             <button
               onClick={handleSend}
-              disabled={!newMsg.trim() || sending}
-              className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-50 active:scale-95 transition-transform"
+              disabled={(!newMsg.trim() && !selectedFile) || sending}
+              className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-50 active:scale-95 transition-transform shrink-0"
             >
-              <Send className="w-4 h-4" />
+              {uploading ? (
+                <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
             </button>
           </div>
         </div>
