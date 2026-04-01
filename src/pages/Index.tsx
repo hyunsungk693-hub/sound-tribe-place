@@ -1,10 +1,11 @@
-import { Briefcase, MapPin, MessageCircle, Music, ChevronRight, Megaphone, Star } from "lucide-react";
+import { Briefcase, MapPin, MessageCircle, ChevronRight, Megaphone, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import PageShell from "@/components/PageShell";
 import CreatePostDialog from "@/components/CreatePostDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { HomeSkeleton } from "@/components/skeletons/PostSkeleton";
+import logoIcon from "@/assets/logo-icon.png";
 
 const quickActions = [
   { icon: Briefcase, label: "구인구직", desc: "음악 관련 일자리 탐색", path: "/jobs", color: "from-blue-500/10 to-blue-600/5" },
@@ -87,8 +88,8 @@ const Index = () => {
       {/* Hero */}
       <div className="pt-6 pb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Music className="w-5 h-5 text-primary" />
+          <div className="w-10 h-10 rounded-xl overflow-hidden">
+            <img src={logoIcon} alt="instrut" className="w-full h-full object-cover" />
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">instrut</h1>
