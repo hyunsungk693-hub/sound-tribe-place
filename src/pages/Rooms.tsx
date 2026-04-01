@@ -5,6 +5,7 @@ import CreatePostDialog from "@/components/CreatePostDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { RoomCardSkeleton } from "@/components/skeletons/PostSkeleton";
 
 const sampleRooms = [
   { id: null, user_id: null, name: "사운드팩토리", area: "홍대입구역 3분", price: "시간당 1.5만원", rating: 4.8, instruments: ["드럼", "앰프", "PA"], hours: "24시간", content: "" },
