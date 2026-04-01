@@ -341,7 +341,7 @@ const Community = () => {
           <div key={post.id || `sample-${i}`} onClick={() => openPost(post)} className="glass-card p-4 hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]" style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${0.1 + i * 0.06}s both` }}>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-[10px] font-bold">{post.author[0]}</div>
-              <span className="text-xs font-medium">{post.author}</span>
+              <span className="text-xs font-medium cursor-pointer hover:text-primary transition-colors" onClick={(e) => { e.stopPropagation(); if (post.user_id) navigate(`/profile/${post.user_id}`); }}>{post.author}</span>
               <span className="text-[10px] text-muted-foreground">{post.time}</span>
               <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">{post.tab}</span>
             </div>
@@ -413,9 +413,9 @@ const Community = () => {
               </div>
 
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-xs font-bold">{selectedPost.author[0]}</div>
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-xs font-bold cursor-pointer" onClick={() => { if (selectedPost.user_id) { setSelectedPost(null); navigate(`/profile/${selectedPost.user_id}`); } }}>{selectedPost.author[0]}</div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium">{selectedPost.author}</p>
+                  <p className="text-sm font-medium cursor-pointer hover:text-primary transition-colors" onClick={() => { if (selectedPost.user_id) { setSelectedPost(null); navigate(`/profile/${selectedPost.user_id}`); } }}>{selectedPost.author}</p>
                   <p className="text-[10px] text-muted-foreground">{selectedPost.time}</p>
                 </div>
                 {selectedPost.user_id && selectedPost.user_id !== user?.id && (
