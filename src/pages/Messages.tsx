@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ArrowLeft, Send, Paperclip, X, FileText, Film, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Send, Paperclip, X, FileText, Film, Image as ImageIcon, Smile } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,6 +35,49 @@ const getFileCategory = (mimeType: string): "image" | "video" | "file" => {
   return "file";
 };
 
+const EMOJI_CATEGORIES: { label: string; emojis: string[] }[] = [
+  { label: "😊 자주 쓰는", emojis: ["😀","😂","🥹","😍","🥰","😎","🤔","😅","😭","🥺","😤","🔥","❤️","👍","👏","🙏","💪","✨","🎵","🎶","🎸","🥁","🎤","🎹","🎺","🎷"] },
+  { label: "😀 표정", emojis: ["😃","😄","😁","😆","😊","🙂","😉","😌","😋","😜","🤪","😝","🤑","🤗","🤭","🤫","🤨","😐","😑","😶","😏","😒","🙄","😬","😮‍💨","🤥","😔","😪","🤤","😴","😷","🤒","🤕","🤢","🤮","🥴","😵","🤯","🤠","🥳","🥸","😈","👿","💀","☠️","👻","👽","🤖"] },
+  { label: "❤️ 하트", emojis: ["❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❤️‍🔥","❤️‍🩹","💕","💞","💓","💗","💖","💘","💝"] },
+  { label: "👋 손", emojis: ["👋","🤚","🖐️","✋","🖖","👌","🤌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👐","🙌","🫶","👐","🤝","🙏"] },
+  { label: "🎵 음악", emojis: ["🎵","🎶","🎼","🎤","🎧","🎷","🎸","🎹","🎺","🎻","🥁","🪘","🪗","🪕","🎚️","🎛️","🔊","📻","🎙️","🎚️"] },
+  { label: "🐱 동물", emojis: ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🐔","🐧","🐦","🦅","🦆","🦉","🐴","🦄","🐝","🐛","🦋"] },
+  { label: "🍕 음식", emojis: ["🍎","🍐","🍊","🍋","🍌","🍉","🍇","🍓","🫐","🍈","🍒","🍑","🥭","🍍","🥥","🥝","🍅","🥑","🍕","🍔","🍟","🌭","🍿","🧂","🥚","🍳","🧇","🥞","🍰","🎂","🍩","🍪","🍫","🍬","🍭","☕","🍵","🧃","🥤","🍺","🍻","🥂","🍷"] },
+];
+
+const EmojiPicker = ({ onSelect }: { onSelect: (emoji: string) => void }) => {
+  const [activeTab, setActiveTab] = useState(0);
+
+  return (
+    <div className="p-2">
+      <div className="flex gap-1 mb-2 overflow-x-auto pb-1 scrollbar-hide">
+        {EMOJI_CATEGORIES.map((cat, i) => (
+          <button
+            key={i}
+            onClick={() => setActiveTab(i)}
+            className={`px-2 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
+              activeTab === i ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+            }`}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-8 gap-1 max-h-40 overflow-y-auto">
+        {EMOJI_CATEGORIES[activeTab].emojis.map((emoji, i) => (
+          <button
+            key={i}
+            onClick={() => onSelect(emoji)}
+            className="w-9 h-9 flex items-center justify-center text-xl hover:bg-secondary rounded-lg active:scale-90 transition-transform"
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const Messages = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -49,8 +92,10 @@ const Messages = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const emojiRef = useRef<HTMLDivElement>(null);
 
   const fetchConversations = useCallback(async () => {
     if (!user) return;
@@ -486,6 +531,13 @@ const Messages = () => {
           </div>
         )}
 
+        {/* Emoji Picker */}
+        {showEmoji && (
+          <div ref={emojiRef} className="border-t border-border/30 bg-card/95 backdrop-blur-lg">
+            <EmojiPicker onSelect={(emoji) => { setNewMsg((prev) => prev + emoji); }} />
+          </div>
+        )}
+
         {/* Input */}
         <div className="p-3 border-t border-border/50 bg-card/80 backdrop-blur-lg pb-safe">
           <div className="flex items-center gap-2">
@@ -502,10 +554,17 @@ const Messages = () => {
             >
               <Paperclip className="w-5 h-5 text-muted-foreground" />
             </button>
+            <button
+              onClick={() => setShowEmoji((v) => !v)}
+              className={`w-10 h-10 rounded-full flex items-center justify-center hover:bg-secondary transition-colors shrink-0 ${showEmoji ? "bg-secondary" : ""}`}
+            >
+              <Smile className="w-5 h-5 text-muted-foreground" />
+            </button>
             <input
               value={newMsg}
               onChange={(e) => setNewMsg(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+              onFocus={() => setShowEmoji(false)}
               placeholder="메시지를 입력하세요..."
               className="flex-1 bg-secondary rounded-full px-4 py-2.5 text-sm outline-none placeholder:text-muted-foreground"
             />
