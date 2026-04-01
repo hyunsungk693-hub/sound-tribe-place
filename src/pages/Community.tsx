@@ -1,4 +1,4 @@
-import { Heart, MessageSquare, Share2, TrendingUp, ArrowLeft, Send } from "lucide-react";
+import { Heart, MessageSquare, Share2, TrendingUp, ArrowLeft, Send, Search, X } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import PageShell from "@/components/PageShell";
 import CreatePostDialog from "@/components/CreatePostDialog";
@@ -39,6 +39,8 @@ const Community = () => {
   const { user } = useAuth();
   const [dbPosts, setDbPosts] = useState<any[]>([]);
   const [selectedTab, setSelectedTab] = useState("전체");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
   const [selectedPost, setSelectedPost] = useState<PostItem | null>(null);
 
   // Like/comment counts from DB
@@ -127,7 +129,11 @@ const Community = () => {
     ],
   ];
 
-  const filtered = selectedTab === "전체" ? allPosts : allPosts.filter((p) => p.tab === selectedTab);
+  const query = searchQuery.trim().toLowerCase();
+  const searched = query
+    ? allPosts.filter((p) => p.title.toLowerCase().includes(query) || p.content.toLowerCase().includes(query) || p.author.toLowerCase().includes(query))
+    : allPosts;
+  const filtered = selectedTab === "전체" ? searched : searched.filter((p) => p.tab === selectedTab);
   const topPost = [...allPosts].sort((a, b) => b.likeCount - a.likeCount)[0];
 
   // Toggle like
@@ -219,6 +225,36 @@ const Community = () => {
 
   return (
     <PageShell title="커뮤니티">
+      {/* Search Bar */}
+      <div className="mb-4">
+        {showSearch ? (
+          <div className="flex items-center gap-2 glass-card px-3 py-2">
+            <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+            <input
+              autoFocus
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="게시물 검색 (제목, 내용, 작성자)"
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+            <button
+              onClick={() => { setSearchQuery(""); setShowSearch(false); }}
+              className="p-1 rounded-full hover:bg-secondary"
+            >
+              <X className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowSearch(true)}
+            className="flex items-center gap-2 glass-card px-3 py-2.5 w-full text-left text-xs text-muted-foreground hover:bg-surface-hover transition-colors"
+          >
+            <Search className="w-4 h-4" />
+            <span>게시물 검색...</span>
+          </button>
+        )}
+      </div>
+
       <div className="flex gap-2 mb-5 overflow-x-auto no-scrollbar pb-1">
         {tabs.map((tab) => (
           <button
@@ -248,6 +284,11 @@ const Community = () => {
       )}
 
       <div className="space-y-3">
+        {filtered.length === 0 && (
+          <div className="text-center py-10 text-muted-foreground text-sm">
+            {searchQuery ? `"${searchQuery}"에 대한 검색 결과가 없습니다` : "게시물이 없습니다"}
+          </div>
+        )}
         {filtered.map((post, i) => (
           <div key={post.id || `sample-${i}`} onClick={() => openPost(post)} className="glass-card p-4 hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]" style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${0.1 + i * 0.06}s both` }}>
             <div className="flex items-center gap-2 mb-2">
