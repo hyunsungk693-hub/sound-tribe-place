@@ -1,4 +1,4 @@
-import { Heart, MessageSquare, Share2, TrendingUp, ArrowLeft, Send, Search, X, Mail } from "lucide-react";
+import { Heart, MessageSquare, Share2, TrendingUp, ArrowLeft, Send, Search, X, Mail, Pencil, Trash2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
@@ -56,6 +56,13 @@ const Community = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
+
+  // Edit state
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const fetchPosts = useCallback(async () => {
     const { data } = await supabase
@@ -228,6 +235,42 @@ const Community = () => {
     setSubmittingComment(false);
   };
 
+  const startEditing = () => {
+    if (!selectedPost) return;
+    setEditTitle(selectedPost.title);
+    setEditContent(selectedPost.content);
+    setEditCategory(selectedPost.tab);
+    setEditing(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!user || !selectedPost?.id) return;
+    if (!editTitle.trim() || !editContent.trim()) {
+      toast.error("제목과 내용을 입력해주세요");
+      return;
+    }
+    setSavingEdit(true);
+    const { error } = await supabase
+      .from("posts")
+      .update({
+        title: editTitle.trim(),
+        content: editContent.trim(),
+        category: editCategory,
+      } as any)
+      .eq("id", selectedPost.id)
+      .eq("user_id", user.id);
+
+    if (error) {
+      toast.error("수정에 실패했습니다");
+    } else {
+      toast.success("게시물이 수정되었습니다");
+      setEditing(false);
+      setSelectedPost(null);
+      await fetchPosts();
+    }
+    setSavingEdit(false);
+  };
+
   return (
     <PageShell title="커뮤니티">
       {/* Search Bar */}
@@ -339,10 +382,34 @@ const Community = () => {
             {/* Header */}
             <div className="p-5 pb-0">
               <div className="flex items-center justify-between mb-4">
-                <button onClick={() => setSelectedPost(null)} className="p-1 rounded-full hover:bg-secondary">
+                <button onClick={() => { setSelectedPost(null); setEditing(false); }} className="p-1 rounded-full hover:bg-secondary">
                   <ArrowLeft className="w-5 h-5" />
                 </button>
-                <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">{selectedPost.tab}</span>
+                <div className="flex items-center gap-2">
+                  {selectedPost.id && selectedPost.user_id === user?.id && !editing && (
+                    <>
+                      <button
+                        onClick={startEditing}
+                        className="p-1.5 rounded-full hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!confirm("게시물을 삭제하시겠습니까?")) return;
+                          await supabase.from("posts").delete().eq("id", selectedPost.id!).eq("user_id", user!.id);
+                          toast.success("게시물이 삭제되었습니다");
+                          setSelectedPost(null);
+                          fetchPosts();
+                        }}
+                        className="p-1.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                  <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">{editing ? editCategory : selectedPost.tab}</span>
+                </div>
               </div>
 
               <div className="flex items-center gap-2 mb-4">
@@ -365,13 +432,64 @@ const Community = () => {
                 )}
               </div>
 
-              <h2 className="text-base font-bold mb-3">{selectedPost.title}</h2>
-              {selectedPost.image_url && (
-                <div className="mb-3 rounded-lg overflow-hidden">
-                  <img src={selectedPost.image_url} alt="" className="w-full max-h-64 object-cover" />
+              {editing ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">카테고리</label>
+                    <select
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                      value={editCategory}
+                      onChange={(e) => setEditCategory(e.target.value)}
+                    >
+                      {["자유", "질문", "거래"].map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">제목</label>
+                    <input
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">내용</label>
+                    <textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      rows={5}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                    />
+                  </div>
+                  <div className="flex gap-2 pb-4">
+                    <button
+                      onClick={() => setEditing(false)}
+                      className="flex-1 h-10 rounded-lg border border-border text-sm font-medium hover:bg-secondary transition-colors"
+                    >
+                      취소
+                    </button>
+                    <button
+                      onClick={handleSaveEdit}
+                      disabled={savingEdit}
+                      className="flex-1 h-10 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 active:scale-95 transition-all"
+                    >
+                      {savingEdit ? "저장 중..." : "저장"}
+                    </button>
+                  </div>
                 </div>
+              ) : (
+                <>
+                  <h2 className="text-base font-bold mb-3">{selectedPost.title}</h2>
+                  {selectedPost.image_url && (
+                    <div className="mb-3 rounded-lg overflow-hidden">
+                      <img src={selectedPost.image_url} alt="" className="w-full max-h-64 object-cover" />
+                    </div>
+                  )}
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{selectedPost.content}</p>
+                </>
               )}
-              <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{selectedPost.content}</p>
 
               <div className="flex items-center gap-4 mt-5 pt-4 border-t border-border/30 pb-4">
                 <button
