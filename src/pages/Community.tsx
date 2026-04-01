@@ -1,4 +1,4 @@
-import { Heart, MessageSquare, Share2, TrendingUp, ArrowLeft, Send, Search, X, Mail } from "lucide-react";
+import { Heart, MessageSquare, Share2, TrendingUp, ArrowLeft, Send, Search, X, Mail, Pencil, Trash2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
