@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import ProfileEditModal from "@/components/ProfileEditModal";
 import NotificationsPanel, { useUnreadCount } from "@/components/NotificationsPanel";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface Profile {
   display_name: string | null;
