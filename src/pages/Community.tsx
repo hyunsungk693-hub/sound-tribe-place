@@ -366,6 +366,11 @@ const Community = () => {
               </div>
 
               <h2 className="text-base font-bold mb-3">{selectedPost.title}</h2>
+              {selectedPost.image_url && (
+                <div className="mb-3 rounded-lg overflow-hidden">
+                  <img src={selectedPost.image_url} alt="" className="w-full max-h-64 object-cover" />
+                </div>
+              )}
               <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{selectedPost.content}</p>
 
               <div className="flex items-center gap-4 mt-5 pt-4 border-t border-border/30 pb-4">
