@@ -1,10 +1,11 @@
-import { Briefcase, MapPin, MessageCircle, Music, ChevronRight, Megaphone, Star } from "lucide-react";
+import { Briefcase, MapPin, MessageCircle, ChevronRight, Megaphone, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import PageShell from "@/components/PageShell";
 import CreatePostDialog from "@/components/CreatePostDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { HomeSkeleton } from "@/components/skeletons/PostSkeleton";
+import logoIcon from "@/assets/logo-icon.png";
 
 const quickActions = [
   { icon: Briefcase, label: "구인구직", desc: "음악 관련 일자리 탐색", path: "/jobs", color: "from-blue-500/10 to-blue-600/5" },
