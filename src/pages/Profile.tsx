@@ -230,11 +230,24 @@ const ProfilePage = () => {
 
       {/* Menu */}
       <div className="glass-card overflow-hidden" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.14s both" }}>
-        {menuItems.map(({ icon: Icon, label }, i) => (
+        <button
+          onClick={() => setNotiOpen(true)}
+          className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-surface-hover transition-colors active:scale-[0.99] text-left border-b border-border/40"
+        >
+          <Bell className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm font-medium flex-1">알림</span>
+          {unreadCount > 0 && (
+            <span className="text-[10px] font-bold bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+              {unreadCount}
+            </span>
+          )}
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        </button>
+        {menuItems.filter(m => m.label !== "알림 설정").map(({ icon: Icon, label }, i, arr) => (
           <button
             key={label}
             className={`w-full flex items-center gap-3 px-4 py-3.5 hover:bg-surface-hover transition-colors active:scale-[0.99] text-left ${
-              i < menuItems.length - 1 ? "border-b border-border/40" : ""
+              i < arr.length - 1 ? "border-b border-border/40" : ""
             }`}
           >
             <Icon className="w-4 h-4 text-muted-foreground" />
