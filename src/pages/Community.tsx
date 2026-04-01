@@ -355,12 +355,12 @@ const Community = () => {
       )}
 
       <div className="space-y-3">
-        {filtered.length === 0 && (
+        {sorted.length === 0 && (
           <div className="text-center py-10 text-muted-foreground text-sm">
             {searchQuery ? `"${searchQuery}"에 대한 검색 결과가 없습니다` : "게시물이 없습니다"}
           </div>
         )}
-        {filtered.map((post, i) => (
+        {sorted.map((post, i) => (
           <div key={post.id || `sample-${i}`} onClick={() => openPost(post)} className="glass-card p-4 hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]" style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${0.1 + i * 0.06}s both` }}>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-[10px] font-bold">{post.author[0]}</div>
