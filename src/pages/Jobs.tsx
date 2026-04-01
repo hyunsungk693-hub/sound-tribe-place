@@ -44,6 +44,7 @@ const Jobs = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [dbJobs, setDbJobs] = useState<any[]>([]);
+  const [loadingJobs, setLoadingJobs] = useState(true);
   const [selectedCat, setSelectedCat] = useState("전체");
   const [selectedJob, setSelectedJob] = useState<JobItem | null>(null);
 
