@@ -126,7 +126,8 @@ const Rooms = () => {
       </div>
 
       <div className="space-y-3">
-        {allRooms.map((room, i) => (
+        {loadingRooms ? [...Array(4)].map((_, i) => <RoomCardSkeleton key={i} />) : null}
+        {!loadingRooms && allRooms.map((room, i) => (
           <div
             key={room.id || `sample-${i}`}
             onClick={() => { setSelectedRoom(room); setEditing(false); }}
