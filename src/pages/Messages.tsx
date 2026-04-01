@@ -210,6 +210,11 @@ const Messages = () => {
 
   useEffect(() => {
     fetchMessages();
+    if (selectedConv) {
+      toast("⚠️ 메시지를 통한 모든 활동에 대한 법적 책임은 본인에게 있습니다.", {
+        duration: 3000,
+      });
+    }
   }, [fetchMessages]);
 
   useEffect(() => {
