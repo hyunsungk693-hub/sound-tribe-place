@@ -111,7 +111,7 @@ const StarRating = React.memo(({ rating }: { rating: number }) => (
       />
     ))}
   </div>
-);
+));
 
 const MapPage = () => {
   const [filter, setFilter] = useState<Filter>("all");
