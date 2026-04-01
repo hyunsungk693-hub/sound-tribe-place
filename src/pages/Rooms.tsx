@@ -55,8 +55,10 @@ const Rooms = () => {
   const [savingEdit, setSavingEdit] = useState(false);
 
   const fetchRooms = async () => {
+    setLoadingRooms(true);
     const { data } = await supabase.from("posts").select("*").eq("post_type", "room").order("created_at", { ascending: false });
     setDbRooms(data || []);
+    setLoadingRooms(false);
   };
 
   useEffect(() => { fetchRooms(); }, []);
