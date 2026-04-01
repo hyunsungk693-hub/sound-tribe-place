@@ -11,7 +11,7 @@ interface Field {
   key: string;
   label: string;
   placeholder: string;
-  type?: "text" | "textarea" | "select";
+  type?: "text" | "textarea" | "select" | "location";
   options?: string[];
 }
 
@@ -54,6 +54,10 @@ const CreatePostDialog = ({ postType, fields, onCreated }: CreatePostDialogProps
       if (values.area) postData.area = values.area;
       if (values.hours) postData.hours = values.hours;
       if (values.instruments) postData.instruments = values.instruments.split(",").map((s: string) => s.trim()).filter(Boolean);
+      if (values.lat && values.lng) {
+        postData.lat = parseFloat(values.lat);
+        postData.lng = parseFloat(values.lng);
+      }
 
       const { error } = await supabase.from("posts").insert(postData as any);
       if (error) throw error;
@@ -116,6 +120,28 @@ const CreatePostDialog = ({ postType, fields, onCreated }: CreatePostDialogProps
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
+              ) : field.type === "location" ? (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input placeholder="위도 (예: 37.5563)" value={values.lat || ""} onChange={(e) => setValues((prev) => ({ ...prev, lat: e.target.value }))} className="text-sm" />
+                    <Input placeholder="경도 (예: 126.9236)" value={values.lng || ""} onChange={(e) => setValues((prev) => ({ ...prev, lng: e.target.value }))} className="text-sm" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.geolocation?.getCurrentPosition((pos) => {
+                        setValues((prev) => ({
+                          ...prev,
+                          lat: pos.coords.latitude.toFixed(4),
+                          lng: pos.coords.longitude.toFixed(4),
+                        }));
+                      }, () => toast.error("위치를 가져올 수 없습니다"));
+                    }}
+                    className="text-xs text-primary font-medium hover:underline"
+                  >
+                    📍 현재 위치 사용
+                  </button>
+                </div>
               ) : (
                 <Input
                   placeholder={field.placeholder}
