@@ -225,6 +225,36 @@ const Community = () => {
 
   return (
     <PageShell title="커뮤니티">
+      {/* Search Bar */}
+      <div className="mb-4">
+        {showSearch ? (
+          <div className="flex items-center gap-2 glass-card px-3 py-2">
+            <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+            <input
+              autoFocus
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="게시물 검색 (제목, 내용, 작성자)"
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+            <button
+              onClick={() => { setSearchQuery(""); setShowSearch(false); }}
+              className="p-1 rounded-full hover:bg-secondary"
+            >
+              <X className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowSearch(true)}
+            className="flex items-center gap-2 glass-card px-3 py-2.5 w-full text-left text-xs text-muted-foreground hover:bg-surface-hover transition-colors"
+          >
+            <Search className="w-4 h-4" />
+            <span>게시물 검색...</span>
+          </button>
+        )}
+      </div>
+
       <div className="flex gap-2 mb-5 overflow-x-auto no-scrollbar pb-1">
         {tabs.map((tab) => (
           <button
