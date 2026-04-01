@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { X, Camera } from "lucide-react";
+import { useState, useRef, useMemo } from "react";
+import { X, Camera, Search, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
