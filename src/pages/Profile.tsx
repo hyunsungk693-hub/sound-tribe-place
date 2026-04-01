@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Settings, ChevronRight, Music, Award, Edit3, Bell, Shield, HelpCircle, LogOut, Heart, MessageSquare, Trash2 } from "lucide-react";
+import { Settings, ChevronRight, Music, Award, Edit3, Bell, Shield, HelpCircle, LogOut, Heart, MessageSquare, Trash2, Sun, Moon, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import ProfileEditModal from "@/components/ProfileEditModal";
 import NotificationsPanel, { useUnreadCount } from "@/components/NotificationsPanel";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface Profile {
   display_name: string | null;
@@ -35,6 +36,13 @@ const ProfilePage = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [notiOpen, setNotiOpen] = useState(false);
   const { count: unreadCount } = useUnreadCount();
+  const { theme, setTheme } = useTheme();
+
+  const themeOptions: { value: "light" | "dark" | "system"; icon: typeof Sun; label: string }[] = [
+    { value: "light", icon: Sun, label: "라이트" },
+    { value: "dark", icon: Moon, label: "다크" },
+    { value: "system", icon: Monitor, label: "시스템" },
+  ];
 
   useEffect(() => {
     if (!user) return;
@@ -228,8 +236,29 @@ const ProfilePage = () => {
         </div>
       </div>
 
+      {/* Theme Switcher */}
+      <div className="glass-card p-4 mb-4" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.13s both" }}>
+        <span className="text-xs font-semibold mb-2.5 block">테마</span>
+        <div className="flex gap-2">
+          {themeOptions.map(({ value, icon: Icon, label }) => (
+            <button
+              key={value}
+              onClick={() => setTheme(value)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all active:scale-95 ${
+                theme === value
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Menu */}
-      <div className="glass-card overflow-hidden" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.14s both" }}>
+      <div className="glass-card overflow-hidden" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.16s both" }}>
         <button
           onClick={() => setNotiOpen(true)}
           className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-surface-hover transition-colors active:scale-[0.99] text-left border-b border-border/40"
