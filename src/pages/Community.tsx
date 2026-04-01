@@ -1,4 +1,4 @@
-import { Heart, MessageSquare, Share2, TrendingUp } from "lucide-react";
+import { Heart, MessageSquare, Share2, TrendingUp, X, ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import PageShell from "@/components/PageShell";
 import CreatePostDialog from "@/components/CreatePostDialog";
