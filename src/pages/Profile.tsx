@@ -276,6 +276,8 @@ const ProfilePage = () => {
           onSaved={(updated) => setProfile(updated)}
         />
       )}
+
+      <NotificationsPanel open={notiOpen} onClose={() => setNotiOpen(false)} />
     </PageShell>
   );
 };
