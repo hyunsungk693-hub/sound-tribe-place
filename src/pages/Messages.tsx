@@ -78,7 +78,7 @@ const EmojiPicker = ({ onSelect }: { onSelect: (emoji: string) => void }) => {
   );
 };
 
-
+const Messages = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const targetUserId = searchParams.get("to");
