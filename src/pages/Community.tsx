@@ -6,6 +6,7 @@ import CreatePostDialog from "@/components/CreatePostDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { PostCardSkeleton } from "@/components/skeletons/PostSkeleton";
 
 const tabs = ["전체", "자유", "질문", "거래"];
 
