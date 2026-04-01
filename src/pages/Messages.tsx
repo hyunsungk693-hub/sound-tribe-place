@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ArrowLeft, Send, Paperclip, X, FileText, Film, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Send, Paperclip, X, FileText, Film, Image as ImageIcon, Smile } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
