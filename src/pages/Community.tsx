@@ -129,7 +129,11 @@ const Community = () => {
     ],
   ];
 
-  const filtered = selectedTab === "전체" ? allPosts : allPosts.filter((p) => p.tab === selectedTab);
+  const query = searchQuery.trim().toLowerCase();
+  const searched = query
+    ? allPosts.filter((p) => p.title.toLowerCase().includes(query) || p.content.toLowerCase().includes(query) || p.author.toLowerCase().includes(query))
+    : allPosts;
+  const filtered = selectedTab === "전체" ? searched : searched.filter((p) => p.tab === selectedTab);
   const topPost = [...allPosts].sort((a, b) => b.likeCount - a.likeCount)[0];
 
   // Toggle like
