@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import ProfileEditModal from "@/components/ProfileEditModal";
+import NotificationsPanel, { useUnreadCount } from "@/components/NotificationsPanel";
 
 interface Profile {
   display_name: string | null;
