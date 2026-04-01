@@ -413,9 +413,9 @@ const Community = () => {
               </div>
 
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-xs font-bold">{selectedPost.author[0]}</div>
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-xs font-bold cursor-pointer" onClick={() => { if (selectedPost.user_id) { setSelectedPost(null); navigate(`/profile/${selectedPost.user_id}`); } }}>{selectedPost.author[0]}</div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium">{selectedPost.author}</p>
+                  <p className="text-sm font-medium cursor-pointer hover:text-primary transition-colors" onClick={() => { if (selectedPost.user_id) { setSelectedPost(null); navigate(`/profile/${selectedPost.user_id}`); } }}>{selectedPost.author}</p>
                   <p className="text-[10px] text-muted-foreground">{selectedPost.time}</p>
                 </div>
                 {selectedPost.user_id && selectedPost.user_id !== user?.id && (
