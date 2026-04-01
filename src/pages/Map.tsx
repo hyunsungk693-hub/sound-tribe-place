@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import PageShell from "@/components/PageShell";
@@ -99,7 +99,7 @@ type Filter = "all" | "job" | "room" | "shop";
 const typeLabel = { job: "구인구직", room: "연습실", shop: "악기사" };
 const typeColor = { job: "#1B64DA", room: "#03C75A", shop: "#FF6F0F" };
 
-const StarRating = ({ rating }: { rating: number }) => (
+const StarRating = React.memo(({ rating }: { rating: number }) => (
   <div className="flex items-center gap-0.5">
     {[1, 2, 3, 4, 5].map((i) => (
       <Star
@@ -111,7 +111,7 @@ const StarRating = ({ rating }: { rating: number }) => (
       />
     ))}
   </div>
-);
+));
 
 const MapPage = () => {
   const [filter, setFilter] = useState<Filter>("all");
