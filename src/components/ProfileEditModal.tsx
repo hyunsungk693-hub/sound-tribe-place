@@ -74,6 +74,21 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
     setInstrumentSearch("");
   };
 
+  const uniqueGenreOptions = useMemo(() => [...new Set(GENRE_OPTIONS)], []);
+
+  const filteredGenres = useMemo(() => {
+    if (!genreSearch.trim()) return uniqueGenreOptions.filter((g) => !genres.includes(g)).slice(0, 12);
+    const q = genreSearch.trim().toLowerCase();
+    return uniqueGenreOptions.filter((g) => g.toLowerCase().includes(q) && !genres.includes(g));
+  }, [genreSearch, genres, uniqueGenreOptions]);
+
+  const addCustomGenre = () => {
+    const name = genreSearch.trim();
+    if (!name || genres.includes(name)) return;
+    setGenres([...genres, name]);
+    setGenreSearch("");
+  };
+
   const toggleItem = (list: string[], setList: (v: string[]) => void, item: string) => {
     setList(list.includes(item) ? list.filter((i) => i !== item) : [...list, item]);
   };
