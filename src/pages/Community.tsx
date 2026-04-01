@@ -235,6 +235,42 @@ const Community = () => {
     setSubmittingComment(false);
   };
 
+  const startEditing = () => {
+    if (!selectedPost) return;
+    setEditTitle(selectedPost.title);
+    setEditContent(selectedPost.content);
+    setEditCategory(selectedPost.tab);
+    setEditing(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!user || !selectedPost?.id) return;
+    if (!editTitle.trim() || !editContent.trim()) {
+      toast.error("제목과 내용을 입력해주세요");
+      return;
+    }
+    setSavingEdit(true);
+    const { error } = await supabase
+      .from("posts")
+      .update({
+        title: editTitle.trim(),
+        content: editContent.trim(),
+        category: editCategory,
+      } as any)
+      .eq("id", selectedPost.id)
+      .eq("user_id", user.id);
+
+    if (error) {
+      toast.error("수정에 실패했습니다");
+    } else {
+      toast.success("게시물이 수정되었습니다");
+      setEditing(false);
+      setSelectedPost(null);
+      await fetchPosts();
+    }
+    setSavingEdit(false);
+  };
+
   return (
     <PageShell title="커뮤니티">
       {/* Search Bar */}
