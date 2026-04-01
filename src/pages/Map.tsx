@@ -282,7 +282,8 @@ const MapPage = () => {
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
-    const filtered = defaultMarkers.filter((m) => filter === "all" || m.type === filter);
+    const allMarkers = [...defaultMarkers, ...dbMarkers];
+    const filtered = allMarkers.filter((m) => filter === "all" || m.type === filter);
     filtered.forEach((m) => {
       const icon = m.type === "job" ? jobIcon : m.type === "room" ? roomIcon : shopIcon;
       const marker = L.marker([m.lat, m.lng], { icon })
@@ -294,7 +295,7 @@ const MapPage = () => {
         .addTo(mapRef.current!);
       markersRef.current.push(marker);
     });
-  }, [filter]);
+  }, [filter, dbMarkers]);
 
   const handleZoomIn = () => mapRef.current?.zoomIn();
   const handleZoomOut = () => mapRef.current?.zoomOut();
