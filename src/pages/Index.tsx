@@ -41,14 +41,17 @@ const Index = () => {
   const [currentBanner, setCurrentBanner] = useState(0);
   const [dbPromos, setDbPromos] = useState<any[]>([]);
   const [dbRecentJobs, setDbRecentJobs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
+    setLoading(true);
     const [promoRes, jobRes] = await Promise.all([
       supabase.from("posts").select("*").eq("post_type", "promotion").order("created_at", { ascending: false }).limit(5),
       supabase.from("posts").select("*").eq("post_type", "job").order("created_at", { ascending: false }).limit(3),
     ]);
     setDbPromos(promoRes.data || []);
     setDbRecentJobs(jobRes.data || []);
+    setLoading(false);
   };
 
   useEffect(() => {
