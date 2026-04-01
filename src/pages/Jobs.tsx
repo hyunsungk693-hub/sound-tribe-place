@@ -6,6 +6,7 @@ import CreatePostDialog from "@/components/CreatePostDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { JobCardSkeleton } from "@/components/skeletons/PostSkeleton";
 
 const categories = ["전체", "공연", "녹음", "레슨", "행사", "기타"];
 
