@@ -325,6 +325,21 @@ const Community = () => {
         ))}
       </div>
 
+      {/* Sort */}
+      <div className="flex items-center gap-1.5 mb-4">
+        <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground" />
+        {([["latest", "최신순"], ["likes", "인기순"], ["comments", "댓글순"]] as const).map(([value, label]) => (
+          <button
+            key={value}
+            onClick={() => setSortBy(value)}
+            className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all active:scale-95 ${
+              sortBy === value ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+
       {topPost && (
         <div
           className="glass-card p-3.5 mb-5 flex items-center gap-3 cursor-pointer hover:bg-surface-hover active:scale-[0.98] transition-all"
