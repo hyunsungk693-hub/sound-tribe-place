@@ -97,6 +97,7 @@ const Index = () => {
         </div>
       </div>
 
+      {loading ? <HomeSkeleton /> : <>
       {/* Ad Banner Carousel */}
       <section className="mb-6" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.05s both" }}>
         <div className="relative overflow-hidden rounded-2xl">
