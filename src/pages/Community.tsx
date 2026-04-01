@@ -303,6 +303,11 @@ const Community = () => {
               <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">{post.tab}</span>
             </div>
             <h3 className="text-sm font-semibold mb-1">{post.title}</h3>
+            {post.image_url && (
+              <div className="mb-2 rounded-lg overflow-hidden">
+                <img src={post.image_url} alt="" className="w-full max-h-48 object-cover" />
+              </div>
+            )}
             <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{post.content}</p>
             <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border/30">
               <button
