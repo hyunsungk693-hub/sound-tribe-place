@@ -187,6 +187,7 @@ export type Database = {
           created_at: string
           hours: string | null
           id: string
+          image_url: string | null
           instruments: string[] | null
           lat: number | null
           lng: number | null
@@ -205,6 +206,7 @@ export type Database = {
           created_at?: string
           hours?: string | null
           id?: string
+          image_url?: string | null
           instruments?: string[] | null
           lat?: number | null
           lng?: number | null
@@ -223,6 +225,7 @@ export type Database = {
           created_at?: string
           hours?: string | null
           id?: string
+          image_url?: string | null
           instruments?: string[] | null
           lat?: number | null
           lng?: number | null
