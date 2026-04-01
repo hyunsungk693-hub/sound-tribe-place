@@ -59,7 +59,21 @@ const BottomNav = () => {
 
     const msgChannel = supabase
       .channel("unread-msg-badge")
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => fetchUnreadMessages())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload: any) => {
+        fetchUnreadMessages();
+        // Show toast for new messages from others
+        if (payload.new && payload.new.sender_id !== user.id) {
+          toast("💬 새 메시지가 도착했습니다", {
+            description: payload.new.content?.slice(0, 50) || "새 메시지",
+            duration: 4000,
+            action: {
+              label: "확인",
+              onClick: () => navigate("/messages"),
+            },
+          });
+        }
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages" }, () => fetchUnreadMessages())
       .subscribe();
 
     const notiChannel = supabase
