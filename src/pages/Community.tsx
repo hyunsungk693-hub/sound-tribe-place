@@ -17,7 +17,7 @@ const samplePosts = [
 const communityFields = [
   { key: "title", label: "제목", placeholder: "글 제목을 입력해주세요" },
   { key: "content", label: "내용", placeholder: "내용을 작성해주세요", type: "textarea" as const },
-  { key: "category", label: "카테고리", placeholder: "", type: "select" as const, options: ["자유", "질문", "합주모집", "장비거래"] },
+  { key: "category", label: "카테고리", placeholder: "", type: "select" as const, options: ["자유", "질문", "거래"] },
   { key: "author_name", label: "닉네임", placeholder: "닉네임" },
 ];
 
