@@ -37,7 +37,7 @@ const ProfilePage = () => {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("display_name, location, instruments, genres, bio")
+      .select("display_name, location, instruments, genres, bio, avatar_url")
       .eq("user_id", user.id)
       .single()
       .then(({ data }) => {
