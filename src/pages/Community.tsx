@@ -39,6 +39,7 @@ type Comment = {
 
 const Community = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [dbPosts, setDbPosts] = useState<any[]>([]);
   const [selectedTab, setSelectedTab] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
