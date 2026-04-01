@@ -39,6 +39,8 @@ const Community = () => {
   const { user } = useAuth();
   const [dbPosts, setDbPosts] = useState<any[]>([]);
   const [selectedTab, setSelectedTab] = useState("전체");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
   const [selectedPost, setSelectedPost] = useState<PostItem | null>(null);
 
   // Like/comment counts from DB
