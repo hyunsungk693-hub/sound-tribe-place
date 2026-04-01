@@ -78,7 +78,20 @@ const BottomNav = () => {
 
     const notiChannel = supabase
       .channel("unread-noti-badge")
-      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, () => fetchUnreadNotifications())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, (payload: any) => {
+        fetchUnreadNotifications();
+        const n = payload.new;
+        if (n) {
+          const icon = n.type === "like" ? "❤️" : "💬";
+          const action = n.type === "like" ? "좋아요를 눌렀습니다" : "댓글을 달았습니다";
+          toast(`${icon} ${n.actor_name || "누군가"}님이 ${action}`, {
+            description: n.post_title ? `"${n.post_title}"` : undefined,
+            duration: 5000,
+          });
+        }
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, () => fetchUnreadNotifications())
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, () => fetchUnreadNotifications())
       .subscribe();
 
     return () => {
