@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, X } from "lucide-react";
+import { useState, useRef } from "react";
+import { Plus, X, ImagePlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -26,6 +26,43 @@ const CreatePostDialog = ({ postType, fields, onCreated }: CreatePostDialogProps
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("이미지 파일만 첨부할 수 있습니다");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("이미지 크기는 5MB 이하여야 합니다");
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile || !user) return null;
+    const ext = imageFile.name.split(".").pop();
+    const path = `${user.id}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage
+      .from("post-images")
+      .upload(path, imageFile);
+    if (error) throw error;
+    const { data } = supabase.storage.from("post-images").getPublicUrl(path);
+    return data.publicUrl;
+  };
 
   const handleSubmit = async () => {
     if (!user) {
@@ -39,6 +76,11 @@ const CreatePostDialog = ({ postType, fields, onCreated }: CreatePostDialogProps
 
     setSubmitting(true);
     try {
+      let imageUrl: string | null = null;
+      if (imageFile) {
+        imageUrl = await uploadImage();
+      }
+
       const postData: Record<string, unknown> = {
         user_id: user.id,
         post_type: postType,
@@ -47,6 +89,7 @@ const CreatePostDialog = ({ postType, fields, onCreated }: CreatePostDialogProps
         author_name: values.author_name?.trim() || user.email?.split("@")[0] || "익명",
       };
 
+      if (imageUrl) postData.image_url = imageUrl;
       if (values.category) postData.category = values.category;
       if (values.venue) postData.venue = values.venue;
       if (values.pay) postData.pay = values.pay;
@@ -64,6 +107,7 @@ const CreatePostDialog = ({ postType, fields, onCreated }: CreatePostDialogProps
 
       toast.success("게시물이 등록되었습니다!");
       setValues({});
+      removeImage();
       setOpen(false);
       onCreated?.();
     } catch (err: any) {
@@ -152,6 +196,38 @@ const CreatePostDialog = ({ postType, fields, onCreated }: CreatePostDialogProps
               )}
             </div>
           ))}
+
+          {/* Image Upload */}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">이미지 첨부</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="hidden"
+            />
+            {imagePreview ? (
+              <div className="relative rounded-lg overflow-hidden border border-border">
+                <img src={imagePreview} alt="미리보기" className="w-full max-h-48 object-cover" />
+                <button
+                  onClick={removeImage}
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full flex items-center justify-center gap-2 py-6 rounded-lg border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-colors text-muted-foreground"
+              >
+                <ImagePlus className="w-5 h-5" />
+                <span className="text-sm">이미지 추가 (최대 5MB)</span>
+              </button>
+            )}
+          </div>
         </div>
 
         <Button
