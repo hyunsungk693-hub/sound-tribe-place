@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Settings, ChevronRight, Music, Award, MapPin, Calendar, Edit3, Bell, Shield, HelpCircle, LogOut } from "lucide-react";
+import { Settings, ChevronRight, Music, Award, Edit3, Bell, Shield, HelpCircle, LogOut, Heart, MessageSquare } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,10 +20,15 @@ const menuItems = [
   { icon: HelpCircle, label: "고객센터" },
 ];
 
+const activityTabs = ["내 게시물", "내 댓글"];
+
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [activeTab, setActiveTab] = useState("내 게시물");
+  const [myPosts, setMyPosts] = useState<any[]>([]);
+  const [myComments, setMyComments] = useState<any[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -35,6 +40,22 @@ const ProfilePage = () => {
       .then(({ data }) => {
         if (data) setProfile(data);
       });
+
+    // Fetch my posts
+    supabase
+      .from("posts")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => setMyPosts(data || []));
+
+    // Fetch my comments
+    supabase
+      .from("post_comments")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => setMyComments(data || []));
   }, [user]);
 
   const handleLogout = async () => {
@@ -98,6 +119,74 @@ const ProfilePage = () => {
               </span>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* My Activity */}
+      <div className="glass-card mb-4 overflow-hidden" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.11s both" }}>
+        <div className="flex border-b border-border/40">
+          {activityTabs.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 py-3 text-xs font-medium transition-colors ${
+                activeTab === tab
+                  ? "text-primary border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab} ({tab === "내 게시물" ? myPosts.length : myComments.length})
+            </button>
+          ))}
+        </div>
+
+        <div className="p-3 space-y-2 max-h-[300px] overflow-y-auto">
+          {activeTab === "내 게시물" ? (
+            myPosts.length > 0 ? (
+              myPosts.map((post) => (
+                <div
+                  key={post.id}
+                  onClick={() => navigate(post.post_type === "community" ? "/community" : post.post_type === "job" ? "/jobs" : "/rooms")}
+                  className="p-3 rounded-xl bg-secondary/50 hover:bg-surface-hover cursor-pointer transition-colors active:scale-[0.98]"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                      {post.post_type === "community" ? "커뮤니티" : post.post_type === "job" ? "구인" : "연습실"}
+                    </span>
+                    {post.category && (
+                      <span className="text-[10px] text-muted-foreground">{post.category}</span>
+                    )}
+                    <span className="text-[10px] text-muted-foreground ml-auto">
+                      {new Date(post.created_at).toLocaleDateString("ko-KR")}
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-semibold truncate">{post.title}</h4>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">{post.content}</p>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-6">작성한 게시물이 없습니다.</p>
+            )
+          ) : (
+            myComments.length > 0 ? (
+              myComments.map((comment) => (
+                <div
+                  key={comment.id}
+                  className="p-3 rounded-xl bg-secondary/50"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <MessageSquare className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-[10px] text-muted-foreground">
+                      {new Date(comment.created_at).toLocaleDateString("ko-KR")}
+                    </span>
+                  </div>
+                  <p className="text-sm text-foreground">{comment.content}</p>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-6">작성한 댓글이 없습니다.</p>
+            )
+          )}
         </div>
       </div>
 
