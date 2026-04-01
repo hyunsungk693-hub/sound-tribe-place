@@ -140,6 +140,17 @@ const Community = () => {
       await supabase.from("post_likes").delete().eq("post_id", post.id).eq("user_id", user.id);
     } else {
       await supabase.from("post_likes").insert({ post_id: post.id, user_id: user.id } as any);
+      // Send notification to post owner
+      const ownerPost = dbPosts.find((p) => p.id === post.id);
+      if (ownerPost && ownerPost.user_id !== user.id) {
+        await supabase.from("notifications").insert({
+          user_id: ownerPost.user_id,
+          actor_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "익명",
+          type: "like",
+          post_id: post.id,
+          post_title: post.title,
+        } as any);
+      }
     }
 
     // Refresh counts
@@ -188,10 +199,20 @@ const Community = () => {
       toast.success("댓글이 등록되었습니다");
       setNewComment("");
       await fetchComments(selectedPost.id);
-      // Refresh counts
       const ids = dbPosts.map((p) => p.id);
       await fetchLikesAndComments(ids);
       setSelectedPost((prev) => prev ? { ...prev, commentCount: prev.commentCount + 1 } : null);
+      // Send notification to post owner
+      const ownerPost = dbPosts.find((p) => p.id === selectedPost.id);
+      if (ownerPost && ownerPost.user_id !== user.id) {
+        await supabase.from("notifications").insert({
+          user_id: ownerPost.user_id,
+          actor_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "익명",
+          type: "comment",
+          post_id: selectedPost.id,
+          post_title: selectedPost.title,
+        } as any);
+      }
     }
     setSubmittingComment(false);
   };

@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      notifications: {
+        Row: {
+          actor_name: string
+          created_at: string
+          id: string
+          is_read: boolean
+          post_id: string | null
+          post_title: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          actor_name?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          post_id?: string | null
+          post_title?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          actor_name?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          post_id?: string | null
+          post_title?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_comments: {
         Row: {
           author_name: string
