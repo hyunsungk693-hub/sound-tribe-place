@@ -339,6 +339,7 @@ const Community = () => {
             {label}
           </button>
         ))}
+      </div>
 
       {topPost && (
         <div
