@@ -31,6 +31,7 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState("내 게시물");
   const [myPosts, setMyPosts] = useState<any[]>([]);
   const [myComments, setMyComments] = useState<any[]>([]);
+  const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
