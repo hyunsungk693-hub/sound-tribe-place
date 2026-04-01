@@ -46,6 +46,7 @@ const Community = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [selectedPost, setSelectedPost] = useState<PostItem | null>(null);
+  const [sortBy, setSortBy] = useState<"latest" | "likes" | "comments">("latest");
 
   // Like/comment counts from DB
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
