@@ -13,6 +13,7 @@ interface Profile {
   instruments: string[] | null;
   genres: string[] | null;
   bio: string | null;
+  avatar_url: string | null;
 }
 
 const menuItems = [
