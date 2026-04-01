@@ -4,7 +4,7 @@ import PageShell from "@/components/PageShell";
 import CreatePostDialog from "@/components/CreatePostDialog";
 import { supabase } from "@/integrations/supabase/client";
 
-const tabs = ["전체", "자유", "질문", "합주모집", "장비거래"];
+const tabs = ["전체", "자유", "질문", "거래"];
 
 const samplePosts = [
   { author: "김재현", time: "2시간 전", tab: "자유", title: "오늘 라이브 후기", content: "홍대에서 첫 라이브 했는데 긴장돼서 손이 떨렸지만 나름 잘 마무리한 것 같아요 ㅎㅎ", likes: 24, comments: 8 },
