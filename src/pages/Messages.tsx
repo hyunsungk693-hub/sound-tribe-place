@@ -35,7 +35,50 @@ const getFileCategory = (mimeType: string): "image" | "video" | "file" => {
   return "file";
 };
 
-const Messages = () => {
+const EMOJI_CATEGORIES: { label: string; emojis: string[] }[] = [
+  { label: "😊 자주 쓰는", emojis: ["😀","😂","🥹","😍","🥰","😎","🤔","😅","😭","🥺","😤","🔥","❤️","👍","👏","🙏","💪","✨","🎵","🎶","🎸","🥁","🎤","🎹","🎺","🎷"] },
+  { label: "😀 표정", emojis: ["😃","😄","😁","😆","😊","🙂","😉","😌","😋","😜","🤪","😝","🤑","🤗","🤭","🤫","🤨","😐","😑","😶","😏","😒","🙄","😬","😮‍💨","🤥","😔","😪","🤤","😴","😷","🤒","🤕","🤢","🤮","🥴","😵","🤯","🤠","🥳","🥸","😈","👿","💀","☠️","👻","👽","🤖"] },
+  { label: "❤️ 하트", emojis: ["❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❤️‍🔥","❤️‍🩹","💕","💞","💓","💗","💖","💘","💝"] },
+  { label: "👋 손", emojis: ["👋","🤚","🖐️","✋","🖖","👌","🤌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👐","🙌","🫶","👐","🤝","🙏"] },
+  { label: "🎵 음악", emojis: ["🎵","🎶","🎼","🎤","🎧","🎷","🎸","🎹","🎺","🎻","🥁","🪘","🪗","🪕","🎚️","🎛️","🔊","📻","🎙️","🎚️"] },
+  { label: "🐱 동물", emojis: ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🐔","🐧","🐦","🦅","🦆","🦉","🐴","🦄","🐝","🐛","🦋"] },
+  { label: "🍕 음식", emojis: ["🍎","🍐","🍊","🍋","🍌","🍉","🍇","🍓","🫐","🍈","🍒","🍑","🥭","🍍","🥥","🥝","🍅","🥑","🍕","🍔","🍟","🌭","🍿","🧂","🥚","🍳","🧇","🥞","🍰","🎂","🍩","🍪","🍫","🍬","🍭","☕","🍵","🧃","🥤","🍺","🍻","🥂","🍷"] },
+];
+
+const EmojiPicker = ({ onSelect }: { onSelect: (emoji: string) => void }) => {
+  const [activeTab, setActiveTab] = useState(0);
+
+  return (
+    <div className="p-2">
+      <div className="flex gap-1 mb-2 overflow-x-auto pb-1 scrollbar-hide">
+        {EMOJI_CATEGORIES.map((cat, i) => (
+          <button
+            key={i}
+            onClick={() => setActiveTab(i)}
+            className={`px-2 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
+              activeTab === i ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+            }`}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-8 gap-1 max-h-40 overflow-y-auto">
+        {EMOJI_CATEGORIES[activeTab].emojis.map((emoji, i) => (
+          <button
+            key={i}
+            onClick={() => onSelect(emoji)}
+            className="w-9 h-9 flex items-center justify-center text-xl hover:bg-secondary rounded-lg active:scale-90 transition-transform"
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const targetUserId = searchParams.get("to");
