@@ -84,8 +84,11 @@ const ProfilePage = () => {
               {profile?.location || "위치를 설정해주세요"}
             </p>
           </div>
-          <button className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center hover:bg-surface-hover transition-colors active:scale-95">
-            <Settings className="w-4 h-4 text-muted-foreground" />
+          <button
+            onClick={() => setEditOpen(true)}
+            className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center hover:bg-surface-hover transition-colors active:scale-95"
+          >
+            <Edit3 className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
 
