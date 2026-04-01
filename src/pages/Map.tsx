@@ -1,8 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import PageShell from "@/components/PageShell";
-import { Search, Plus, Minus, Navigation, X, Star, MapPin, Clock, Phone } from "lucide-react";
+import { Search, Plus, Minus, Navigation, X, Star, MapPin, Clock, Phone, Send } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+
+type Review = { user: string; text: string; rating: number; date: string };
 
 type MarkerData = {
   id: number;
@@ -16,10 +21,10 @@ type MarkerData = {
   hours?: string;
   rating?: number;
   reviewCount?: number;
-  reviews?: { user: string; text: string; rating: number; date: string }[];
+  reviews?: Review[];
 };
 
-const markers: MarkerData[] = [
+const defaultMarkers: MarkerData[] = [
   { id: 1, type: "job", name: "밴드 기타리스트 모집", desc: "홍대 라이브클럽 · 회당 15만원", lat: 37.5563, lng: 126.9236, address: "서울 마포구 와우산로 21길 19", phone: "02-332-1234", rating: 4.2, reviewCount: 8, reviews: [
     { user: "기타러버", text: "분위기 좋고 페이도 괜찮아요. 재계약 의사 있습니다.", rating: 5, date: "2026.03.15" },
     { user: "세션맨", text: "장비 상태가 좋고 사운드 엔지니어가 친절해요.", rating: 4, date: "2026.03.10" },
@@ -113,13 +118,117 @@ const StarRating = React.memo(({ rating }: { rating: number }) => (
   </div>
 ));
 
+const InteractiveStarRating = ({ rating, onRate }: { rating: number; onRate: (r: number) => void }) => (
+  <div className="flex items-center gap-1">
+    {[1, 2, 3, 4, 5].map((i) => (
+      <button
+        key={i}
+        type="button"
+        onClick={() => onRate(i)}
+        className="active:scale-110 transition-transform"
+      >
+        <Star
+          className="w-6 h-6"
+          fill={i <= rating ? "#FBBF24" : "none"}
+          stroke={i <= rating ? "#FBBF24" : "#D1D5DB"}
+          strokeWidth={1.5}
+        />
+      </button>
+    ))}
+  </div>
+);
+
 const MapPage = () => {
+  const { user } = useAuth();
   const [filter, setFilter] = useState<Filter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selected, setSelected] = useState<MarkerData | null>(null);
+  const [dbReviews, setDbReviews] = useState<Record<string, Review[]>>({});
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [newRating, setNewRating] = useState(0);
+  const [newContent, setNewContent] = useState("");
+  const [newUserName, setNewUserName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Fetch DB reviews for a place
+  const fetchReviews = useCallback(async (placeId: number, placeType: string) => {
+    const { data } = await supabase
+      .from("reviews")
+      .select("*")
+      .eq("place_id", placeId)
+      .eq("place_type", placeType)
+      .order("created_at", { ascending: false });
+
+    if (data) {
+      const mapped: Review[] = data.map((r) => ({
+        user: r.user_name,
+        text: r.content,
+        rating: r.rating,
+        date: new Date(r.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\. /g, ".").replace(/\.$/, ""),
+      }));
+      setDbReviews((prev) => ({ ...prev, [`${placeType}-${placeId}`]: mapped }));
+    }
+  }, []);
+
+  // When a marker is selected, fetch its reviews
+  useEffect(() => {
+    if (selected) {
+      fetchReviews(selected.id, selected.type);
+    }
+  }, [selected, fetchReviews]);
+
+  const handleSubmitReview = async () => {
+    if (!user) {
+      toast.error("리뷰를 작성하려면 로그인이 필요합니다.");
+      return;
+    }
+    if (!selected) return;
+    if (newRating === 0) {
+      toast.error("별점을 선택해주세요.");
+      return;
+    }
+    if (!newContent.trim()) {
+      toast.error("리뷰 내용을 입력해주세요.");
+      return;
+    }
+    if (newContent.trim().length > 500) {
+      toast.error("리뷰는 500자 이내로 작성해주세요.");
+      return;
+    }
+
+    setSubmitting(true);
+    const { error } = await supabase.from("reviews").insert({
+      user_id: user.id,
+      place_id: selected.id,
+      place_type: selected.type,
+      rating: newRating,
+      content: newContent.trim(),
+      user_name: newUserName.trim() || "익명",
+    });
+
+    if (error) {
+      toast.error("리뷰 작성에 실패했습니다.");
+    } else {
+      toast.success("리뷰가 등록되었습니다!");
+      setNewRating(0);
+      setNewContent("");
+      setNewUserName("");
+      setShowReviewForm(false);
+      fetchReviews(selected.id, selected.type);
+    }
+    setSubmitting(false);
+  };
+
+  // Get combined reviews (default + DB)
+  const getCombinedReviews = (marker: MarkerData): Review[] => {
+    const key = `${marker.type}-${marker.id}`;
+    const fromDb = dbReviews[key] || [];
+    const fromDefault = marker.reviews || [];
+    return [...fromDb, ...fromDefault];
+  };
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -144,12 +253,13 @@ const MapPage = () => {
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
-    const filtered = markers.filter((m) => filter === "all" || m.type === filter);
+    const filtered = defaultMarkers.filter((m) => filter === "all" || m.type === filter);
     filtered.forEach((m) => {
       const icon = m.type === "job" ? jobIcon : m.type === "room" ? roomIcon : shopIcon;
       const marker = L.marker([m.lat, m.lng], { icon })
         .on("click", () => {
           setSelected(m);
+          setShowReviewForm(false);
           mapRef.current?.panTo([m.lat, m.lng]);
         })
         .addTo(mapRef.current!);
@@ -171,6 +281,11 @@ const MapPage = () => {
     { key: "room" as Filter, label: "연습실", dotColor: "#03C75A" },
     { key: "shop" as Filter, label: "악기사", dotColor: "#FF6F0F" },
   ];
+
+  const combinedReviews = selected ? getCombinedReviews(selected) : [];
+  const avgRating = combinedReviews.length > 0
+    ? Math.round((combinedReviews.reduce((s, r) => s + r.rating, 0) / combinedReviews.length) * 10) / 10
+    : selected?.rating || 0;
 
   return (
     <PageShell title="지도">
@@ -234,11 +349,10 @@ const MapPage = () => {
           </div>
         </div>
 
-        {/* Detail panel (bottom sheet style) */}
+        {/* Detail panel */}
         {selected && (
           <div className="absolute bottom-0 left-0 right-0 z-[1001] animate-in slide-in-from-bottom duration-300">
             <div className="bg-background border-t border-border rounded-t-2xl shadow-2xl max-h-[60vh] overflow-y-auto">
-              {/* Handle bar */}
               <div className="flex justify-center pt-2 pb-1">
                 <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
               </div>
@@ -248,10 +362,7 @@ const MapPage = () => {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <span
-                        className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
-                        style={{ backgroundColor: typeColor[selected.type] }}
-                      >
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: typeColor[selected.type] }}>
                         {typeLabel[selected.type]}
                       </span>
                     </div>
@@ -259,7 +370,7 @@ const MapPage = () => {
                     <p className="text-sm text-muted-foreground mt-0.5">{selected.desc}</p>
                   </div>
                   <button
-                    onClick={() => setSelected(null)}
+                    onClick={() => { setSelected(null); setShowReviewForm(false); }}
                     className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0 ml-2 hover:bg-muted active:scale-95 transition-all"
                   >
                     <X className="w-4 h-4 text-muted-foreground" />
@@ -267,13 +378,11 @@ const MapPage = () => {
                 </div>
 
                 {/* Rating */}
-                {selected.rating && (
-                  <div className="flex items-center gap-2 mb-3">
-                    <StarRating rating={selected.rating} />
-                    <span className="text-sm font-semibold text-foreground">{selected.rating}</span>
-                    <span className="text-xs text-muted-foreground">리뷰 {selected.reviewCount}개</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 mb-3">
+                  <StarRating rating={avgRating} />
+                  <span className="text-sm font-semibold text-foreground">{avgRating}</span>
+                  <span className="text-xs text-muted-foreground">리뷰 {combinedReviews.length}개</span>
+                </div>
 
                 {/* Info */}
                 <div className="space-y-2 mb-4">
@@ -297,12 +406,78 @@ const MapPage = () => {
                   )}
                 </div>
 
-                {/* Reviews */}
-                {selected.reviews && selected.reviews.length > 0 && (
+                {/* Write review button */}
+                {!showReviewForm && (
+                  <button
+                    onClick={() => {
+                      if (!user) {
+                        toast.error("리뷰를 작성하려면 로그인이 필요합니다.");
+                        return;
+                      }
+                      setShowReviewForm(true);
+                    }}
+                    className="w-full mb-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all"
+                  >
+                    ✏️ 리뷰 작성하기
+                  </button>
+                )}
+
+                {/* Review form */}
+                {showReviewForm && (
+                  <div className="mb-4 p-3 rounded-xl border border-border bg-secondary/30 space-y-3">
+                    <h4 className="text-sm font-bold text-foreground">리뷰 작성</h4>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">별점</label>
+                      <InteractiveStarRating rating={newRating} onRate={setNewRating} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">닉네임 (선택)</label>
+                      <input
+                        type="text"
+                        value={newUserName}
+                        onChange={(e) => setNewUserName(e.target.value)}
+                        placeholder="익명"
+                        maxLength={20}
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">내용</label>
+                      <textarea
+                        value={newContent}
+                        onChange={(e) => setNewContent(e.target.value)}
+                        placeholder="리뷰를 작성해주세요..."
+                        maxLength={500}
+                        rows={3}
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                      />
+                      <div className="text-right text-[11px] text-muted-foreground mt-0.5">{newContent.length}/500</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setShowReviewForm(false); setNewRating(0); setNewContent(""); setNewUserName(""); }}
+                        className="flex-1 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary active:scale-[0.98] transition-all"
+                      >
+                        취소
+                      </button>
+                      <button
+                        onClick={handleSubmitReview}
+                        disabled={submitting}
+                        className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        {submitting ? "등록 중..." : "등록"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Reviews list */}
+                {combinedReviews.length > 0 ? (
                   <div>
                     <h4 className="text-sm font-bold text-foreground mb-2">리뷰</h4>
                     <div className="space-y-3">
-                      {selected.reviews.map((r, i) => (
+                      {combinedReviews.map((r, i) => (
                         <div key={i} className="bg-secondary/50 rounded-xl p-3">
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
@@ -316,9 +491,7 @@ const MapPage = () => {
                       ))}
                     </div>
                   </div>
-                )}
-
-                {selected.reviews && selected.reviews.length === 0 && (
+                ) : (
                   <p className="text-sm text-muted-foreground text-center py-4">아직 리뷰가 없습니다.</p>
                 )}
               </div>
@@ -326,16 +499,6 @@ const MapPage = () => {
           </div>
         )}
       </div>
-
-      <style>{`
-        .naver-popup .leaflet-popup-content-wrapper {
-          border-radius: 12px;
-          box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-          padding: 0;
-        }
-        .naver-popup .leaflet-popup-content { margin: 12px 14px; }
-        .naver-popup .leaflet-popup-tip { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
-      `}</style>
     </PageShell>
   );
 };
