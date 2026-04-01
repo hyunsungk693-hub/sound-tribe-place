@@ -1,4 +1,5 @@
-import { Home, Briefcase, Map, MapPin, MessageCircle, Mail, User, Bell } from "lucide-react";
+import { Home, Briefcase, Map, MapPin, MessageCircle, Mail, User, Bell, Heart, MessageSquare } from "lucide-react";
+import { toast } from "sonner";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
