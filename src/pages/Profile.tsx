@@ -234,6 +234,15 @@ const ProfilePage = () => {
           로그아웃
         </span>
       </button>
+
+      {editOpen && profile && user && (
+        <ProfileEditModal
+          userId={user.id}
+          profile={profile}
+          onClose={() => setEditOpen(false)}
+          onSaved={(updated) => setProfile(updated)}
+        />
+      )}
     </PageShell>
   );
 };
