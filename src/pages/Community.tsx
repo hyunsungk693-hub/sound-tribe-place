@@ -24,6 +24,7 @@ type PostItem = {
   tab: string;
   title: string;
   content: string;
+  image_url: string | null;
   likeCount: number;
   commentCount: number;
   liked: boolean;
