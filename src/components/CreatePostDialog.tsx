@@ -54,6 +54,10 @@ const CreatePostDialog = ({ postType, fields, onCreated }: CreatePostDialogProps
       if (values.area) postData.area = values.area;
       if (values.hours) postData.hours = values.hours;
       if (values.instruments) postData.instruments = values.instruments.split(",").map((s: string) => s.trim()).filter(Boolean);
+      if (values.lat && values.lng) {
+        postData.lat = parseFloat(values.lat);
+        postData.lng = parseFloat(values.lng);
+      }
 
       const { error } = await supabase.from("posts").insert(postData as any);
       if (error) throw error;
