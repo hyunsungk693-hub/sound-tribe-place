@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import PageShell from "@/components/PageShell";
+import { Search, Plus, Minus, Navigation } from "lucide-react";
 
 type MarkerData = {
   id: number;
@@ -30,22 +31,35 @@ const markers: MarkerData[] = [
   { id: 15, type: "shop", name: "사운드기어", desc: "음향장비·레코딩 장비", lat: 37.5450, lng: 126.9520 },
 ];
 
-const createIcon = (color: string) =>
-  L.divIcon({
+const createIcon = (type: "job" | "room" | "shop") => {
+  const configs = {
+    job: { bg: "#1B64DA", icon: "💼", label: "구인" },
+    room: { bg: "#03C75A", icon: "🎵", label: "연습실" },
+    shop: { bg: "#FF6F0F", icon: "🎸", label: "악기" },
+  };
+  const c = configs[type];
+  return L.divIcon({
     className: "",
-    html: `<div style="width:28px;height:28px;border-radius:50%;background:${color};border:3px solid #fff;box-shadow:0 2px 8px ${color}80;"></div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
+    html: `<div style="display:flex;flex-direction:column;align-items:center;">
+      <div style="background:${c.bg};color:#fff;padding:4px 8px;border-radius:8px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.25);display:flex;align-items:center;gap:3px;">
+        <span style="font-size:12px">${c.icon}</span>${c.label}
+      </div>
+      <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid ${c.bg};margin-top:-1px;"></div>
+    </div>`,
+    iconSize: [60, 36],
+    iconAnchor: [30, 36],
   });
+};
 
-const jobIcon = createIcon("#3b82f6");
-const roomIcon = createIcon("#10b981");
-const shopIcon = createIcon("#f59e0b");
+const jobIcon = createIcon("job");
+const roomIcon = createIcon("room");
+const shopIcon = createIcon("shop");
 
 type Filter = "all" | "job" | "room" | "shop";
 
 const MapPage = () => {
   const [filter, setFilter] = useState<Filter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -57,8 +71,10 @@ const MapPage = () => {
       zoom: 12,
       zoomControl: false,
     });
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    // Use CartoDB Voyager for a clean, Naver-like appearance
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+      maxZoom: 19,
     }).addTo(mapRef.current);
 
     return () => {
@@ -76,56 +92,133 @@ const MapPage = () => {
     filtered.forEach((m) => {
       const icon = m.type === "job" ? jobIcon : m.type === "room" ? roomIcon : shopIcon;
       const marker = L.marker([m.lat, m.lng], { icon })
-        .bindPopup(`<b>${m.name}</b><br/><span style="color:#888;font-size:12px">${m.desc}</span>`)
+        .bindPopup(
+          `<div style="font-family:-apple-system,sans-serif;min-width:160px;">
+            <div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">${m.name}</div>
+            <div style="font-size:12px;color:#666;">${m.desc}</div>
+          </div>`,
+          { closeButton: false, className: "naver-popup" }
+        )
         .addTo(mapRef.current!);
       markersRef.current.push(marker);
     });
   }, [filter]);
 
+  const handleZoomIn = () => mapRef.current?.zoomIn();
+  const handleZoomOut = () => mapRef.current?.zoomOut();
+  const handleMyLocation = () => {
+    navigator.geolocation?.getCurrentPosition((pos) => {
+      mapRef.current?.setView([pos.coords.latitude, pos.coords.longitude], 15);
+    });
+  };
+
+  const filterButtons = [
+    { key: "all" as Filter, label: "전체" },
+    { key: "job" as Filter, label: "구인구직", dotColor: "#1B64DA" },
+    { key: "room" as Filter, label: "연습실", dotColor: "#03C75A" },
+    { key: "shop" as Filter, label: "악기사", dotColor: "#FF6F0F" },
+  ];
+
   return (
     <PageShell title="지도">
-      <div className="flex gap-2 mb-4">
-        {([
-          { key: "all" as Filter, label: "전체" },
-          { key: "job" as Filter, label: "구인구직", color: "bg-blue-500" },
-          { key: "room" as Filter, label: "연습실", color: "bg-emerald-500" },
-          { key: "shop" as Filter, label: "악기사", color: "bg-amber-500" },
-        ]).map(({ key, label, color }) => (
+      {/* Search bar - Naver style */}
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="장소, 주소 검색"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+        />
+      </div>
+
+      {/* Filter chips */}
+      <div className="flex gap-2 mb-3 overflow-x-auto scrollbar-hide">
+        {filterButtons.map(({ key, label, dotColor }) => (
           <button
             key={key}
             onClick={() => setFilter(key)}
-            className={`flex items-center gap-1.5 shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 active:scale-95 ${
+            className={`flex items-center gap-1.5 shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 active:scale-95 border ${
               filter === key
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground"
+                ? "bg-foreground text-background border-foreground shadow-sm"
+                : "bg-background text-foreground border-border hover:bg-secondary"
             }`}
           >
-            {color && <span className={`w-2 h-2 rounded-full ${color}`} />}
+            {dotColor && (
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: dotColor }}
+              />
+            )}
             {label}
           </button>
         ))}
       </div>
 
-      <div className="flex items-center gap-4 mb-3 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-blue-500" />
-          구인구직
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-emerald-500" />
-          연습실
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-amber-500" />
-          악기사
-        </span>
+      {/* Map container */}
+      <div className="relative rounded-xl overflow-hidden border border-border shadow-md">
+        <div
+          ref={containerRef}
+          style={{ height: "calc(100vh - 300px)" }}
+        />
+
+        {/* Zoom & location controls - Naver style */}
+        <div className="absolute right-3 bottom-6 z-[1000] flex flex-col gap-1.5">
+          <button
+            onClick={handleMyLocation}
+            className="w-9 h-9 bg-background rounded-lg shadow-md border border-border flex items-center justify-center hover:bg-secondary active:scale-95 transition-all"
+          >
+            <Navigation className="w-4 h-4 text-foreground" />
+          </button>
+          <div className="flex flex-col bg-background rounded-lg shadow-md border border-border overflow-hidden">
+            <button
+              onClick={handleZoomIn}
+              className="w-9 h-9 flex items-center justify-center hover:bg-secondary active:scale-95 transition-all border-b border-border"
+            >
+              <Plus className="w-4 h-4 text-foreground" />
+            </button>
+            <button
+              onClick={handleZoomOut}
+              className="w-9 h-9 flex items-center justify-center hover:bg-secondary active:scale-95 transition-all"
+            >
+              <Minus className="w-4 h-4 text-foreground" />
+            </button>
+          </div>
+        </div>
+
+        {/* Legend overlay */}
+        <div className="absolute left-3 bottom-6 z-[1000] bg-background/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md border border-border">
+          <div className="flex items-center gap-3 text-[11px] font-medium text-foreground">
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: "#1B64DA" }} />
+              구인구직
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: "#03C75A" }} />
+              연습실
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: "#FF6F0F" }} />
+              악기사
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div
-        ref={containerRef}
-        className="rounded-2xl overflow-hidden border border-border/50 shadow-sm"
-        style={{ height: "calc(100vh - 280px)" }}
-      />
+      <style>{`
+        .naver-popup .leaflet-popup-content-wrapper {
+          border-radius: 12px;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+          padding: 0;
+        }
+        .naver-popup .leaflet-popup-content {
+          margin: 12px 14px;
+        }
+        .naver-popup .leaflet-popup-tip {
+          box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+      `}</style>
     </PageShell>
   );
 };
