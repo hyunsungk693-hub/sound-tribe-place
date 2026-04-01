@@ -65,13 +65,19 @@ const Community = () => {
         ))}
       </div>
 
-      <div className="glass-card p-3.5 mb-5 flex items-center gap-3" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) both" }}>
-        <TrendingUp className="w-4 h-4 text-primary shrink-0" />
-        <div className="overflow-hidden">
-          <p className="text-[10px] text-primary font-medium mb-0.5">인기글</p>
-          <p className="text-xs truncate">주말 합주 멤버 구합니다 — 댓글 22개</p>
+      {topPost && (
+        <div
+          className="glass-card p-3.5 mb-5 flex items-center gap-3 cursor-pointer hover:bg-surface-hover active:scale-[0.98] transition-all"
+          style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) both" }}
+          onClick={() => setSelectedPost(topPost)}
+        >
+          <TrendingUp className="w-4 h-4 text-primary shrink-0" />
+          <div className="overflow-hidden">
+            <p className="text-[10px] text-primary font-medium mb-0.5">인기글</p>
+            <p className="text-xs truncate">{topPost.title} — ♥ {topPost.likes} · 댓글 {topPost.comments}개</p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="space-y-3">
         {filtered.map((post, i) => (
