@@ -57,6 +57,13 @@ const Community = () => {
   const [newComment, setNewComment] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
 
+  // Edit state
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+
   const fetchPosts = useCallback(async () => {
     const { data } = await supabase
       .from("posts")
