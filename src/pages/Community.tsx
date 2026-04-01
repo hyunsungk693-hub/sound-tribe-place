@@ -24,6 +24,7 @@ const communityFields = [
 const Community = () => {
   const [dbPosts, setDbPosts] = useState<any[]>([]);
   const [selectedTab, setSelectedTab] = useState("전체");
+  const [selectedPost, setSelectedPost] = useState<any>(null);
 
   const fetchPosts = async () => {
     const { data } = await supabase.from("posts").select("*").eq("post_type", "community").order("created_at", { ascending: false });
