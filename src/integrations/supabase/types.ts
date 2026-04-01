@@ -24,6 +24,8 @@ export type Database = {
           hours: string | null
           id: string
           instruments: string[] | null
+          lat: number | null
+          lng: number | null
           pay: string | null
           post_type: string
           price: string | null
@@ -40,6 +42,8 @@ export type Database = {
           hours?: string | null
           id?: string
           instruments?: string[] | null
+          lat?: number | null
+          lng?: number | null
           pay?: string | null
           post_type: string
           price?: string | null
@@ -56,6 +60,8 @@ export type Database = {
           hours?: string | null
           id?: string
           instruments?: string[] | null
+          lat?: number | null
+          lng?: number | null
           pay?: string | null
           post_type?: string
           price?: string | null
