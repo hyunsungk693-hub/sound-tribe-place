@@ -38,7 +38,13 @@ const INSTRUMENT_OPTIONS = [
   // 기타
   "하모니카", "오카리나", "칼림바", "디저리두", "백파이프", "밴드네온",
 ];
-const GENRE_OPTIONS = ["록", "팝", "재즈", "클래식", "인디", "R&B", "힙합", "일렉트로닉", "포크", "메탈", "블루스", "펑크"];
+const GENRE_OPTIONS = [
+  "록", "팝", "재즈", "클래식", "인디", "R&B", "힙합", "일렉트로닉", "포크", "메탈", "블루스", "펑크",
+  "소울", "레게", "컨트리", "얼터너티브", "그런지", "프로그레시브", "퓨전", "보사노바",
+  "라틴", "월드뮤직", "앰비언트", "트랩", "디스코", "펑키", "가스펠", "뉴에이지",
+  "포스트록", "슈게이징", "트로트", "발라드", "CCM", "국악", "EDM", "하우스", "테크노",
+  "드럼앤베이스", "덥스텝", "K-POP", "J-POP", "시티팝",
+];
 
 const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
   const [displayName, setDisplayName] = useState(profile.display_name || "");
