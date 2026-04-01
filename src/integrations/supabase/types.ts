@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      posts: {
+        Row: {
+          area: string | null
+          author_name: string
+          category: string | null
+          content: string
+          created_at: string
+          hours: string | null
+          id: string
+          instruments: string[] | null
+          pay: string | null
+          post_type: string
+          price: string | null
+          title: string
+          user_id: string
+          venue: string | null
+        }
+        Insert: {
+          area?: string | null
+          author_name?: string
+          category?: string | null
+          content: string
+          created_at?: string
+          hours?: string | null
+          id?: string
+          instruments?: string[] | null
+          pay?: string | null
+          post_type: string
+          price?: string | null
+          title: string
+          user_id: string
+          venue?: string | null
+        }
+        Update: {
+          area?: string | null
+          author_name?: string
+          category?: string | null
+          content?: string
+          created_at?: string
+          hours?: string | null
+          id?: string
+          instruments?: string[] | null
+          pay?: string | null
+          post_type?: string
+          price?: string | null
+          title?: string
+          user_id?: string
+          venue?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
