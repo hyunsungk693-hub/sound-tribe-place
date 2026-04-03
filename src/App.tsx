@@ -17,7 +17,7 @@ import Messages from "./pages/Messages.tsx";
 import Auth from "./pages/Auth.tsx";
 import UserProfile from "./pages/UserProfile.tsx";
 import NotFound from "./pages/NotFound.tsx";
-
+import PostDetail from "./pages/PostDetail.tsx";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
