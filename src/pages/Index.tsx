@@ -136,7 +136,7 @@ const Index = () => {
         </div>
         <div className="space-y-2">
           {promotions.map((promo, i) => (
-            <div key={i} className="glass-card p-3.5 flex items-start justify-between hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]">
+            <div key={i} onClick={() => promo.id ? navigate(`/post/${promo.id}`) : null} className="glass-card p-3.5 flex items-start justify-between hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   {promo.hot && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
