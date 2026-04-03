@@ -82,11 +82,12 @@ const Index = () => {
 
   const recentJobs = [
     ...dbRecentJobs.map((j) => ({
+      id: j.id,
       title: j.title,
       venue: j.venue || "",
       tag: j.category || "기타",
     })),
-    ...sampleRecentJobs,
+    ...sampleRecentJobs.map((j) => ({ ...j, id: null as string | null })),
   ].slice(0, 5);
 
   return (
