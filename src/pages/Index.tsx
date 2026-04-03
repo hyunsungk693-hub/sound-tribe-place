@@ -71,21 +71,23 @@ const Index = () => {
 
   const promotions = [
     ...dbPromos.map((p) => ({
+      id: p.id,
       title: p.title,
       author: p.author_name || "익명",
       date: new Date(p.created_at).toLocaleDateString("ko-KR"),
       hot: false,
     })),
-    ...samplePromotions,
+    ...samplePromotions.map((p) => ({ ...p, id: null as string | null })),
   ];
 
   const recentJobs = [
     ...dbRecentJobs.map((j) => ({
+      id: j.id,
       title: j.title,
       venue: j.venue || "",
       tag: j.category || "기타",
     })),
-    ...sampleRecentJobs,
+    ...sampleRecentJobs.map((j) => ({ ...j, id: null as string | null })),
   ].slice(0, 5);
 
   return (
@@ -134,7 +136,7 @@ const Index = () => {
         </div>
         <div className="space-y-2">
           {promotions.map((promo, i) => (
-            <div key={i} className="glass-card p-3.5 flex items-start justify-between hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]">
+            <div key={i} onClick={() => promo.id ? navigate(`/post/${promo.id}`) : null} className="glass-card p-3.5 flex items-start justify-between hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   {promo.hot && <Star className="w-3 h-3 text-primary fill-primary shrink-0" />}
@@ -155,7 +157,7 @@ const Index = () => {
         </div>
         <div className="space-y-2">
           {recentJobs.map((job, i) => (
-            <div key={i} className="glass-card p-3.5 flex items-center justify-between hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]">
+            <div key={i} onClick={() => job.id ? navigate(`/post/${job.id}`) : navigate("/jobs")} className="glass-card p-3.5 flex items-center justify-between hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]">
               <div>
                 <p className="text-sm font-medium">{job.title}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{job.venue}</p>
