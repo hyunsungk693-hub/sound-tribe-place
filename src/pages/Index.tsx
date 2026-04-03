@@ -7,6 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { HomeSkeleton } from "@/components/skeletons/PostSkeleton";
 import logoIcon from "@/assets/logo-icon.png";
 import banner1 from "@/assets/banner-1.png";
+import banner2 from "@/assets/banner-2.jpg";
+import banner3 from "@/assets/banner-3.jpg";
+import banner4 from "@/assets/banner-4.jpg";
 
 const quickActions = [
   { icon: Briefcase, label: "구인구직", desc: "음악 관련 일자리 탐색", path: "/jobs", color: "from-blue-500/10 to-blue-600/5" },
@@ -15,10 +18,10 @@ const quickActions = [
 ];
 
 const adBanners = [
-  { title: "음악인을 위한 플랫폼", desc: "함께 만드는 음악의 무대", bg: "from-primary/10 to-primary/5", image: banner1 },
-  { title: "🎸 악기 할인 대전", desc: "최대 50% 할인! 봄맞이 특별 세일", bg: "from-primary/10 to-primary/5" },
-  { title: "🎵 뮤직 페스티벌 2026", desc: "서울 올림픽공원 · 4월 12~13일", bg: "from-blue-500/10 to-blue-400/5" },
-  { title: "🎧 온라인 믹싱 클래스", desc: "프로 엔지니어에게 배우는 믹싱 노하우", bg: "from-emerald-500/10 to-emerald-400/5" },
+  { title: "음악인을 위한 플랫폼", desc: "함께 만드는 음악의 무대", image: banner1 },
+  { title: "🎸 악기 할인 대전", desc: "최대 50% 할인! 봄맞이 특별 세일", image: banner2 },
+  { title: "🎵 뮤직 페스티벌 2026", desc: "서울 올림픽공원 · 4월 12~13일", image: banner3 },
+  { title: "🎧 온라인 믹싱 클래스", desc: "프로 엔지니어에게 배우는 믹싱 노하우", image: banner4 },
 ];
 
 const samplePromotions = [
