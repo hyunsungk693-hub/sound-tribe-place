@@ -157,7 +157,7 @@ const Index = () => {
         </div>
         <div className="space-y-2">
           {recentJobs.map((job, i) => (
-            <div key={i} className="glass-card p-3.5 flex items-center justify-between hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]">
+            <div key={i} onClick={() => job.id ? navigate(`/post/${job.id}`) : navigate("/jobs")} className="glass-card p-3.5 flex items-center justify-between hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]">
               <div>
                 <p className="text-sm font-medium">{job.title}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{job.venue}</p>
