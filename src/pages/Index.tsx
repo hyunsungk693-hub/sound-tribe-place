@@ -71,12 +71,13 @@ const Index = () => {
 
   const promotions = [
     ...dbPromos.map((p) => ({
+      id: p.id,
       title: p.title,
       author: p.author_name || "익명",
       date: new Date(p.created_at).toLocaleDateString("ko-KR"),
       hot: false,
     })),
-    ...samplePromotions,
+    ...samplePromotions.map((p) => ({ ...p, id: null as string | null })),
   ];
 
   const recentJobs = [
