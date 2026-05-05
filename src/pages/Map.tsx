@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
+import { importMapsLibrary } from "@/lib/googleMapsLoader";
 import PageShell from "@/components/PageShell";
 import { Search, Plus, Minus, Navigation, X, Star, MapPin, Clock, Phone, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -256,12 +256,16 @@ const MapPage = () => {
   // Init Google Map
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
-    if (!apiKey) return;
-    setOptions({ key: apiKey, v: "weekly" });
     let cancelled = false;
     (async () => {
-      const { Map } = await importLibrary("maps");
+      const { data, error } = await supabase.functions.invoke("google-maps-key");
+      if (cancelled) return;
+      const apiKey = (data as any)?.key as string | undefined;
+      if (error || !apiKey) {
+        toast.error("지도 키를 불러올 수 없습니다.");
+        return;
+      }
+      const { Map } = await importMapsLibrary(apiKey, "maps");
       if (cancelled || !containerRef.current) return;
       mapRef.current = new Map(containerRef.current, {
         center: { lat: 37.5505, lng: 126.968 },
@@ -282,7 +286,7 @@ const MapPage = () => {
     markersRef.current = [];
 
     (async () => {
-      const { AdvancedMarkerElement } = await importLibrary("marker");
+      const { AdvancedMarkerElement } = await importMapsLibrary("", "marker");
 
       const allMarkers = [...defaultMarkers, ...dbMarkers];
       const filtered = allMarkers.filter((m) => filter === "all" || m.type === filter);
