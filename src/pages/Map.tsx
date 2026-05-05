@@ -281,7 +281,8 @@ const MapPage = () => {
     markersRef.current = [];
 
     (async () => {
-      const { AdvancedMarkerElement } = await importLibrary("marker");
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string;
+      const { AdvancedMarkerElement } = await importMapsLibrary(apiKey, "marker");
 
       const allMarkers = [...defaultMarkers, ...dbMarkers];
       const filtered = allMarkers.filter((m) => filter === "all" || m.type === filter);
