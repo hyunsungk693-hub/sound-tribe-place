@@ -5,6 +5,7 @@ export function loadGoogleMaps(apiKey: string): Promise<typeof google> {
   if (typeof window === "undefined") return Promise.reject(new Error("no window"));
   if ((window as any).google?.maps?.importLibrary) return Promise.resolve((window as any).google);
   if (loadPromise) return loadPromise;
+  if (!apiKey) return Promise.reject(new Error("missing api key"));
 
   loadPromise = new Promise((resolve, reject) => {
     // Inline bootstrap loader (official pattern)
