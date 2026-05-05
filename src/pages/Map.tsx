@@ -256,10 +256,15 @@ const MapPage = () => {
   // Init Google Map
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
-    if (!apiKey) return;
     let cancelled = false;
     (async () => {
+      const { data, error } = await supabase.functions.invoke("google-maps-key");
+      if (cancelled) return;
+      const apiKey = (data as any)?.key as string | undefined;
+      if (error || !apiKey) {
+        toast.error("지도 키를 불러올 수 없습니다.");
+        return;
+      }
       const { Map } = await importMapsLibrary(apiKey, "maps");
       if (cancelled || !containerRef.current) return;
       mapRef.current = new Map(containerRef.current, {
