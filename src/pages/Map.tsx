@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
 import PageShell from "@/components/PageShell";
 import { Search, Plus, Minus, Navigation, X, Star, MapPin, Clock, Phone, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,29 +75,23 @@ const defaultMarkers: MarkerData[] = [
   ]},
 ];
 
-const createIcon = (type: "job" | "room" | "shop") => {
-  const configs = {
-    job: { bg: "#1B64DA", icon: "💼", label: "구인" },
-    room: { bg: "#03C75A", icon: "🎵", label: "연습실" },
-    shop: { bg: "#FF6F0F", icon: "🎸", label: "악기" },
-  };
-  const c = configs[type];
-  return L.divIcon({
-    className: "",
-    html: `<div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;">
-      <div style="background:${c.bg};color:#fff;padding:4px 8px;border-radius:8px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.25);display:flex;align-items:center;gap:3px;">
-        <span style="font-size:12px">${c.icon}</span>${c.label}
-      </div>
-      <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid ${c.bg};margin-top:-1px;"></div>
-    </div>`,
-    iconSize: [60, 36],
-    iconAnchor: [30, 36],
-  });
+const markerConfigs = {
+  job: { bg: "#1B64DA", icon: "💼", label: "구인" },
+  room: { bg: "#03C75A", icon: "🎵", label: "연습실" },
+  shop: { bg: "#FF6F0F", icon: "🎸", label: "악기" },
 };
 
-const jobIcon = createIcon("job");
-const roomIcon = createIcon("room");
-const shopIcon = createIcon("shop");
+const createMarkerElement = (type: "job" | "room" | "shop") => {
+  const c = markerConfigs[type];
+  const el = document.createElement("div");
+  el.style.cssText = "display:flex;flex-direction:column;align-items:center;cursor:pointer;transform:translateY(-18px);";
+  el.innerHTML = `
+    <div style="background:${c.bg};color:#fff;padding:4px 8px;border-radius:8px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.25);display:flex;align-items:center;gap:3px;">
+      <span style="font-size:12px">${c.icon}</span>${c.label}
+    </div>
+    <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid ${c.bg};margin-top:-1px;"></div>`;
+  return el;
+};
 
 type Filter = "all" | "job" | "room" | "shop";
 
@@ -151,9 +144,10 @@ const MapPage = () => {
   const [newContent, setNewContent] = useState("");
   const [newUserName, setNewUserName] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const mapRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<L.Marker[]>([]);
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [mapReady, setMapReady] = useState(false);
 
   // Fetch posts from DB that have lat/lng
   const fetchDbMarkers = useCallback(async () => {
@@ -259,49 +253,61 @@ const MapPage = () => {
     return [...fromDb, ...fromDefault];
   };
 
+  // Init Google Map
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    mapRef.current = L.map(containerRef.current, {
-      center: [37.5505, 126.968],
-      zoom: 12,
-      zoomControl: false,
-    });
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-      maxZoom: 19,
-    }).addTo(mapRef.current);
-
-    return () => {
-      mapRef.current?.remove();
-      mapRef.current = null;
-    };
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+    if (!apiKey) return;
+    setOptions({ key: apiKey, v: "weekly" });
+    let cancelled = false;
+    (async () => {
+      const { Map } = await importLibrary("maps");
+      if (cancelled || !containerRef.current) return;
+      mapRef.current = new Map(containerRef.current, {
+        center: { lat: 37.5505, lng: 126.968 },
+        zoom: 12,
+        disableDefaultUI: true,
+        gestureHandling: "greedy",
+        mapId: "instrut-map",
+      });
+      setMapReady(true);
+    })();
+    return () => { cancelled = true; };
   }, []);
 
+  // Render markers
   useEffect(() => {
-    if (!mapRef.current) return;
-    markersRef.current.forEach((m) => m.remove());
+    if (!mapRef.current || !mapReady) return;
+    markersRef.current.forEach((m) => (m.map = null));
     markersRef.current = [];
 
-    const allMarkers = [...defaultMarkers, ...dbMarkers];
-    const filtered = allMarkers.filter((m) => filter === "all" || m.type === filter);
-    filtered.forEach((m) => {
-      const icon = m.type === "job" ? jobIcon : m.type === "room" ? roomIcon : shopIcon;
-      const marker = L.marker([m.lat, m.lng], { icon })
-        .on("click", () => {
+    (async () => {
+      const { AdvancedMarkerElement } = await importLibrary("marker");
+
+      const allMarkers = [...defaultMarkers, ...dbMarkers];
+      const filtered = allMarkers.filter((m) => filter === "all" || m.type === filter);
+      filtered.forEach((m) => {
+        const marker = new AdvancedMarkerElement({
+          position: { lat: m.lat, lng: m.lng },
+          map: mapRef.current!,
+          content: createMarkerElement(m.type),
+        });
+        marker.addListener("click", () => {
           setSelected(m);
           setShowReviewForm(false);
-          mapRef.current?.panTo([m.lat, m.lng]);
-        })
-        .addTo(mapRef.current!);
-      markersRef.current.push(marker);
-    });
-  }, [filter, dbMarkers]);
+          mapRef.current?.panTo({ lat: m.lat, lng: m.lng });
+        });
+        markersRef.current.push(marker);
+      });
+    })();
+  }, [filter, dbMarkers, mapReady]);
 
-  const handleZoomIn = () => mapRef.current?.zoomIn();
-  const handleZoomOut = () => mapRef.current?.zoomOut();
+  const handleZoomIn = () => mapRef.current?.setZoom((mapRef.current.getZoom() || 12) + 1);
+  const handleZoomOut = () => mapRef.current?.setZoom((mapRef.current.getZoom() || 12) - 1);
   const handleMyLocation = () => {
     navigator.geolocation?.getCurrentPosition((pos) => {
-      mapRef.current?.setView([pos.coords.latitude, pos.coords.longitude], 15);
+      mapRef.current?.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      mapRef.current?.setZoom(15);
     });
   };
 
