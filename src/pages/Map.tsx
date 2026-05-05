@@ -144,9 +144,10 @@ const MapPage = () => {
   const [newContent, setNewContent] = useState("");
   const [newUserName, setNewUserName] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const mapRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<L.Marker[]>([]);
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [mapReady, setMapReady] = useState(false);
 
   // Fetch posts from DB that have lat/lng
   const fetchDbMarkers = useCallback(async () => {
