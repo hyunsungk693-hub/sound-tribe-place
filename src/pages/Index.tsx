@@ -129,6 +129,15 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Nearby Map */}
+      <section className="mb-6" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.08s both" }}>
+        <div className="flex items-center gap-2 mb-3">
+          <MapPin className="w-4 h-4 text-primary" />
+          <h2 className="font-semibold text-sm">내 주변 지도</h2>
+        </div>
+        <HomeMap />
+      </section>
+
       {/* Promotion Board */}
       <section className="mb-6" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s both" }}>
         <div className="flex items-center gap-2 mb-3">
