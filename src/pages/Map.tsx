@@ -75,29 +75,23 @@ const defaultMarkers: MarkerData[] = [
   ]},
 ];
 
-const createIcon = (type: "job" | "room" | "shop") => {
-  const configs = {
-    job: { bg: "#1B64DA", icon: "💼", label: "구인" },
-    room: { bg: "#03C75A", icon: "🎵", label: "연습실" },
-    shop: { bg: "#FF6F0F", icon: "🎸", label: "악기" },
-  };
-  const c = configs[type];
-  return L.divIcon({
-    className: "",
-    html: `<div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;">
-      <div style="background:${c.bg};color:#fff;padding:4px 8px;border-radius:8px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.25);display:flex;align-items:center;gap:3px;">
-        <span style="font-size:12px">${c.icon}</span>${c.label}
-      </div>
-      <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid ${c.bg};margin-top:-1px;"></div>
-    </div>`,
-    iconSize: [60, 36],
-    iconAnchor: [30, 36],
-  });
+const markerConfigs = {
+  job: { bg: "#1B64DA", icon: "💼", label: "구인" },
+  room: { bg: "#03C75A", icon: "🎵", label: "연습실" },
+  shop: { bg: "#FF6F0F", icon: "🎸", label: "악기" },
 };
 
-const jobIcon = createIcon("job");
-const roomIcon = createIcon("room");
-const shopIcon = createIcon("shop");
+const createMarkerElement = (type: "job" | "room" | "shop") => {
+  const c = markerConfigs[type];
+  const el = document.createElement("div");
+  el.style.cssText = "display:flex;flex-direction:column;align-items:center;cursor:pointer;transform:translateY(-18px);";
+  el.innerHTML = `
+    <div style="background:${c.bg};color:#fff;padding:4px 8px;border-radius:8px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.25);display:flex;align-items:center;gap:3px;">
+      <span style="font-size:12px">${c.icon}</span>${c.label}
+    </div>
+    <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid ${c.bg};margin-top:-1px;"></div>`;
+  return el;
+};
 
 type Filter = "all" | "job" | "room" | "shop";
 
