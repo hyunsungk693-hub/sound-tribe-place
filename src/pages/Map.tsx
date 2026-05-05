@@ -253,49 +253,64 @@ const MapPage = () => {
     return [...fromDb, ...fromDefault];
   };
 
+  // Init Google Map
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    mapRef.current = L.map(containerRef.current, {
-      center: [37.5505, 126.968],
-      zoom: 12,
-      zoomControl: false,
-    });
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-      maxZoom: 19,
-    }).addTo(mapRef.current);
-
-    return () => {
-      mapRef.current?.remove();
-      mapRef.current = null;
-    };
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+    if (!apiKey) return;
+    const loader = new Loader({ apiKey, version: "weekly" });
+    let cancelled = false;
+    (async () => {
+      const { Map } = await loader.importLibrary("maps");
+      if (cancelled || !containerRef.current) return;
+      mapRef.current = new Map(containerRef.current, {
+        center: { lat: 37.5505, lng: 126.968 },
+        zoom: 12,
+        disableDefaultUI: true,
+        gestureHandling: "greedy",
+        mapId: "instrut-map",
+      });
+      setMapReady(true);
+    })();
+    return () => { cancelled = true; };
   }, []);
 
+  // Render markers
   useEffect(() => {
-    if (!mapRef.current) return;
-    markersRef.current.forEach((m) => m.remove());
+    if (!mapRef.current || !mapReady) return;
+    markersRef.current.forEach((m) => (m.map = null));
     markersRef.current = [];
 
-    const allMarkers = [...defaultMarkers, ...dbMarkers];
-    const filtered = allMarkers.filter((m) => filter === "all" || m.type === filter);
-    filtered.forEach((m) => {
-      const icon = m.type === "job" ? jobIcon : m.type === "room" ? roomIcon : shopIcon;
-      const marker = L.marker([m.lat, m.lng], { icon })
-        .on("click", () => {
+    (async () => {
+      const { AdvancedMarkerElement } = (await new Loader({
+        apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string,
+        version: "weekly",
+      }).importLibrary("marker")) as google.maps.MarkerLibrary;
+
+      const allMarkers = [...defaultMarkers, ...dbMarkers];
+      const filtered = allMarkers.filter((m) => filter === "all" || m.type === filter);
+      filtered.forEach((m) => {
+        const marker = new AdvancedMarkerElement({
+          position: { lat: m.lat, lng: m.lng },
+          map: mapRef.current!,
+          content: createMarkerElement(m.type),
+        });
+        marker.addListener("click", () => {
           setSelected(m);
           setShowReviewForm(false);
-          mapRef.current?.panTo([m.lat, m.lng]);
-        })
-        .addTo(mapRef.current!);
-      markersRef.current.push(marker);
-    });
-  }, [filter, dbMarkers]);
+          mapRef.current?.panTo({ lat: m.lat, lng: m.lng });
+        });
+        markersRef.current.push(marker);
+      });
+    })();
+  }, [filter, dbMarkers, mapReady]);
 
-  const handleZoomIn = () => mapRef.current?.zoomIn();
-  const handleZoomOut = () => mapRef.current?.zoomOut();
+  const handleZoomIn = () => mapRef.current?.setZoom((mapRef.current.getZoom() || 12) + 1);
+  const handleZoomOut = () => mapRef.current?.setZoom((mapRef.current.getZoom() || 12) - 1);
   const handleMyLocation = () => {
     navigator.geolocation?.getCurrentPosition((pos) => {
-      mapRef.current?.setView([pos.coords.latitude, pos.coords.longitude], 15);
+      mapRef.current?.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      mapRef.current?.setZoom(15);
     });
   };
 
