@@ -10,6 +10,7 @@ import banner1 from "@/assets/banner-1.png";
 import banner2 from "@/assets/banner-2.jpg";
 import banner3 from "@/assets/banner-3.jpg";
 import banner4 from "@/assets/banner-4.jpg";
+import HomeMap from "@/components/HomeMap";
 
 const quickActions = [
   { icon: Briefcase, label: "구인구직", desc: "음악 관련 일자리 탐색", path: "/jobs", color: "from-blue-500/10 to-blue-600/5" },
