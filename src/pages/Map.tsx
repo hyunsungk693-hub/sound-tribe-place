@@ -258,10 +258,9 @@ const MapPage = () => {
     if (!containerRef.current || mapRef.current) return;
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
     if (!apiKey) return;
-    setOptions({ key: apiKey, v: "weekly" });
     let cancelled = false;
     (async () => {
-      const { Map } = await importLibrary("maps");
+      const { Map } = await importMapsLibrary(apiKey, "maps");
       if (cancelled || !containerRef.current) return;
       mapRef.current = new Map(containerRef.current, {
         center: { lat: 37.5505, lng: 126.968 },
