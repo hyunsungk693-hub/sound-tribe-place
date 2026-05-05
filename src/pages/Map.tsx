@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
+import { importMapsLibrary } from "@/lib/googleMapsLoader";
 import PageShell from "@/components/PageShell";
 import { Search, Plus, Minus, Navigation, X, Star, MapPin, Clock, Phone, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
