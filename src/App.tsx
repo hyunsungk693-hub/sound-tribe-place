@@ -19,6 +19,7 @@ import UserProfile from "./pages/UserProfile.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import PostDetail from "./pages/PostDetail.tsx";
 import Admin from "./pages/Admin.tsx";
+import PhoneShell from "@/components/PhoneShell";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
