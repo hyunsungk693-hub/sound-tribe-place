@@ -432,9 +432,10 @@ const MapPage = () => {
     : selected?.rating || 0;
 
   return (
-    <div className="absolute inset-0 bg-background overscroll-none">
-      {/* Map fills phone frame above bottom nav */}
-      <div ref={containerRef} className="absolute top-0 inset-x-0 bottom-16 touch-none" style={{ touchAction: "none" }} />
+    <div className="absolute inset-0 bg-background overscroll-none flex flex-col">
+      <div className="relative flex-1 min-h-0">
+      {/* Map fills available area above bottom nav */}
+      <div ref={containerRef} className="absolute inset-0 touch-none" style={{ touchAction: "none" }} />
 
       {/* Top overlay: search + filters */}
       <div className="absolute top-0 inset-x-0 z-[1000] p-3 space-y-2 pointer-events-none">
@@ -510,7 +511,7 @@ const MapPage = () => {
 
       {/* Detail panel - inside phone frame, above BottomNav */}
       {selected && (
-        <div className="absolute inset-x-0 bottom-16 z-[9998] animate-in slide-in-from-bottom duration-300">
+        <div className="absolute inset-x-0 bottom-0 z-[9998] animate-in slide-in-from-bottom duration-300">
           <div className="bg-background border-t border-border rounded-t-2xl shadow-2xl max-h-[55vh] overflow-y-auto">
             <div className="flex justify-center pt-2 pb-1">
               <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
@@ -657,6 +658,7 @@ const MapPage = () => {
           </div>
         </div>
       )}
+      </div>
       <BottomNav />
     </div>
   );
