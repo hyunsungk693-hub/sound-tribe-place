@@ -108,7 +108,7 @@ const BottomNav = () => {
 
   return (
     <nav className="sticky bottom-0 left-0 right-0 z-[2000] bg-card/95 backdrop-blur-lg border-t border-border/50 pb-safe">
-      <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
+      <div className="flex items-center justify-around h-12 max-w-lg mx-auto">
         {navItems.map(({ path, icon: Icon, label }) => {
           const isActive = location.pathname === path;
           const badgeCount = getBadgeCount(path);
