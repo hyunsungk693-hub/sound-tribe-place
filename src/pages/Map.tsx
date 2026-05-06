@@ -433,8 +433,8 @@ const MapPage = () => {
 
   return (
     <div className="absolute inset-0 bg-background overscroll-none">
-      {/* Map fills phone frame */}
-      <div ref={containerRef} className="absolute inset-0 touch-none" style={{ touchAction: "none" }} />
+      {/* Map fills phone frame above bottom nav */}
+      <div ref={containerRef} className="absolute top-0 inset-x-0 bottom-16 touch-none" style={{ touchAction: "none" }} />
 
       {/* Top overlay: search + filters */}
       <div className="absolute top-0 inset-x-0 z-[1000] p-3 space-y-2 pointer-events-none">
