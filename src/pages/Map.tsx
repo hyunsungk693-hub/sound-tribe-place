@@ -417,8 +417,9 @@ const MapPage = () => {
     : selected?.rating || 0;
 
   return (
-    <div className="fixed inset-0 bg-background">
-      {/* Fullscreen map */}
+    <div className="fixed inset-0 bg-muted flex items-center justify-center">
+      <div className="relative bg-background w-full h-full sm:w-[420px] sm:h-[90vh] sm:max-h-[900px] sm:rounded-[2rem] sm:shadow-2xl sm:border sm:border-border overflow-hidden">
+      {/* Phone-shaped map */}
       <div ref={containerRef} className="absolute inset-0" />
 
       {/* Top overlay: search + filters */}
@@ -644,6 +645,7 @@ const MapPage = () => {
         document.body
       )}
       <BottomNav />
+      </div>
     </div>
   );
 };
