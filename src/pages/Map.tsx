@@ -275,7 +275,17 @@ const MapPage = () => {
         zoom: 12,
         disableDefaultUI: true,
         gestureHandling: "greedy",
-        mapId: "instrut-map",
+        clickableIcons: false,
+        styles: [
+          { featureType: "poi", stylers: [{ visibility: "off" }] },
+          { featureType: "transit", stylers: [{ visibility: "off" }] },
+          { featureType: "poi.business", stylers: [{ visibility: "off" }] },
+          { featureType: "poi.attraction", stylers: [{ visibility: "off" }] },
+          { featureType: "poi.medical", stylers: [{ visibility: "off" }] },
+          { featureType: "poi.place_of_worship", stylers: [{ visibility: "off" }] },
+          { featureType: "poi.school", stylers: [{ visibility: "off" }] },
+          { featureType: "poi.sports_complex", stylers: [{ visibility: "off" }] },
+        ],
       });
       setMapReady(true);
     })();
