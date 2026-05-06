@@ -536,7 +536,8 @@ const MapPage = () => {
         </div>,
         document.body
       )}
-    </PageShell>
+      <BottomNav />
+    </div>
   );
 };
 
