@@ -6,7 +6,7 @@ interface PageShellProps {
 }
 
 const PageShell = ({ children, title }: PageShellProps) => (
-  <div className="min-h-screen bg-background">
+  <div className="flex flex-col min-h-screen bg-background">
     {title && (
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border/30">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center">
@@ -14,7 +14,7 @@ const PageShell = ({ children, title }: PageShellProps) => (
         </div>
       </header>
     )}
-    <main className="max-w-lg mx-auto px-4 pb-24 pt-4">{children}</main>
+    <main className="flex-1 max-w-lg w-full mx-auto px-4 pb-4 pt-4">{children}</main>
     <BottomNav />
   </div>
 );
