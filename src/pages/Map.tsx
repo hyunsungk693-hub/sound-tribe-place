@@ -417,10 +417,10 @@ const MapPage = () => {
     : selected?.rating || 0;
 
   return (
-    <div className="fixed inset-0 bg-muted flex items-center justify-center">
-      <div className="relative bg-background w-full h-full sm:w-[420px] sm:h-[90vh] sm:max-h-[900px] sm:rounded-[2rem] sm:shadow-2xl sm:border sm:border-border overflow-hidden">
+    <div className="fixed inset-0 bg-muted flex items-center justify-center overscroll-none">
+      <div className="relative bg-background w-full h-full sm:w-[420px] sm:h-[90vh] sm:max-h-[900px] sm:rounded-[2rem] sm:shadow-2xl sm:border sm:border-border overflow-hidden touch-none overscroll-contain">
       {/* Phone-shaped map */}
-      <div ref={containerRef} className="absolute inset-0" />
+      <div ref={containerRef} className="absolute inset-0 touch-none" style={{ touchAction: "none" }} />
 
       {/* Top overlay: search + filters */}
       <div className="absolute top-0 inset-x-0 z-[1000] p-3 space-y-2 pointer-events-none">
