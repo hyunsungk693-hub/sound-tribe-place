@@ -262,9 +262,10 @@ const MapPage = () => {
     if (!containerRef.current || mapRef.current) return;
     let cancelled = false;
     (async () => {
-      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
-      if (!apiKey) {
-        toast.error("VITE_GOOGLE_MAPS_API_KEY가 설정되지 않았습니다.");
+      const { data, error } = await supabase.functions.invoke("google-maps-key");
+      const apiKey = (data as any)?.key as string | undefined;
+      if (error || !apiKey) {
+        toast.error("Google Maps API 키를 가져올 수 없습니다.");
         return;
       }
       const { Map } = await importMapsLibrary(apiKey, "maps");
