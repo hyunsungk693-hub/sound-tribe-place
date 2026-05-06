@@ -352,15 +352,21 @@ const MapPage = () => {
   useEffect(() => {
     if (!mapRef.current || !mapReady || !userLocation) return;
     (async () => {
-      const { AdvancedMarkerElement } = await importMapsLibrary("", "marker");
-      if (userMarkerRef.current) userMarkerRef.current.map = null;
-      const el = document.createElement("div");
-      el.style.cssText = "width:18px;height:18px;border-radius:50%;background:#1B64DA;border:3px solid #fff;box-shadow:0 0 0 2px rgba(27,100,218,0.35),0 2px 6px rgba(0,0,0,0.3);";
-      userMarkerRef.current = new AdvancedMarkerElement({
+      const { Marker } = await importMapsLibrary("", "marker");
+      if (userMarkerRef.current) (userMarkerRef.current as any).setMap(null);
+      const g = (window as any).google.maps;
+      userMarkerRef.current = new Marker({
         position: userLocation,
         map: mapRef.current!,
-        content: el,
         title: "현재 위치",
+        icon: {
+          path: g.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: "#1B64DA",
+          fillOpacity: 1,
+          strokeColor: "#ffffff",
+          strokeWeight: 3,
+        },
       });
       mapRef.current!.setCenter(userLocation);
       mapRef.current!.setZoom(15);
