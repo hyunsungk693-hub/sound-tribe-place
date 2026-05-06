@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Trash2, Pencil, Plus, X } from "lucide-react";
+import { Trash2, Pencil, Plus, X, UserPlus, Shield } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 type PlaceType = "job" | "room" | "shop";
 type Place = {
@@ -131,10 +132,16 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-4 py-3">
-        <h1 className="text-lg font-bold">관리자 - 장소 마커 관리</h1>
+        <h1 className="text-lg font-bold">관리자</h1>
       </header>
 
-      <div className="p-4 space-y-6">
+      <Tabs defaultValue="places" className="p-4">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsTrigger value="places">장소 마커</TabsTrigger>
+          <TabsTrigger value="admins">관리자 권한</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="places" className="space-y-6 mt-0">
         <Card className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold">{editingId ? "장소 수정" : "새 장소 등록"}</h2>
