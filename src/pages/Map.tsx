@@ -146,8 +146,12 @@ const MapPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
+  const userMarkerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationLoading, setLocationLoading] = useState(true);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   // Fetch posts from DB that have lat/lng
   const fetchDbMarkers = useCallback(async () => {
@@ -304,13 +308,63 @@ const MapPage = () => {
     })();
   }, [filter, dbMarkers, mapReady]);
 
+  // Fetch user's current location on mount
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationError("이 브라우저는 위치 정보를 지원하지 않습니다.");
+      setLocationLoading(false);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocationLoading(false);
+      },
+      (err) => {
+        setLocationError(err.message || "위치 정보를 가져올 수 없습니다.");
+        setLocationLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, []);
+
+  // When user location and map are ready, drop a marker and recenter
+  useEffect(() => {
+    if (!mapRef.current || !mapReady || !userLocation) return;
+    (async () => {
+      const { AdvancedMarkerElement } = await importMapsLibrary("", "marker");
+      if (userMarkerRef.current) userMarkerRef.current.map = null;
+      const el = document.createElement("div");
+      el.style.cssText = "width:18px;height:18px;border-radius:50%;background:#1B64DA;border:3px solid #fff;box-shadow:0 0 0 2px rgba(27,100,218,0.35),0 2px 6px rgba(0,0,0,0.3);";
+      userMarkerRef.current = new AdvancedMarkerElement({
+        position: userLocation,
+        map: mapRef.current!,
+        content: el,
+        title: "현재 위치",
+      });
+      mapRef.current!.setCenter(userLocation);
+      mapRef.current!.setZoom(15);
+    })();
+  }, [userLocation, mapReady]);
+
   const handleZoomIn = () => mapRef.current?.setZoom((mapRef.current.getZoom() || 12) + 1);
   const handleZoomOut = () => mapRef.current?.setZoom((mapRef.current.getZoom() || 12) - 1);
   const handleMyLocation = () => {
-    navigator.geolocation?.getCurrentPosition((pos) => {
-      mapRef.current?.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-      mapRef.current?.setZoom(15);
-    });
+    setLocationLoading(true);
+    setLocationError(null);
+    navigator.geolocation?.getCurrentPosition(
+      (pos) => {
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserLocation(loc);
+        setLocationLoading(false);
+        mapRef.current?.setCenter(loc);
+        mapRef.current?.setZoom(15);
+      },
+      (err) => {
+        setLocationError(err.message || "위치 정보를 가져올 수 없습니다.");
+        setLocationLoading(false);
+      }
+    );
   };
 
   const filterButtons = [
@@ -359,6 +413,22 @@ const MapPage = () => {
               {label}
             </button>
           ))}
+        </div>
+        <div className="pointer-events-auto max-w-lg mx-auto flex justify-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/95 backdrop-blur border border-border shadow-sm text-[11px] font-medium">
+            <Navigation className="w-3 h-3 text-primary" />
+            {locationLoading ? (
+              <span className="text-muted-foreground">현재 위치 가져오는 중…</span>
+            ) : locationError ? (
+              <span className="text-destructive">위치 오류: {locationError}</span>
+            ) : userLocation ? (
+              <span className="text-foreground">
+                위도 {userLocation.lat.toFixed(5)}, 경도 {userLocation.lng.toFixed(5)}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">위치 정보 없음</span>
+            )}
+          </div>
         </div>
       </div>
 
