@@ -153,6 +153,42 @@ const MapPage = () => {
   const [locationLoading, setLocationLoading] = useState(true);
   const [locationError, setLocationError] = useState<string | null>(null);
 
+  // Phone-frame size that adapts to viewport orientation while keeping a 9:19.5 ratio
+  const [frameSize, setFrameSize] = useState<{ w: number; h: number; isMobile: boolean }>(() => ({ w: 420, h: 820, isMobile: false }));
+  useEffect(() => {
+    const PHONE_RATIO = 9 / 19.5;
+    const compute = () => {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const isMobile = vw < 640;
+      if (isMobile) {
+        setFrameSize({ w: vw, h: vh, isMobile: true });
+        return;
+      }
+      let h = Math.min(vh * 0.92, 900);
+      let w = h * PHONE_RATIO;
+      if (w > vw * 0.9) {
+        w = vw * 0.9;
+        h = w / PHONE_RATIO;
+      }
+      setFrameSize({ w: Math.round(w), h: Math.round(h), isMobile: false });
+    };
+    compute();
+    window.addEventListener("resize", compute);
+    window.addEventListener("orientationchange", compute);
+    return () => {
+      window.removeEventListener("resize", compute);
+      window.removeEventListener("orientationchange", compute);
+    };
+  }, []);
+
+  // Trigger Google Maps resize when frame size changes
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const g = (window as any).google;
+    if (g?.maps?.event) g.maps.event.trigger(mapRef.current, "resize");
+  }, [frameSize]);
+
   // Fetch posts (with lat/lng) + admin-curated places from DB
   const fetchDbMarkers = useCallback(async () => {
     const [postsRes, placesRes] = await Promise.all([
@@ -418,7 +454,10 @@ const MapPage = () => {
 
   return (
     <div className="fixed inset-0 bg-muted flex items-center justify-center overscroll-none">
-      <div className="relative bg-background w-full h-full sm:w-[420px] sm:h-[90vh] sm:max-h-[900px] sm:rounded-[2rem] sm:shadow-2xl sm:border sm:border-border overflow-hidden touch-none overscroll-contain">
+      <div
+        className={`relative bg-background overflow-hidden touch-none overscroll-contain ${frameSize.isMobile ? "" : "rounded-[2rem] shadow-2xl border border-border"}`}
+        style={{ width: frameSize.w, height: frameSize.h }}
+      >
       {/* Phone-shaped map */}
       <div ref={containerRef} className="absolute inset-0 touch-none" style={{ touchAction: "none" }} />
 
