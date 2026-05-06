@@ -51,7 +51,7 @@ const PhoneShell = ({ children }: { children: ReactNode }) => {
         className="relative bg-background overflow-hidden rounded-[2.5rem] shadow-2xl border border-border"
         style={{ width: w, height: h }}
       >
-        <div className="absolute inset-0 overflow-y-auto overscroll-contain">
+        <div className="absolute inset-0 overflow-y-auto overscroll-contain scrollbar-hide">
           {children}
         </div>
       </div>
