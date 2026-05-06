@@ -275,7 +275,17 @@ const MapPage = () => {
         zoom: 12,
         disableDefaultUI: true,
         gestureHandling: "greedy",
-        mapId: "instrut-map",
+        clickableIcons: false,
+        styles: [
+          { featureType: "poi", stylers: [{ visibility: "off" }] },
+          { featureType: "transit", stylers: [{ visibility: "off" }] },
+          { featureType: "poi.business", stylers: [{ visibility: "off" }] },
+          { featureType: "poi.attraction", stylers: [{ visibility: "off" }] },
+          { featureType: "poi.medical", stylers: [{ visibility: "off" }] },
+          { featureType: "poi.place_of_worship", stylers: [{ visibility: "off" }] },
+          { featureType: "poi.school", stylers: [{ visibility: "off" }] },
+          { featureType: "poi.sports_complex", stylers: [{ visibility: "off" }] },
+        ],
       });
       setMapReady(true);
     })();
@@ -285,19 +295,28 @@ const MapPage = () => {
   // Render markers
   useEffect(() => {
     if (!mapRef.current || !mapReady) return;
-    markersRef.current.forEach((m) => (m.map = null));
+    markersRef.current.forEach((m: any) => m.setMap(null));
     markersRef.current = [];
 
     (async () => {
-      const { AdvancedMarkerElement } = await importMapsLibrary("", "marker");
+      const { Marker } = await importMapsLibrary("", "marker");
 
       const allMarkers = [...defaultMarkers, ...dbMarkers];
       const filtered = allMarkers.filter((m) => filter === "all" || m.type === filter);
       filtered.forEach((m) => {
-        const marker = new AdvancedMarkerElement({
+        const c = markerConfigs[m.type];
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="34" viewBox="0 0 64 34">
+          <rect x="0" y="0" rx="8" ry="8" width="64" height="22" fill="${c.bg}"/>
+          <text x="32" y="15" text-anchor="middle" font-size="11" font-weight="700" font-family="-apple-system,system-ui,sans-serif" fill="#fff">${c.label}</text>
+          <polygon points="26,22 38,22 32,30" fill="${c.bg}"/>
+        </svg>`;
+        const marker = new Marker({
           position: { lat: m.lat, lng: m.lng },
           map: mapRef.current!,
-          content: createMarkerElement(m.type),
+          icon: {
+            url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+            anchor: new (window as any).google.maps.Point(32, 30),
+          },
         });
         marker.addListener("click", () => {
           setSelected(m);
@@ -333,15 +352,21 @@ const MapPage = () => {
   useEffect(() => {
     if (!mapRef.current || !mapReady || !userLocation) return;
     (async () => {
-      const { AdvancedMarkerElement } = await importMapsLibrary("", "marker");
-      if (userMarkerRef.current) userMarkerRef.current.map = null;
-      const el = document.createElement("div");
-      el.style.cssText = "width:18px;height:18px;border-radius:50%;background:#1B64DA;border:3px solid #fff;box-shadow:0 0 0 2px rgba(27,100,218,0.35),0 2px 6px rgba(0,0,0,0.3);";
-      userMarkerRef.current = new AdvancedMarkerElement({
+      const { Marker } = await importMapsLibrary("", "marker");
+      if (userMarkerRef.current) (userMarkerRef.current as any).setMap(null);
+      const g = (window as any).google.maps;
+      userMarkerRef.current = new Marker({
         position: userLocation,
         map: mapRef.current!,
-        content: el,
         title: "현재 위치",
+        icon: {
+          path: g.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: "#1B64DA",
+          fillOpacity: 1,
+          strokeColor: "#ffffff",
+          strokeWeight: 3,
+        },
       });
       mapRef.current!.setCenter(userLocation);
       mapRef.current!.setZoom(15);
