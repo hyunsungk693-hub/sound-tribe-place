@@ -511,7 +511,7 @@ const MapPage = () => {
 
       {/* Detail panel - inside phone frame, above BottomNav */}
       {selected && (
-        <div className="absolute inset-x-0 bottom-16 z-[9998] animate-in slide-in-from-bottom duration-300">
+        <div className="absolute inset-x-0 bottom-0 z-[9998] animate-in slide-in-from-bottom duration-300">
           <div className="bg-background border-t border-border rounded-t-2xl shadow-2xl max-h-[55vh] overflow-y-auto">
             <div className="flex justify-center pt-2 pb-1">
               <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
