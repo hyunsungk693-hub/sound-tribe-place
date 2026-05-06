@@ -446,7 +446,7 @@ const Messages = () => {
   // Chat view
   if (selectedConv) {
     return (
-      <div className="flex flex-col h-[100dvh] bg-background">
+      <div className="flex flex-col h-full min-h-full bg-background absolute inset-0">
         {/* Header */}
         <div className="flex items-center gap-3 p-4 border-b border-border/50 bg-card/80 backdrop-blur-lg">
           <button
