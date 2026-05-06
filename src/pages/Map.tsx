@@ -414,6 +414,22 @@ const MapPage = () => {
             </button>
           ))}
         </div>
+        <div className="pointer-events-auto max-w-lg mx-auto flex justify-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/95 backdrop-blur border border-border shadow-sm text-[11px] font-medium">
+            <Navigation className="w-3 h-3 text-primary" />
+            {locationLoading ? (
+              <span className="text-muted-foreground">현재 위치 가져오는 중…</span>
+            ) : locationError ? (
+              <span className="text-destructive">위치 오류: {locationError}</span>
+            ) : userLocation ? (
+              <span className="text-foreground">
+                위도 {userLocation.lat.toFixed(5)}, 경도 {userLocation.lng.toFixed(5)}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">위치 정보 없음</span>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Zoom & location controls */}
