@@ -131,9 +131,6 @@ const BottomNav = () => {
                 )}
               </div>
               <span className="text-[9px] font-medium whitespace-nowrap leading-none">{label}</span>
-              {isActive && (
-                <div className="absolute bottom-1 w-1 h-1 rounded-full bg-primary" />
-              )}
             </button>
           );
         })}
