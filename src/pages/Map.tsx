@@ -655,8 +655,7 @@ const MapPage = () => {
               )}
             </div>
           </div>
-        </div>,
-        document.body
+        </div>
       )}
       <BottomNav />
     </div>
