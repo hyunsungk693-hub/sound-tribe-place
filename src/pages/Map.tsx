@@ -454,7 +454,10 @@ const MapPage = () => {
 
   return (
     <div className="fixed inset-0 bg-muted flex items-center justify-center overscroll-none">
-      <div className="relative bg-background w-full h-full sm:w-[420px] sm:h-[90vh] sm:max-h-[900px] sm:rounded-[2rem] sm:shadow-2xl sm:border sm:border-border overflow-hidden touch-none overscroll-contain">
+      <div
+        className={`relative bg-background overflow-hidden touch-none overscroll-contain ${frameSize.isMobile ? "" : "rounded-[2rem] shadow-2xl border border-border"}`}
+        style={{ width: frameSize.w, height: frameSize.h }}
+      >
       {/* Phone-shaped map */}
       <div ref={containerRef} className="absolute inset-0 touch-none" style={{ touchAction: "none" }} />
 
