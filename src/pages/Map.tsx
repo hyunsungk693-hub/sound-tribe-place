@@ -658,6 +658,7 @@ const MapPage = () => {
           </div>
         </div>
       )}
+      </div>
       <BottomNav />
     </div>
   );
