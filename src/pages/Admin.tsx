@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Trash2, Pencil, Plus, X } from "lucide-react";
+import { Trash2, Pencil, Plus, X, UserPlus, Shield } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 type PlaceType = "job" | "room" | "shop";
 type Place = {
@@ -131,10 +132,16 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-4 py-3">
-        <h1 className="text-lg font-bold">관리자 - 장소 마커 관리</h1>
+        <h1 className="text-lg font-bold">관리자</h1>
       </header>
 
-      <div className="p-4 space-y-6">
+      <Tabs defaultValue="places" className="p-4">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsTrigger value="places">장소 마커</TabsTrigger>
+          <TabsTrigger value="admins">관리자 권한</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="places" className="space-y-6 mt-0">
         <Card className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold">{editingId ? "장소 수정" : "새 장소 등록"}</h2>
@@ -215,9 +222,89 @@ const Admin = () => {
             </Card>
           ))}
         </div>
-      </div>
+        </TabsContent>
+
+        <TabsContent value="admins" className="mt-0">
+          <AdminsManager />
+        </TabsContent>
+      </Tabs>
 
       <BottomNav />
+    </div>
+  );
+};
+
+type AdminEntry = { user_id: string; email: string | null; created_at: string };
+
+const AdminsManager = () => {
+  const [admins, setAdmins] = useState<AdminEntry[]>([]);
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.functions.invoke("manage-admins", { body: { action: "list" } });
+    setLoading(false);
+    if (error) return toast.error("관리자 목록 로드 실패");
+    setAdmins((data as any)?.admins || []);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const add = async () => {
+    if (!email.trim()) return toast.error("이메일을 입력하세요");
+    setBusy(true);
+    const { data, error } = await supabase.functions.invoke("manage-admins", { body: { action: "add", email: email.trim() } });
+    setBusy(false);
+    if (error || (data as any)?.error) return toast.error((data as any)?.error || "추가 실패");
+    toast.success("관리자로 추가되었습니다");
+    setEmail("");
+    load();
+  };
+
+  const remove = async (targetEmail: string | null) => {
+    if (!targetEmail) return toast.error("이메일 정보가 없습니다");
+    if (!confirm(`${targetEmail}의 관리자 권한을 해제하시겠습니까?`)) return;
+    const { data, error } = await supabase.functions.invoke("manage-admins", { body: { action: "remove", email: targetEmail } });
+    if (error || (data as any)?.error) return toast.error((data as any)?.error || "해제 실패");
+    toast.success("권한이 해제되었습니다");
+    load();
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card className="p-4">
+        <h2 className="font-semibold mb-3 flex items-center gap-2"><UserPlus className="w-4 h-4" />관리자 추가</h2>
+        <div className="flex gap-2">
+          <Input
+            type="email"
+            placeholder="user@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && add()}
+          />
+          <Button onClick={add} disabled={busy}>추가</Button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">해당 이메일로 가입된 사용자가 있어야 합니다.</p>
+      </Card>
+
+      <div className="space-y-2">
+        <h2 className="font-semibold flex items-center gap-2"><Shield className="w-4 h-4" />현재 관리자 ({admins.length})</h2>
+        {loading && <p className="text-sm text-muted-foreground">불러오는 중...</p>}
+        {!loading && admins.length === 0 && <p className="text-sm text-muted-foreground">등록된 관리자가 없습니다.</p>}
+        {admins.map((a) => (
+          <Card key={a.user_id} className="p-3 flex items-center justify-between">
+            <div className="min-w-0">
+              <p className="font-medium truncate">{a.email || "(이메일 없음)"}</p>
+              <p className="text-xs text-muted-foreground">{new Date(a.created_at).toLocaleDateString("ko-KR")}</p>
+            </div>
+            <Button size="icon" variant="ghost" onClick={() => remove(a.email)}>
+              <Trash2 className="w-4 h-4 text-destructive" />
+            </Button>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };
