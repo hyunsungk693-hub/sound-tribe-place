@@ -508,10 +508,10 @@ const MapPage = () => {
         </div>
       </div>
 
-      {/* Detail panel - portal to body to avoid overflow clipping */}
-      {selected && createPortal(
-        <div className="fixed inset-x-0 bottom-16 z-[9999] animate-in slide-in-from-bottom duration-300 pb-safe">
-          <div className="bg-background border-t border-border rounded-t-2xl shadow-2xl max-h-[60vh] overflow-y-auto">
+      {/* Detail panel - inside phone frame, above BottomNav */}
+      {selected && (
+        <div className="absolute inset-x-0 bottom-16 z-[9998] animate-in slide-in-from-bottom duration-300">
+          <div className="bg-background border-t border-border rounded-t-2xl shadow-2xl max-h-[55vh] overflow-y-auto">
             <div className="flex justify-center pt-2 pb-1">
               <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
             </div>
@@ -655,8 +655,7 @@ const MapPage = () => {
               )}
             </div>
           </div>
-        </div>,
-        document.body
+        </div>
       )}
       <BottomNav />
     </div>
