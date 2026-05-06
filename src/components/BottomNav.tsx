@@ -116,7 +116,7 @@ const BottomNav = () => {
             <button
               key={path}
               onClick={() => navigate(path)}
-              className={`relative flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all duration-200 active:scale-95 ${
+              className={`relative flex flex-col items-center gap-0.5 px-1 py-2 rounded-xl transition-all duration-200 active:scale-95 min-w-0 flex-1 ${
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
@@ -130,7 +130,7 @@ const BottomNav = () => {
                   </div>
                 )}
               </div>
-              <span className="text-[10px] font-medium">{label}</span>
+              <span className="text-[9px] font-medium whitespace-nowrap leading-none">{label}</span>
               {isActive && (
                 <div className="absolute bottom-1 w-1 h-1 rounded-full bg-primary" />
               )}
