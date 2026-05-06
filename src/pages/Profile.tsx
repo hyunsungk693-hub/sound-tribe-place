@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import ProfileEditModal from "@/components/ProfileEditModal";
 import NotificationsPanel, { useUnreadCount } from "@/components/NotificationsPanel";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAdmin } from "@/hooks/useAdmin";
 
 interface Profile {
   display_name: string | null;
@@ -28,6 +29,7 @@ const activityTabs = ["내 게시물", "내 댓글"];
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
+  const { isAdmin } = useAdmin();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [activeTab, setActiveTab] = useState("내 게시물");
@@ -286,10 +288,21 @@ const ProfilePage = () => {
         ))}
       </div>
 
+      {/* Admin link */}
+      {isAdmin && (
+        <button
+          onClick={() => navigate("/admin")}
+          className="w-full mt-4 py-3 text-sm font-medium text-primary hover:bg-primary/5 rounded-xl transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
+        >
+          <Shield className="w-4 h-4" />
+          관리자 페이지
+        </button>
+      )}
+
       {/* Logout */}
       <button
         onClick={handleLogout}
-        className="w-full mt-4 py-3 text-sm font-medium text-destructive hover:bg-destructive/5 rounded-xl transition-colors active:scale-[0.98]"
+        className="w-full mt-2 py-3 text-sm font-medium text-destructive hover:bg-destructive/5 rounded-xl transition-colors active:scale-[0.98]"
       >
         <span className="flex items-center justify-center gap-2">
           <LogOut className="w-4 h-4" />
