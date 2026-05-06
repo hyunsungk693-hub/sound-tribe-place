@@ -295,19 +295,28 @@ const MapPage = () => {
   // Render markers
   useEffect(() => {
     if (!mapRef.current || !mapReady) return;
-    markersRef.current.forEach((m) => (m.map = null));
+    markersRef.current.forEach((m: any) => m.setMap(null));
     markersRef.current = [];
 
     (async () => {
-      const { AdvancedMarkerElement } = await importMapsLibrary("", "marker");
+      const { Marker } = await importMapsLibrary("", "marker");
 
       const allMarkers = [...defaultMarkers, ...dbMarkers];
       const filtered = allMarkers.filter((m) => filter === "all" || m.type === filter);
       filtered.forEach((m) => {
-        const marker = new AdvancedMarkerElement({
+        const c = markerConfigs[m.type];
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="34" viewBox="0 0 64 34">
+          <rect x="0" y="0" rx="8" ry="8" width="64" height="22" fill="${c.bg}"/>
+          <text x="32" y="15" text-anchor="middle" font-size="11" font-weight="700" font-family="-apple-system,system-ui,sans-serif" fill="#fff">${c.label}</text>
+          <polygon points="26,22 38,22 32,30" fill="${c.bg}"/>
+        </svg>`;
+        const marker = new Marker({
           position: { lat: m.lat, lng: m.lng },
           map: mapRef.current!,
-          content: createMarkerElement(m.type),
+          icon: {
+            url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+            anchor: new (window as any).google.maps.Point(32, 30),
+          },
         });
         marker.addListener("click", () => {
           setSelected(m);
