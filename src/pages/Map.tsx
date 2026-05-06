@@ -326,10 +326,11 @@ const MapPage = () => {
     : selected?.rating || 0;
 
   return (
-    <PageShell title="지도">
-      {/* Search bar */}
-      <div className="relative mb-3">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+    <div className="fixed inset-0 bg-background flex flex-col">
+      {/* Top overlay: search + filters */}
+      <div className="absolute top-0 inset-x-0 z-[1000] p-3 space-y-2 pointer-events-none">
+        <div className="relative pointer-events-auto">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input
           type="text"
           placeholder="장소, 주소 검색"
