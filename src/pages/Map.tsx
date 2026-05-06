@@ -432,12 +432,8 @@ const MapPage = () => {
     : selected?.rating || 0;
 
   return (
-    <div className="fixed inset-0 bg-muted flex items-center justify-center overscroll-none">
-      <div
-        className={`relative bg-background overflow-hidden touch-none overscroll-contain ${frameSize.isMobile ? "" : "rounded-[2rem] shadow-2xl border border-border"}`}
-        style={{ width: frameSize.w, height: frameSize.h }}
-      >
-      {/* Phone-shaped map */}
+    <div className="absolute inset-0 bg-background overscroll-none">
+      {/* Map fills phone frame */}
       <div ref={containerRef} className="absolute inset-0 touch-none" style={{ touchAction: "none" }} />
 
       {/* Top overlay: search + filters */}
