@@ -500,15 +500,6 @@ const MapPage = () => {
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="absolute left-3 bottom-24 z-[1000] bg-background/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md border border-border">
-        <div className="flex items-center gap-3 text-[11px] font-medium text-foreground">
-          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: "#1B64DA" }} />구인구직</span>
-          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: "#03C75A" }} />연습실</span>
-          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: "#FF6F0F" }} />악기사</span>
-        </div>
-      </div>
-
       {/* Detail panel - inside phone frame, above BottomNav */}
       {selected && (
         <div className="absolute inset-x-0 bottom-0 z-[9998] animate-in slide-in-from-bottom duration-300">
