@@ -7,10 +7,10 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { path: "/", icon: Home, label: "홈" },
-  { path: "/jobs", icon: Briefcase, label: "구인구직" },
+  { path: "/jobs", icon: Briefcase, label: "구인" },
   { path: "/rooms", icon: MapPin, label: "연습실" },
   { path: "/map", icon: Map, label: "지도" },
-  { path: "/community", icon: MessageCircle, label: "커뮤니티" },
+  { path: "/community", icon: MessageCircle, label: "커뮤" },
   { path: "/messages", icon: Mail, label: "메시지" },
   { path: "/profile", icon: User, label: "프로필" },
 ];
