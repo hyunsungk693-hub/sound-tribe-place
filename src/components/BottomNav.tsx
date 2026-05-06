@@ -116,14 +116,14 @@ const BottomNav = () => {
             <button
               key={path}
               onClick={() => navigate(path)}
-              className={`relative flex flex-col items-center gap-0.5 px-1 py-2 rounded-xl transition-all duration-200 active:scale-95 min-w-0 flex-1 ${
+              className={`relative flex flex-col items-center gap-0 px-1 py-1 rounded-lg transition-all duration-200 active:scale-95 min-w-0 flex-1 ${
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <div className="relative">
-                <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
+                <Icon className="w-4 h-4" strokeWidth={isActive ? 2.5 : 2} />
                 {badgeCount > 0 && (
                   <div className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-[9px] font-bold">
                     {badgeCount > 99 ? "99+" : badgeCount}
