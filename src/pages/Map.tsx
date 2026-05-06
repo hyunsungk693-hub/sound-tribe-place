@@ -153,29 +153,40 @@ const MapPage = () => {
   const [locationLoading, setLocationLoading] = useState(true);
   const [locationError, setLocationError] = useState<string | null>(null);
 
-  // Fetch posts from DB that have lat/lng
+  // Fetch posts (with lat/lng) + admin-curated places from DB
   const fetchDbMarkers = useCallback(async () => {
-    const { data } = await supabase
-      .from("posts")
-      .select("*")
-      .not("lat", "is", null)
-      .not("lng", "is", null);
-    if (data) {
-      const mapped: MarkerData[] = data.map((p: any, idx: number) => ({
-        id: 10000 + idx,
-        type: p.post_type === "room" ? "room" as const : p.post_type === "job" ? "job" as const : "shop" as const,
-        name: p.title,
-        desc: [p.venue || p.area, p.pay || p.price].filter(Boolean).join(" · ") || p.content?.slice(0, 40),
-        lat: p.lat,
-        lng: p.lng,
-        address: p.venue || p.area || "",
-        hours: p.hours || undefined,
-        rating: 0,
-        reviewCount: 0,
-        reviews: [],
-      }));
-      setDbMarkers(mapped);
-    }
+    const [postsRes, placesRes] = await Promise.all([
+      supabase.from("posts").select("*").not("lat", "is", null).not("lng", "is", null),
+      supabase.from("places").select("*"),
+    ]);
+    const fromPosts: MarkerData[] = (postsRes.data || []).map((p: any, idx: number) => ({
+      id: 10000 + idx,
+      type: p.post_type === "room" ? "room" as const : p.post_type === "job" ? "job" as const : "shop" as const,
+      name: p.title,
+      desc: [p.venue || p.area, p.pay || p.price].filter(Boolean).join(" · ") || p.content?.slice(0, 40),
+      lat: p.lat,
+      lng: p.lng,
+      address: p.venue || p.area || "",
+      hours: p.hours || undefined,
+      rating: 0,
+      reviewCount: 0,
+      reviews: [],
+    }));
+    const fromPlaces: MarkerData[] = (placesRes.data || []).map((p: any, idx: number) => ({
+      id: 20000 + idx,
+      type: p.type as "job" | "room" | "shop",
+      name: p.name,
+      desc: p.description || "",
+      lat: p.lat,
+      lng: p.lng,
+      address: p.address || "",
+      phone: p.phone || undefined,
+      hours: p.hours || undefined,
+      rating: 0,
+      reviewCount: 0,
+      reviews: [],
+    }));
+    setDbMarkers([...fromPosts, ...fromPlaces]);
   }, []);
 
   useEffect(() => { fetchDbMarkers(); }, [fetchDbMarkers]);
