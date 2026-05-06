@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { importMapsLibrary } from "@/lib/googleMapsLoader";
-import PageShell from "@/components/PageShell";
+import BottomNav from "@/components/BottomNav";
 import { Search, Plus, Minus, Navigation, X, Star, MapPin, Clock, Phone, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -258,11 +258,9 @@ const MapPage = () => {
     if (!containerRef.current || mapRef.current) return;
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase.functions.invoke("google-maps-key");
-      if (cancelled) return;
-      const apiKey = (data as any)?.key as string | undefined;
-      if (error || !apiKey) {
-        toast.error("지도 키를 불러올 수 없습니다.");
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+      if (!apiKey) {
+        toast.error("VITE_GOOGLE_MAPS_API_KEY가 설정되지 않았습니다.");
         return;
       }
       const { Map } = await importMapsLibrary(apiKey, "maps");
@@ -328,67 +326,64 @@ const MapPage = () => {
     : selected?.rating || 0;
 
   return (
-    <PageShell title="지도">
-      {/* Search bar */}
-      <div className="relative mb-3">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder="장소, 주소 검색"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-        />
+    <div className="fixed inset-0 bg-background">
+      {/* Fullscreen map */}
+      <div ref={containerRef} className="absolute inset-0" />
+
+      {/* Top overlay: search + filters */}
+      <div className="absolute top-0 inset-x-0 z-[1000] p-3 space-y-2 pointer-events-none">
+        <div className="relative pointer-events-auto max-w-lg mx-auto">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="장소, 주소 검색"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-border bg-background/95 backdrop-blur shadow-md text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          />
+        </div>
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide pointer-events-auto max-w-lg mx-auto">
+          {filterButtons.map(({ key, label, dotColor }) => (
+            <button
+              key={key}
+              onClick={() => setFilter(key)}
+              className={`flex items-center gap-1.5 shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 active:scale-95 border shadow-sm ${
+                filter === key
+                  ? "bg-foreground text-background border-foreground"
+                  : "bg-background/95 backdrop-blur text-foreground border-border hover:bg-secondary"
+              }`}
+            >
+              {dotColor && (
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
+              )}
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Filter chips */}
-      <div className="flex gap-2 mb-3 overflow-x-auto scrollbar-hide">
-        {filterButtons.map(({ key, label, dotColor }) => (
-          <button
-            key={key}
-            onClick={() => setFilter(key)}
-            className={`flex items-center gap-1.5 shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 active:scale-95 border ${
-              filter === key
-                ? "bg-foreground text-background border-foreground shadow-sm"
-                : "bg-background text-foreground border-border hover:bg-secondary"
-            }`}
-          >
-            {dotColor && (
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
-            )}
-            {label}
+      {/* Zoom & location controls */}
+      <div className="absolute right-3 bottom-24 z-[1000] flex flex-col gap-1.5">
+        <button onClick={handleMyLocation} className="w-10 h-10 bg-background rounded-lg shadow-md border border-border flex items-center justify-center hover:bg-secondary active:scale-95 transition-all">
+          <Navigation className="w-4 h-4 text-foreground" />
+        </button>
+        <div className="flex flex-col bg-background rounded-lg shadow-md border border-border overflow-hidden">
+          <button onClick={handleZoomIn} className="w-10 h-10 flex items-center justify-center hover:bg-secondary active:scale-95 transition-all border-b border-border">
+            <Plus className="w-4 h-4 text-foreground" />
           </button>
-        ))}
+          <button onClick={handleZoomOut} className="w-10 h-10 flex items-center justify-center hover:bg-secondary active:scale-95 transition-all">
+            <Minus className="w-4 h-4 text-foreground" />
+          </button>
+        </div>
       </div>
 
-      {/* Map container */}
-      <div className="relative rounded-xl overflow-hidden border border-border shadow-md">
-        <div ref={containerRef} style={{ height: "calc(100vh - 300px)" }} />
-
-        {/* Zoom & location controls */}
-        <div className="absolute right-3 bottom-6 z-[1000] flex flex-col gap-1.5">
-          <button onClick={handleMyLocation} className="w-9 h-9 bg-background rounded-lg shadow-md border border-border flex items-center justify-center hover:bg-secondary active:scale-95 transition-all">
-            <Navigation className="w-4 h-4 text-foreground" />
-          </button>
-          <div className="flex flex-col bg-background rounded-lg shadow-md border border-border overflow-hidden">
-            <button onClick={handleZoomIn} className="w-9 h-9 flex items-center justify-center hover:bg-secondary active:scale-95 transition-all border-b border-border">
-              <Plus className="w-4 h-4 text-foreground" />
-            </button>
-            <button onClick={handleZoomOut} className="w-9 h-9 flex items-center justify-center hover:bg-secondary active:scale-95 transition-all">
-              <Minus className="w-4 h-4 text-foreground" />
-            </button>
-          </div>
+      {/* Legend */}
+      <div className="absolute left-3 bottom-24 z-[1000] bg-background/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md border border-border">
+        <div className="flex items-center gap-3 text-[11px] font-medium text-foreground">
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: "#1B64DA" }} />구인구직</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: "#03C75A" }} />연습실</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: "#FF6F0F" }} />악기사</span>
         </div>
-
-        {/* Legend */}
-        <div className="absolute left-3 bottom-6 z-[1000] bg-background/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md border border-border">
-          <div className="flex items-center gap-3 text-[11px] font-medium text-foreground">
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: "#1B64DA" }} />구인구직</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: "#03C75A" }} />연습실</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: "#FF6F0F" }} />악기사</span>
-          </div>
-        </div>
-
       </div>
 
       {/* Detail panel - portal to body to avoid overflow clipping */}
@@ -541,7 +536,8 @@ const MapPage = () => {
         </div>,
         document.body
       )}
-    </PageShell>
+      <BottomNav />
+    </div>
   );
 };
 
