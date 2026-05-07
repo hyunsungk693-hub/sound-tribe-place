@@ -329,7 +329,16 @@ const MapPage = () => {
       const { Marker } = await importMapsLibrary("", "marker");
 
       const allMarkers = [...defaultMarkers, ...dbMarkers];
-      const filtered = allMarkers.filter((m) => filter === "all" || m.type === filter);
+      const q = searchQuery.trim().toLowerCase();
+      const filtered = allMarkers.filter((m) => {
+        if (filter !== "all" && m.type !== filter) return false;
+        if (!q) return true;
+        return (
+          m.name.toLowerCase().includes(q) ||
+          (m.desc || "").toLowerCase().includes(q) ||
+          (m.address || "").toLowerCase().includes(q)
+        );
+      });
       filtered.forEach((m) => {
         const c = markerConfigs[m.type];
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="34" viewBox="0 0 64 34">
