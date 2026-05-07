@@ -41,6 +41,7 @@ type RoomItem = {
 
 const Rooms = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [dbRooms, setDbRooms] = useState<any[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(true);
   const [selectedRoom, setSelectedRoom] = useState<RoomItem | null>(null);
