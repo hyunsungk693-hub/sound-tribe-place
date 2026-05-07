@@ -362,7 +362,7 @@ const MapPage = () => {
         markersRef.current.push(marker);
       });
     })();
-  }, [filter, dbMarkers, mapReady]);
+  }, [filter, dbMarkers, mapReady, searchQuery]);
 
   // Fetch user's current location on mount
   useEffect(() => {
