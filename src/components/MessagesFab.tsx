@@ -45,7 +45,7 @@ const MessagesFab = () => {
     <button
       onClick={() => navigate("/messages")}
       aria-label="메시지"
-      className="fixed top-3 right-3 z-[2100] w-11 h-11 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+      className="absolute top-3 right-3 z-[2100] w-11 h-11 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-95 transition-transform"
     >
       <Mail className="w-5 h-5" />
       {unread > 0 && (
