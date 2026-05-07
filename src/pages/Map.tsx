@@ -23,6 +23,7 @@ type MarkerData = {
   rating?: number;
   reviewCount?: number;
   reviews?: Review[];
+  userId?: string;
 };
 
 const defaultMarkers: MarkerData[] = [
