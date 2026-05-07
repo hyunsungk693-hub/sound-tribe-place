@@ -625,23 +625,26 @@ const MapPage = () => {
 
               {/* Contact actions */}
               <div className="grid grid-cols-2 gap-2 mb-2">
-                <a
-                  href={selected.phone ? `tel:${selected.phone.replace(/[^0-9+]/g, "")}` : undefined}
-                  onClick={(e) => {
+                <button
+                  type="button"
+                  onClick={() => {
                     if (!selected.phone) {
-                      e.preventDefault();
                       toast.error("등록된 전화번호가 없습니다.");
+                      return;
                     }
+                    window.location.href = `tel:${selected.phone.replace(/[^0-9+]/g, "")}`;
                   }}
-                  className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold active:scale-[0.98] transition-all ${selected.phone ? "bg-primary text-primary-foreground hover:bg-primary/90" : "border border-border bg-background text-muted-foreground"}`}
+                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold active:scale-[0.98] transition-all bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   <Phone className="w-4 h-4" />
                   전화하기
-                </a>
+                </button>
                 <button
+                  type="button"
                   onClick={() => {
                     if (!user) {
                       toast.error("메시지를 보내려면 로그인이 필요합니다.");
+                      navigate("/auth");
                       return;
                     }
                     if (!selected.userId) {
@@ -654,7 +657,7 @@ const MapPage = () => {
                     }
                     navigate(`/messages?to=${selected.userId}`);
                   }}
-                  className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold active:scale-[0.98] transition-all ${selected.userId ? "bg-primary text-primary-foreground hover:bg-primary/90" : "border border-border bg-background text-muted-foreground"}`}
+                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold active:scale-[0.98] transition-all bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   <MessageCircle className="w-4 h-4" />
                   메시지 보내기
