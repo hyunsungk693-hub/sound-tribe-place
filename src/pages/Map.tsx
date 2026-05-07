@@ -341,17 +341,17 @@ const MapPage = () => {
       });
       filtered.forEach((m) => {
         const c = markerConfigs[m.type];
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="34" viewBox="0 0 64 34">
-          <rect x="0" y="0" rx="8" ry="8" width="64" height="22" fill="${c.bg}"/>
-          <text x="32" y="15" text-anchor="middle" font-size="11" font-weight="700" font-family="-apple-system,system-ui,sans-serif" fill="#fff">${c.label}</text>
-          <polygon points="26,22 38,22 32,30" fill="${c.bg}"/>
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40">
+          <circle cx="16" cy="16" r="14" fill="${c.bg}" stroke="#fff" stroke-width="2.5"/>
+          <text x="16" y="21" text-anchor="middle" font-size="14" font-family="-apple-system,system-ui,sans-serif">${c.icon}</text>
+          <circle cx="16" cy="35" r="2.5" fill="${c.bg}" stroke="#fff" stroke-width="1.5"/>
         </svg>`;
         const marker = new Marker({
           position: { lat: m.lat, lng: m.lng },
           map: mapRef.current!,
           icon: {
             url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
-            anchor: new (window as any).google.maps.Point(32, 30),
+            anchor: new (window as any).google.maps.Point(16, 38),
           },
         });
         marker.addListener("click", () => {
