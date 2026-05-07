@@ -1,4 +1,5 @@
 import BottomNav from "./BottomNav";
+import MessagesFab from "./MessagesFab";
 
 interface PageShellProps {
   children: React.ReactNode;
@@ -16,6 +17,7 @@ const PageShell = ({ children, title }: PageShellProps) => (
     )}
     <main className="flex-1 max-w-lg w-full mx-auto px-4 pb-4 pt-4">{children}</main>
     <BottomNav />
+    <MessagesFab />
   </div>
 );
 
