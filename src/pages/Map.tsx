@@ -450,14 +450,66 @@ const MapPage = () => {
       {/* Top overlay: search + filters */}
       <div className="absolute top-0 inset-x-0 z-[1000] p-3 space-y-2 pointer-events-none">
         <div className="relative pointer-events-auto max-w-lg mx-auto">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="장소, 주소 검색"
+            placeholder="장소, 주소, 공고 검색"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-border bg-background/95 backdrop-blur shadow-md text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            className="w-full pl-9 pr-9 py-2.5 rounded-lg border border-border bg-background/95 backdrop-blur shadow-md text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2 top-2 w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground"
+              aria-label="검색 지우기"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+          {searchQuery.trim() && (() => {
+            const q = searchQuery.trim().toLowerCase();
+            const all = [...defaultMarkers, ...dbMarkers];
+            const results = all.filter((m) => {
+              if (filter !== "all" && m.type !== filter) return false;
+              return (
+                m.name.toLowerCase().includes(q) ||
+                (m.desc || "").toLowerCase().includes(q) ||
+                (m.address || "").toLowerCase().includes(q)
+              );
+            }).slice(0, 8);
+            return (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg max-h-72 overflow-y-auto z-[1100]">
+                {results.length === 0 ? (
+                  <div className="px-3 py-3 text-sm text-muted-foreground">검색 결과가 없습니다.</div>
+                ) : (
+                  results.map((m) => (
+                    <button
+                      key={`${m.type}-${m.id}`}
+                      type="button"
+                      onClick={() => {
+                        setSelected(m);
+                        setShowReviewForm(false);
+                        setSearchQuery("");
+                        mapRef.current?.panTo({ lat: m.lat, lng: m.lng });
+                        mapRef.current?.setZoom(15);
+                      }}
+                      className="w-full text-left px-3 py-2 hover:bg-secondary flex items-start gap-2 border-b border-border last:border-b-0"
+                    >
+                      <span className="mt-1 w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: typeColor[m.type] }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold truncate">{m.name}</div>
+                        <div className="text-[11px] text-muted-foreground truncate">
+                          {typeLabel[m.type]} · {m.address || m.desc}
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            );
+          })()}
         </div>
         <div className="flex flex-wrap gap-1.5 pointer-events-auto max-w-lg mx-auto">
           {filterButtons.map(({ key, label, dotColor }) => (
