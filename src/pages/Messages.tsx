@@ -81,8 +81,9 @@ const EmojiPicker = ({ onSelect }: { onSelect: (emoji: string) => void }) => {
 
 const Messages = () => {
   const { user } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const targetUserId = searchParams.get("to");
+  const handledTargetRef = useRef<string | null>(null);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
