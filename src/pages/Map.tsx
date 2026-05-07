@@ -615,6 +615,28 @@ const MapPage = () => {
                 )}
               </div>
 
+              {/* Directions */}
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}${userLocation ? `&origin=${userLocation.lat},${userLocation.lng}` : ""}&travelmode=driving`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all"
+                >
+                  <Route className="w-4 h-4" />
+                  Google 길찾기
+                </a>
+                <a
+                  href={`https://map.kakao.com/link/to/${encodeURIComponent(selected.name)},${selected.lat},${selected.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-border bg-background text-sm font-semibold text-foreground hover:bg-secondary active:scale-[0.98] transition-all"
+                >
+                  <Navigation className="w-4 h-4" />
+                  카카오맵
+                </a>
+              </div>
+
               {/* Write review button */}
               {!showReviewForm && (
                 <button
