@@ -188,6 +188,8 @@ const MapPage = () => {
       rating: 0,
       reviewCount: 0,
       reviews: [],
+      userId: p.user_id,
+      phone: undefined,
     }));
     const fromPlaces: MarkerData[] = (placesRes.data || []).map((p: any, idx: number) => ({
       id: 20000 + idx,
