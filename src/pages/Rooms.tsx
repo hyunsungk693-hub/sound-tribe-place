@@ -1,5 +1,6 @@
-import { Search, MapPin, Clock, Star, Music, ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { Search, MapPin, Clock, Star, Music, ArrowLeft, Pencil, Trash2, MessageCircle } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import CreatePostDialog from "@/components/CreatePostDialog";
 import { supabase } from "@/integrations/supabase/client";
