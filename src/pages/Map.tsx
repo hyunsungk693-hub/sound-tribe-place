@@ -137,6 +137,7 @@ const InteractiveStarRating = ({ rating, onRate }: { rating: number; onRate: (r:
 
 const MapPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selected, setSelected] = useState<MarkerData | null>(null);
