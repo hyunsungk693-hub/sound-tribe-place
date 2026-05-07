@@ -10,13 +10,19 @@ import { JobCardSkeleton } from "@/components/skeletons/PostSkeleton";
 
 const categories = ["전체", "공연", "녹음", "레슨", "행사", "기타"];
 
+const SAMPLE_AUTHORS = [
+  "4cef9ad6-633d-42b6-adf6-a352853b05a5",
+  "c2c088e8-341c-46f4-b0cf-b7683f35f0e8",
+  "4552f73b-5d17-436f-9c39-4f29d7a3320b",
+];
+
 const sampleJobs = [
-  { id: null, user_id: null, title: "밴드 기타리스트 모집", venue: "홍대 라이브클럽", tag: "공연", pay: "회당 15만원", date: "3일 전", content: "" },
-  { id: null, user_id: null, title: "레코딩 세션 드러머", venue: "강남 A스튜디오", tag: "녹음", pay: "곡당 10만원", date: "5일 전", content: "" },
-  { id: null, user_id: null, title: "웨딩 싱어 구함", venue: "서울 전 지역", tag: "행사", pay: "회당 20만원", date: "1주일 전", content: "" },
-  { id: null, user_id: null, title: "피아노 레슨 선생님", venue: "분당 음악학원", tag: "레슨", pay: "월 200만원", date: "2일 전", content: "" },
-  { id: null, user_id: null, title: "뮤지컬 오케스트라 바이올린", venue: "대학로 소극장", tag: "공연", pay: "협의", date: "오늘", content: "" },
-  { id: null, user_id: null, title: "교회 찬양팀 베이스", venue: "여의도", tag: "기타", pay: "주 1회 봉사", date: "4일 전", content: "" },
+  { id: null, user_id: SAMPLE_AUTHORS[0], title: "밴드 기타리스트 모집", venue: "홍대 라이브클럽", tag: "공연", pay: "회당 15만원", date: "3일 전", content: "" },
+  { id: null, user_id: SAMPLE_AUTHORS[1], title: "레코딩 세션 드러머", venue: "강남 A스튜디오", tag: "녹음", pay: "곡당 10만원", date: "5일 전", content: "" },
+  { id: null, user_id: SAMPLE_AUTHORS[2], title: "웨딩 싱어 구함", venue: "서울 전 지역", tag: "행사", pay: "회당 20만원", date: "1주일 전", content: "" },
+  { id: null, user_id: SAMPLE_AUTHORS[0], title: "피아노 레슨 선생님", venue: "분당 음악학원", tag: "레슨", pay: "월 200만원", date: "2일 전", content: "" },
+  { id: null, user_id: SAMPLE_AUTHORS[1], title: "뮤지컬 오케스트라 바이올린", venue: "대학로 소극장", tag: "공연", pay: "협의", date: "오늘", content: "" },
+  { id: null, user_id: SAMPLE_AUTHORS[2], title: "교회 찬양팀 베이스", venue: "여의도", tag: "기타", pay: "주 1회 봉사", date: "4일 전", content: "" },
 ];
 
 const jobFields = [
