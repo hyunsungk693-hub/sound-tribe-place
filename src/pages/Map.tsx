@@ -329,7 +329,16 @@ const MapPage = () => {
       const { Marker } = await importMapsLibrary("", "marker");
 
       const allMarkers = [...defaultMarkers, ...dbMarkers];
-      const filtered = allMarkers.filter((m) => filter === "all" || m.type === filter);
+      const q = searchQuery.trim().toLowerCase();
+      const filtered = allMarkers.filter((m) => {
+        if (filter !== "all" && m.type !== filter) return false;
+        if (!q) return true;
+        return (
+          m.name.toLowerCase().includes(q) ||
+          (m.desc || "").toLowerCase().includes(q) ||
+          (m.address || "").toLowerCase().includes(q)
+        );
+      });
       filtered.forEach((m) => {
         const c = markerConfigs[m.type];
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="34" viewBox="0 0 64 34">
@@ -353,7 +362,7 @@ const MapPage = () => {
         markersRef.current.push(marker);
       });
     })();
-  }, [filter, dbMarkers, mapReady]);
+  }, [filter, dbMarkers, mapReady, searchQuery]);
 
   // Fetch user's current location on mount
   useEffect(() => {
@@ -450,19 +459,19 @@ const MapPage = () => {
             className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-border bg-background/95 backdrop-blur shadow-md text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
           />
         </div>
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide pointer-events-auto max-w-lg mx-auto">
+        <div className="flex flex-wrap gap-1.5 pointer-events-auto max-w-lg mx-auto">
           {filterButtons.map(({ key, label, dotColor }) => (
             <button
               key={key}
               onClick={() => setFilter(key)}
-              className={`flex items-center gap-1.5 shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 active:scale-95 border shadow-sm ${
+              className={`flex items-center gap-1 shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all duration-200 active:scale-95 border shadow-sm ${
                 filter === key
                   ? "bg-foreground text-background border-foreground"
                   : "bg-background/95 backdrop-blur text-foreground border-border hover:bg-secondary"
               }`}
             >
               {dotColor && (
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
               )}
               {label}
             </button>
