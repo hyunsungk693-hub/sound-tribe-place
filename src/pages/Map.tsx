@@ -641,7 +641,6 @@ const MapPage = () => {
                 </button>
                 <button
                   type="button"
-                  disabled={!selected.userId || selected.userId === user?.id}
                   onClick={() => {
                     if (!user) {
                       toast.error("메시지를 보내려면 로그인이 필요합니다.");
@@ -649,19 +648,16 @@ const MapPage = () => {
                       return;
                     }
                     if (!selected.userId) {
-                      toast.error("이 장소는 등록자가 없어 메시지를 보낼 수 없습니다.");
+                      toast.error("이 게시물에는 연결된 사용자가 없습니다.");
                       return;
                     }
                     if (selected.userId === user.id) {
                       toast.error("본인에게는 메시지를 보낼 수 없습니다.");
                       return;
                     }
-                    const targetId = selected.userId;
-                    setSelected(null);
-                    setShowReviewForm(false);
-                    navigate(`/messages?to=${targetId}`);
+                    navigate(`/messages?to=${selected.userId}`);
                   }}
-                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold active:scale-[0.98] transition-all bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold active:scale-[0.98] transition-all bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   <MessageCircle className="w-4 h-4" />
                   메시지 보내기
