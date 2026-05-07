@@ -443,236 +443,196 @@ const Messages = () => {
     );
   };
 
-  // Chat panel JSX (reused for mobile overlay & desktop right pane)
-  const chatPanel = selectedConv ? (
-    <div className="flex flex-col h-full bg-background">
-      {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-border/50 bg-card/80 backdrop-blur-lg">
-        <button
-          onClick={() => {
-            setSelectedConv(null);
-            fetchConversations();
-          }}
-          className="p-1 rounded-full hover:bg-secondary md:hidden"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-xs font-bold overflow-hidden">
-          {selectedConv.otherUserAvatar ? (
-            <img src={selectedConv.otherUserAvatar} className="w-full h-full object-cover" />
-          ) : (
-            selectedConv.otherUserName[0]
-          )}
-        </div>
-        <span className="text-sm font-semibold">{selectedConv.otherUserName}</span>
-      </div>
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.length === 0 && (
-          <div className="text-center text-muted-foreground text-xs py-10">
-            대화를 시작해보세요 👋
+  // Chat view (full-screen overlay inside the phone shell)
+  if (selectedConv) {
+    return (
+      <div className="absolute inset-0 z-[1500] flex flex-col bg-background">
+        {/* Header */}
+        <div className="flex items-center gap-3 p-4 border-b border-border/50 bg-card/80 backdrop-blur-lg shrink-0">
+          <button
+            onClick={() => {
+              setSelectedConv(null);
+              fetchConversations();
+            }}
+            className="p-1 rounded-full hover:bg-secondary"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-xs font-bold overflow-hidden shrink-0">
+            {selectedConv.otherUserAvatar ? (
+              <img src={selectedConv.otherUserAvatar} className="w-full h-full object-cover" />
+            ) : (
+              selectedConv.otherUserName[0]
+            )}
           </div>
-        )}
-        {messages.map((msg) => {
-          const isMine = msg.sender_id === user?.id;
-          return (
-            <div
-              key={msg.id}
-              className={`flex ${isMine ? "justify-end" : "justify-start"}`}
-            >
+          <span className="text-sm font-semibold truncate">{selectedConv.otherUserName}</span>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
+          {messages.length === 0 && (
+            <div className="text-center text-muted-foreground text-xs py-10">
+              대화를 시작해보세요 👋
+            </div>
+          )}
+          {messages.map((msg) => {
+            const isMine = msg.sender_id === user?.id;
+            return (
               <div
-                className={`max-w-[75%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                  isMine
-                    ? "bg-primary text-primary-foreground rounded-br-md"
-                    : "bg-secondary text-secondary-foreground rounded-bl-md"
-                }`}
+                key={msg.id}
+                className={`flex ${isMine ? "justify-end" : "justify-start"}`}
               >
-                {renderMessageContent(msg, isMine)}
                 <div
-                  className={`text-[10px] mt-1 ${
-                    isMine ? "text-primary-foreground/60" : "text-muted-foreground"
+                  className={`max-w-[75%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed break-words ${
+                    isMine
+                      ? "bg-primary text-primary-foreground rounded-br-md"
+                      : "bg-secondary text-secondary-foreground rounded-bl-md"
                   }`}
                 >
-                  {formatTime(msg.created_at)}
+                  {renderMessageContent(msg, isMine)}
+                  <div
+                    className={`text-[10px] mt-1 ${
+                      isMine ? "text-primary-foreground/60" : "text-muted-foreground"
+                    }`}
+                  >
+                    {formatTime(msg.created_at)}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
-        <div ref={bottomRef} />
-      </div>
+            );
+          })}
+          <div ref={bottomRef} />
+        </div>
 
-      {/* File Preview */}
-      {selectedFile && (
-        <div className="px-3 pt-2 border-t border-border/30 bg-card/60">
-          <div className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-2">
-            {filePreview && filePreview !== "video" && filePreview !== "file" ? (
-              <img src={filePreview} alt="미리보기" className="w-12 h-12 rounded object-cover" />
-            ) : filePreview === "video" ? (
-              <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
-                <Film className="w-5 h-5 text-muted-foreground" />
+        {/* File Preview */}
+        {selectedFile && (
+          <div className="px-3 pt-2 border-t border-border/30 bg-card/60 shrink-0">
+            <div className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-2">
+              {filePreview && filePreview !== "video" && filePreview !== "file" ? (
+                <img src={filePreview} alt="미리보기" className="w-12 h-12 rounded object-cover" />
+              ) : filePreview === "video" ? (
+                <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
+                  <Film className="w-5 h-5 text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-muted-foreground" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium truncate">{selectedFile.name}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {(selectedFile.size / 1024 / 1024).toFixed(1)} MB
+                </p>
               </div>
-            ) : (
-              <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
-                <FileText className="w-5 h-5 text-muted-foreground" />
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium truncate">{selectedFile.name}</p>
-              <p className="text-[10px] text-muted-foreground">
-                {(selectedFile.size / 1024 / 1024).toFixed(1)} MB
-              </p>
+              <button onClick={clearFile} className="p-1 rounded-full hover:bg-background/50">
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <button onClick={clearFile} className="p-1 rounded-full hover:bg-background/50">
-              <X className="w-4 h-4" />
+          </div>
+        )}
+
+        {/* Emoji Picker */}
+        {showEmoji && (
+          <div ref={emojiRef} className="border-t border-border/30 bg-card/95 backdrop-blur-lg shrink-0">
+            <EmojiPicker onSelect={(emoji) => { setNewMsg((prev) => prev + emoji); }} />
+          </div>
+        )}
+
+        {/* Input */}
+        <div className="p-3 border-t border-border/50 bg-card/80 backdrop-blur-lg pb-safe shrink-0">
+          <div className="flex items-center gap-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-secondary transition-colors shrink-0"
+            >
+              <Paperclip className="w-5 h-5 text-muted-foreground" />
+            </button>
+            <button
+              onClick={() => setShowEmoji((v) => !v)}
+              className={`w-10 h-10 rounded-full flex items-center justify-center hover:bg-secondary transition-colors shrink-0 ${showEmoji ? "bg-secondary" : ""}`}
+            >
+              <Smile className="w-5 h-5 text-muted-foreground" />
+            </button>
+            <input
+              value={newMsg}
+              onChange={(e) => setNewMsg(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+              onFocus={() => setShowEmoji(false)}
+              placeholder="메시지를 입력하세요..."
+              className="flex-1 min-w-0 bg-secondary rounded-full px-4 py-2.5 text-sm outline-none placeholder:text-muted-foreground"
+            />
+            <button
+              onClick={handleSend}
+              disabled={(!newMsg.trim() && !selectedFile) || sending}
+              className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-50 active:scale-95 transition-transform shrink-0"
+            >
+              {uploading ? (
+                <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
             </button>
           </div>
         </div>
-      )}
-
-      {/* Emoji Picker */}
-      {showEmoji && (
-        <div ref={emojiRef} className="border-t border-border/30 bg-card/95 backdrop-blur-lg">
-          <EmojiPicker onSelect={(emoji) => { setNewMsg((prev) => prev + emoji); }} />
-        </div>
-      )}
-
-      {/* Input */}
-      <div className="p-3 border-t border-border/50 bg-card/80 backdrop-blur-lg pb-safe">
-        <div className="flex items-center gap-2">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileSelect}
-            accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
-            className="hidden"
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-secondary transition-colors shrink-0"
-          >
-            <Paperclip className="w-5 h-5 text-muted-foreground" />
-          </button>
-          <button
-            onClick={() => setShowEmoji((v) => !v)}
-            className={`w-10 h-10 rounded-full flex items-center justify-center hover:bg-secondary transition-colors shrink-0 ${showEmoji ? "bg-secondary" : ""}`}
-          >
-            <Smile className="w-5 h-5 text-muted-foreground" />
-          </button>
-          <input
-            value={newMsg}
-            onChange={(e) => setNewMsg(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-            onFocus={() => setShowEmoji(false)}
-            placeholder="메시지를 입력하세요..."
-            className="flex-1 bg-secondary rounded-full px-4 py-2.5 text-sm outline-none placeholder:text-muted-foreground"
-          />
-          <button
-            onClick={handleSend}
-            disabled={(!newMsg.trim() && !selectedFile) || sending}
-            className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-50 active:scale-95 transition-transform shrink-0"
-          >
-            {uploading ? (
-              <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-          </button>
-        </div>
       </div>
-    </div>
-  ) : (
-    <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
-      대화를 선택하세요
-    </div>
-  );
-
-  // Conversation list JSX
-  const conversationList = (
-    loading ? (
-      <div className="space-y-1">
-        {[...Array(5)].map((_, i) => <ConversationSkeleton key={i} />)}
-      </div>
-    ) : conversations.length === 0 ? (
-      <div className="text-center py-20 text-muted-foreground text-sm">
-        <p className="mb-1">아직 대화가 없습니다</p>
-        <p className="text-xs">커뮤니티 게시물에서 작성자에게 메시지를 보내보세요!</p>
-      </div>
-    ) : (
-      <div className="space-y-1">
-        {conversations.map((conv) => (
-          <div
-            key={conv.id}
-            onClick={() => setSelectedConv(conv)}
-            className={`flex items-center gap-3 p-3.5 rounded-xl hover:bg-surface-hover cursor-pointer active:scale-[0.98] transition-all ${
-              selectedConv?.id === conv.id ? "bg-secondary" : ""
-            }`}
-          >
-            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-sm font-bold shrink-0 overflow-hidden">
-              {conv.otherUserAvatar ? (
-                <img src={conv.otherUserAvatar} className="w-full h-full object-cover" />
-              ) : (
-                conv.otherUserName[0]
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold">{conv.otherUserName}</span>
-                <span className="text-[10px] text-muted-foreground">
-                  {formatTime(conv.lastMessageAt)}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground truncate mt-0.5">
-                {conv.lastMessage || "대화를 시작해보세요"}
-              </p>
-            </div>
-            {conv.unreadCount > 0 && (
-              <div className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0">
-                {conv.unreadCount}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    )
-  );
-
-  // Mobile: full-screen overlay when chat is selected
-  if (selectedConv) {
-    return (
-      <>
-        <div className="md:hidden absolute inset-0 z-[1500] flex flex-col bg-background">
-          {chatPanel}
-        </div>
-        <div className="hidden md:block">
-          <PageShell title="메시지">
-            <div className="flex gap-4 h-[calc(100vh-8rem)]">
-              <div className="w-80 shrink-0 overflow-y-auto border-r border-border/40 pr-2">
-                {conversationList}
-              </div>
-              <div className="flex-1 min-w-0 border border-border/40 rounded-xl overflow-hidden">
-                {chatPanel}
-              </div>
-            </div>
-          </PageShell>
-        </div>
-      </>
     );
   }
 
-  // No selection
+  // Conversation list
   return (
     <PageShell title="메시지">
-      <div className="md:hidden">{conversationList}</div>
-      <div className="hidden md:flex gap-4 h-[calc(100vh-8rem)]">
-        <div className="w-80 shrink-0 overflow-y-auto border-r border-border/40 pr-2">
-          {conversationList}
+      {loading ? (
+        <div className="space-y-1">
+          {[...Array(5)].map((_, i) => <ConversationSkeleton key={i} />)}
         </div>
-        <div className="flex-1 min-w-0 border border-border/40 rounded-xl flex items-center justify-center text-muted-foreground text-sm">
-          대화를 선택하세요
+      ) : conversations.length === 0 ? (
+        <div className="text-center py-20 text-muted-foreground text-sm">
+          <p className="mb-1">아직 대화가 없습니다</p>
+          <p className="text-xs">커뮤니티 게시물에서 작성자에게 메시지를 보내보세요!</p>
         </div>
-      </div>
+      ) : (
+        <div className="space-y-1">
+          {conversations.map((conv) => (
+            <div
+              key={conv.id}
+              onClick={() => setSelectedConv(conv)}
+              className="flex items-center gap-3 p-3.5 rounded-xl hover:bg-surface-hover cursor-pointer active:scale-[0.98] transition-all"
+            >
+              <div className="w-11 h-11 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-sm font-bold shrink-0 overflow-hidden">
+                {conv.otherUserAvatar ? (
+                  <img src={conv.otherUserAvatar} className="w-full h-full object-cover" />
+                ) : (
+                  conv.otherUserName[0]
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold truncate">{conv.otherUserName}</span>
+                  <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
+                    {formatTime(conv.lastMessageAt)}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground truncate mt-0.5">
+                  {conv.lastMessage || "대화를 시작해보세요"}
+                </p>
+              </div>
+              {conv.unreadCount > 0 && (
+                <div className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0">
+                  {conv.unreadCount}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </PageShell>
   );
 };
