@@ -3,7 +3,8 @@ import { createPortal } from "react-dom";
 import { importMapsLibrary } from "@/lib/googleMapsLoader";
 import BottomNav from "@/components/BottomNav";
 import MessagesFab from "@/components/MessagesFab";
-import { Search, Plus, Minus, Navigation, X, Star, MapPin, Clock, Phone, Send, Route } from "lucide-react";
+import { Search, Plus, Minus, Navigation, X, Star, MapPin, Clock, Phone, Send, Route, MessageCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -23,6 +24,7 @@ type MarkerData = {
   rating?: number;
   reviewCount?: number;
   reviews?: Review[];
+  userId?: string;
 };
 
 const defaultMarkers: MarkerData[] = [
@@ -135,6 +137,7 @@ const InteractiveStarRating = ({ rating, onRate }: { rating: number; onRate: (r:
 
 const MapPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selected, setSelected] = useState<MarkerData | null>(null);
@@ -187,6 +190,8 @@ const MapPage = () => {
       rating: 0,
       reviewCount: 0,
       reviews: [],
+      userId: p.user_id,
+      phone: undefined,
     }));
     const fromPlaces: MarkerData[] = (placesRes.data || []).map((p: any, idx: number) => ({
       id: 20000 + idx,
@@ -608,12 +613,49 @@ const MapPage = () => {
                   </div>
                 )}
                 {selected.phone && (
-                  <div className="flex items-center gap-2 text-sm text-foreground">
+                  <a
+                    href={`tel:${selected.phone.replace(/[^0-9+]/g, "")}`}
+                    className="flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors"
+                  >
                     <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
-                    {selected.phone}
-                  </div>
+                    <span className="underline-offset-2 hover:underline">{selected.phone}</span>
+                  </a>
                 )}
               </div>
+
+              {/* Contact actions */}
+              {(selected.phone || selected.userId) && (
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  {selected.phone && (
+                    <a
+                      href={`tel:${selected.phone.replace(/[^0-9+]/g, "")}`}
+                      className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all"
+                    >
+                      <Phone className="w-4 h-4" />
+                      전화하기
+                    </a>
+                  )}
+                  {selected.userId && (
+                    <button
+                      onClick={() => {
+                        if (!user) {
+                          toast.error("메시지를 보내려면 로그인이 필요합니다.");
+                          return;
+                        }
+                        if (selected.userId === user.id) {
+                          toast.error("본인에게는 메시지를 보낼 수 없습니다.");
+                          return;
+                        }
+                        navigate(`/messages?to=${selected.userId}`);
+                      }}
+                      className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold active:scale-[0.98] transition-all ${selected.phone ? "border border-border bg-background text-foreground hover:bg-secondary" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      메시지 보내기
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* Directions */}
               <div className="grid grid-cols-2 gap-2 mb-4">
@@ -621,7 +663,7 @@ const MapPage = () => {
                   href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}${userLocation ? `&origin=${userLocation.lat},${userLocation.lng}` : ""}&travelmode=driving`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all"
+                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-semibold hover:bg-secondary/80 active:scale-[0.98] transition-all"
                 >
                   <Route className="w-4 h-4" />
                   Google 길찾기
