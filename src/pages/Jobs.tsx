@@ -1,4 +1,4 @@
-import { Search, SlidersHorizontal, ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowLeft, Pencil, Trash2, MessageCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
