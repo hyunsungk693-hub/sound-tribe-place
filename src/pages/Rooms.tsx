@@ -253,10 +253,11 @@ const Rooms = () => {
                   ) : (
                     <p className="text-sm text-muted-foreground italic">상세 설명이 없습니다.</p>
                   )}
-                  {selectedRoom.user_id && selectedRoom.user_id !== user?.id && (
+                  {selectedRoom.user_id !== user?.id && (
                     <button
                       onClick={() => {
                         if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
+                        if (!selectedRoom.user_id) { toast.error("샘플 연습실은 메시지를 보낼 수 없습니다"); return; }
                         navigate(`/messages?to=${selectedRoom.user_id}`);
                       }}
                       className="mt-5 w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
