@@ -11,7 +11,6 @@ const navItems = [
   { path: "/rooms", icon: MapPin, label: "연습실" },
   { path: "/map", icon: Map, label: "지도" },
   { path: "/community", icon: MessageCircle, label: "커뮤" },
-  { path: "/messages", icon: Mail, label: "메시지" },
   { path: "/profile", icon: User, label: "프로필" },
 ];
 

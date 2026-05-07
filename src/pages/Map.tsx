@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { importMapsLibrary } from "@/lib/googleMapsLoader";
 import BottomNav from "@/components/BottomNav";
+import MessagesFab from "@/components/MessagesFab";
 import { Search, Plus, Minus, Navigation, X, Star, MapPin, Clock, Phone, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -647,6 +648,7 @@ const MapPage = () => {
       )}
       </div>
       <BottomNav />
+      <MessagesFab />
     </div>
   );
 };
