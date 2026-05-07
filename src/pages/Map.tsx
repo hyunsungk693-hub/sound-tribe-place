@@ -616,49 +616,25 @@ const MapPage = () => {
               </div>
 
               {/* Directions */}
-              <div className="mb-4 rounded-xl border border-border bg-secondary/30 overflow-hidden">
-                <div className="px-3 py-2.5 space-y-2">
-                  <div className="flex items-start gap-2">
-                    <div className="mt-1 w-2 h-2 rounded-full bg-primary shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">출발</div>
-                      <div className="text-sm font-medium text-foreground truncate">
-                        {userLocation ? "내 현재 위치" : locationLoading ? "위치 확인 중…" : "위치 미확인 (도착지로 안내)"}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="ml-[3px] border-l-2 border-dashed border-border h-3" />
-                  <div className="flex items-start gap-2">
-                    <MapPin className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">도착</div>
-                      <div className="text-sm font-medium text-foreground truncate">{selected.name}</div>
-                      {selected.address && (
-                        <div className="text-[11px] text-muted-foreground truncate">{selected.address}</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2 p-2 border-t border-border bg-background/50">
-                  <a
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}${userLocation ? `&origin=${userLocation.lat},${userLocation.lng}` : ""}&travelmode=driving`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all"
-                  >
-                    <Route className="w-4 h-4" />
-                    Google 길찾기
-                  </a>
-                  <a
-                    href={`https://map.kakao.com/link/to/${encodeURIComponent(selected.name)},${selected.lat},${selected.lng}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-1.5 py-2 rounded-lg border border-border bg-background text-sm font-semibold text-foreground hover:bg-secondary active:scale-[0.98] transition-all"
-                  >
-                    <Navigation className="w-4 h-4" />
-                    카카오맵
-                  </a>
-                </div>
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}${userLocation ? `&origin=${userLocation.lat},${userLocation.lng}` : ""}&travelmode=driving`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all"
+                >
+                  <Route className="w-4 h-4" />
+                  Google 길찾기
+                </a>
+                <a
+                  href={`https://map.kakao.com/link/to/${encodeURIComponent(selected.name)},${selected.lat},${selected.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-border bg-background text-sm font-semibold text-foreground hover:bg-secondary active:scale-[0.98] transition-all"
+                >
+                  <Navigation className="w-4 h-4" />
+                  카카오맵
+                </a>
               </div>
 
               {/* Write review button */}
