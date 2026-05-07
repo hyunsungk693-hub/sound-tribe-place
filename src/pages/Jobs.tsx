@@ -158,9 +158,23 @@ const Jobs = () => {
               <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary shrink-0 ml-2">{job.tag}</span>
             </div>
             <p className="text-xs text-muted-foreground">{job.venue}</p>
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/30">
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/30 gap-2">
               <span className="text-xs font-medium text-primary">{job.pay}</span>
-              <span className="text-[10px] text-muted-foreground">{job.date}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-muted-foreground">{job.date}</span>
+                {job.user_id && job.user_id !== user?.id && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
+                      navigate(`/messages?to=${job.user_id}`);
+                    }}
+                    className="flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all"
+                  >
+                    <MessageCircle className="w-3 h-3" /> 메시지
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ))}
