@@ -1,4 +1,4 @@
-import { Search, SlidersHorizontal, ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowLeft, Pencil, Trash2, MessageCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
@@ -243,6 +243,17 @@ const Jobs = () => {
                     <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{selectedJob.content}</p>
                   ) : (
                     <p className="text-sm text-muted-foreground italic">상세 내용이 없습니다.</p>
+                  )}
+                  {selectedJob.user_id && selectedJob.user_id !== user?.id && (
+                    <button
+                      onClick={() => {
+                        if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
+                        navigate(`/messages?to=${selectedJob.user_id}`);
+                      }}
+                      className="mt-5 w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                    >
+                      <MessageCircle className="w-4 h-4" /> 메시지 보내기
+                    </button>
                   )}
                 </>
               )}
