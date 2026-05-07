@@ -81,8 +81,9 @@ const EmojiPicker = ({ onSelect }: { onSelect: (emoji: string) => void }) => {
 
 const Messages = () => {
   const { user } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const targetUserId = searchParams.get("to");
+  const handledTargetRef = useRef<string | null>(null);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
@@ -171,65 +172,68 @@ const Messages = () => {
   // Auto-open conversation if ?to= param exists
   useEffect(() => {
     if (!targetUserId || !user || loading) return;
-
-    const existingConv = conversations.find(
-      (c) => c.otherUserId === targetUserId
-    );
-    if (existingConv) {
-      setSelectedConv(existingConv);
-    } else {
-      const createConv = async () => {
-        const sorted = [user.id, targetUserId].sort();
-        const { data, error } = await supabase
-          .from("conversations")
-          .insert({ user1_id: sorted[0], user2_id: sorted[1] } as any)
-          .select()
-          .single();
-
-        if (error && error.code === "23505") {
-          const { data: existing } = await supabase
-            .from("conversations")
-            .select("*")
-            .or(
-              `and(user1_id.eq.${sorted[0]},user2_id.eq.${sorted[1]}),and(user1_id.eq.${sorted[1]},user2_id.eq.${sorted[0]})`
-            )
-            .single();
-          if (existing) {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("display_name, avatar_url")
-              .eq("user_id", targetUserId)
-              .single();
-            setSelectedConv({
-              id: existing.id,
-              otherUserId: targetUserId,
-              otherUserName: profile?.display_name || "사용자",
-              otherUserAvatar: profile?.avatar_url || null,
-              lastMessage: "",
-              lastMessageAt: existing.created_at,
-              unreadCount: 0,
-            });
-          }
-        } else if (data) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("display_name, avatar_url")
-            .eq("user_id", targetUserId)
-            .single();
-          setSelectedConv({
-            id: data.id,
-            otherUserId: targetUserId,
-            otherUserName: profile?.display_name || "사용자",
-            otherUserAvatar: profile?.avatar_url || null,
-            lastMessage: "",
-            lastMessageAt: data.created_at,
-            unreadCount: 0,
-          });
-        }
-      };
-      createConv();
+    if (targetUserId === user.id) {
+      toast.error("자기 자신에게는 메시지를 보낼 수 없습니다");
+      setSearchParams({}, { replace: true });
+      return;
     }
-  }, [targetUserId, user, loading, conversations]);
+    if (handledTargetRef.current === targetUserId) return;
+    handledTargetRef.current = targetUserId;
+
+    const openOrCreate = async () => {
+      const existingConv = conversations.find((c) => c.otherUserId === targetUserId);
+      if (existingConv) {
+        setSelectedConv(existingConv);
+        setSearchParams({}, { replace: true });
+        return;
+      }
+
+      const sorted = [user.id, targetUserId].sort();
+      const { data, error } = await supabase
+        .from("conversations")
+        .insert({ user1_id: sorted[0], user2_id: sorted[1] } as any)
+        .select()
+        .single();
+
+      let convRow = data;
+      if (error && error.code === "23505") {
+        const { data: existing } = await supabase
+          .from("conversations")
+          .select("*")
+          .or(
+            `and(user1_id.eq.${sorted[0]},user2_id.eq.${sorted[1]}),and(user1_id.eq.${sorted[1]},user2_id.eq.${sorted[0]})`
+          )
+          .maybeSingle();
+        convRow = existing;
+      } else if (error) {
+        toast.error("대화를 시작할 수 없습니다");
+        handledTargetRef.current = null;
+        return;
+      }
+
+      if (!convRow) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name, avatar_url")
+        .eq("user_id", targetUserId)
+        .maybeSingle();
+
+      setSelectedConv({
+        id: convRow.id,
+        otherUserId: targetUserId,
+        otherUserName: profile?.display_name || "사용자",
+        otherUserAvatar: profile?.avatar_url || null,
+        lastMessage: "",
+        lastMessageAt: convRow.created_at,
+        unreadCount: 0,
+      });
+      setSearchParams({}, { replace: true });
+      fetchConversations();
+    };
+
+    openOrCreate();
+  }, [targetUserId, user, loading, conversations, setSearchParams, fetchConversations]);
 
   useEffect(() => {
     fetchConversations();
