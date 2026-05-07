@@ -39,17 +39,18 @@ const MessagesFab = () => {
   }, [user, fetchUnread]);
 
   if (!user) return null;
-  if (location.pathname === "/messages") return null;
+  const hideOn = ["/messages", "/map", "/profile"];
+  if (hideOn.some((p) => location.pathname === p || location.pathname.startsWith(p + "/"))) return null;
 
   return (
     <button
       onClick={() => navigate("/messages")}
       aria-label="메시지"
-      className="absolute top-3 right-3 z-[2100] w-11 h-11 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+      className="absolute top-3 right-3 z-[2100] w-9 h-9 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-95 transition-transform"
     >
-      <Mail className="w-5 h-5" />
+      <Mail className="w-4 h-4" />
       {unread > 0 && (
-        <div className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-[10px] font-bold border-2 border-background">
+        <div className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-[9px] font-bold border-2 border-background">
           {unread > 99 ? "99+" : unread}
         </div>
       )}
