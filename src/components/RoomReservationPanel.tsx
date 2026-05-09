@@ -39,13 +39,14 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
     if (!roomId) return;
     setLoading(true);
     const dayStart = new Date(`${date}T00:00:00`).toISOString();
-    const dayEnd = new Date(`${date}T23:59:59`).toISOString();
+    const dayEnd = new Date(`${date}T23:59:59.999`).toISOString();
+    // Overlap: start_at < dayEnd AND end_at > dayStart
     const { data } = await supabase
       .from("room_reservations" as any)
       .select("*")
       .eq("room_id", roomId)
-      .gte("start_at", dayStart)
-      .lte("start_at", dayEnd)
+      .lt("start_at", dayEnd)
+      .gt("end_at", dayStart)
       .order("start_at");
     setReservations((data as any) || []);
     setLoading(false);
