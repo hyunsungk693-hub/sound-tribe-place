@@ -268,16 +268,29 @@ const Jobs = () => {
                     <p className="text-sm text-muted-foreground italic">상세 내용이 없습니다.</p>
                   )}
                   {selectedJob.user_id !== user?.id && (
-                    <button
-                      onClick={() => {
-                        if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
-                        if (!selectedJob.user_id) { toast.error("샘플 공고는 메시지를 보낼 수 없습니다"); return; }
-                        navigate(`/messages?to=${selectedJob.user_id}`);
-                      }}
-                      className="mt-5 w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                    >
-                      <MessageCircle className="w-4 h-4" /> 메시지 보내기
-                    </button>
+                    <div className="mt-5 flex gap-2">
+                      <button
+                        onClick={() => {
+                          if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
+                          if (!selectedJob.user_id) { toast.error("샘플 공고는 메시지를 보낼 수 없습니다"); return; }
+                          navigate(`/messages?to=${selectedJob.user_id}`);
+                        }}
+                        className="flex-1 h-11 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:bg-secondary/80 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                      >
+                        <MessageCircle className="w-4 h-4" /> 메시지
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
+                          if (!selectedJob.user_id) { toast.error("샘플 공고는 지원할 수 없습니다"); return; }
+                          const msg = `[지원] "${selectedJob.title}" 공고에 지원합니다. 자세한 내용을 알려주세요!`;
+                          navigate(`/messages?to=${selectedJob.user_id}&prefill=${encodeURIComponent(msg)}`);
+                        }}
+                        className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 active:scale-[0.98] transition-all"
+                      >
+                        지원하기
+                      </button>
+                    </div>
                   )}
                 </>
               )}
