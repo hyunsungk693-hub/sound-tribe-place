@@ -9,6 +9,8 @@ import ProfileEditModal from "@/components/ProfileEditModal";
 import NotificationsPanel, { useUnreadCount } from "@/components/NotificationsPanel";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAdmin } from "@/hooks/useAdmin";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Profile {
   display_name: string | null;
@@ -40,6 +42,45 @@ const ProfilePage = () => {
   const [notiOpen, setNotiOpen] = useState(false);
   const { count: unreadCount } = useUnreadCount();
   const { theme, setTheme } = useTheme();
+  const [cancelTarget, setCancelTarget] = useState<any | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+
+  const fetchReservations = async () => {
+    if (!user) return;
+    const { data: rsv } = await supabase
+      .from("room_reservations" as any)
+      .select("*")
+      .eq("user_id", user.id)
+      .order("start_at", { ascending: false });
+    const rsvList = (rsv as any[]) || [];
+    const roomIds = Array.from(new Set(rsvList.map((r) => r.room_id))).filter(Boolean);
+    let titlesById: Record<string, string> = {};
+    if (roomIds.length > 0) {
+      const { data: rooms } = await supabase
+        .from("posts")
+        .select("id,title,venue")
+        .in("id", roomIds);
+      (rooms || []).forEach((p: any) => { titlesById[p.id] = p.title || p.venue || "연습실"; });
+    }
+    setMyReservations(rsvList.map((r) => ({ ...r, room_title: titlesById[r.room_id] || "삭제된 연습실" })));
+  };
+
+  const confirmCancel = async () => {
+    if (!cancelTarget) return;
+    if (!cancelReason.trim()) {
+      toast.error("취소 사유를 입력해주세요");
+      return;
+    }
+    setCancelling(true);
+    const { error } = await supabase.from("room_reservations" as any).delete().eq("id", cancelTarget.id);
+    setCancelling(false);
+    if (error) { toast.error("취소 실패"); return; }
+    toast.success(`예약이 취소되었습니다 (사유: ${cancelReason.trim()})`);
+    setCancelTarget(null);
+    setCancelReason("");
+    await fetchReservations();
+  };
 
   const themeOptions: { value: "light" | "dark" | "system"; icon: typeof Sun; label: string }[] = [
     { value: "light", icon: Sun, label: "라이트" },
@@ -75,24 +116,7 @@ const ProfilePage = () => {
       .then(({ data }) => setMyComments(data || []));
 
     // Fetch my room reservations (with room title)
-    (async () => {
-      const { data: rsv } = await supabase
-        .from("room_reservations" as any)
-        .select("*")
-        .eq("user_id", user.id)
-        .order("start_at", { ascending: false });
-      const rsvList = (rsv as any[]) || [];
-      const roomIds = Array.from(new Set(rsvList.map((r) => r.room_id))).filter(Boolean);
-      let titlesById: Record<string, string> = {};
-      if (roomIds.length > 0) {
-        const { data: rooms } = await supabase
-          .from("posts")
-          .select("id,title,venue")
-          .in("id", roomIds);
-        (rooms || []).forEach((p: any) => { titlesById[p.id] = p.title || p.venue || "연습실"; });
-      }
-      setMyReservations(rsvList.map((r) => ({ ...r, room_title: titlesById[r.room_id] || "삭제된 연습실" })));
-    })();
+    fetchReservations();
   }, [user]);
 
   const handleLogout = async () => {
@@ -271,13 +295,7 @@ const ProfilePage = () => {
                       </span>
                       {upcoming && (
                         <button
-                          onClick={async () => {
-                            if (!confirm("예약을 취소하시겠습니까?")) return;
-                            const { error } = await supabase.from("room_reservations" as any).delete().eq("id", r.id);
-                            if (error) { toast.error("취소 실패"); return; }
-                            toast.success("예약이 취소되었습니다");
-                            setMyReservations((prev) => prev.filter((x) => x.id !== r.id));
-                          }}
+                          onClick={() => { setCancelTarget(r); setCancelReason(""); }}
                           className="p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -378,6 +396,49 @@ const ProfilePage = () => {
       )}
 
       <NotificationsPanel open={notiOpen} onClose={() => setNotiOpen(false)} />
+
+      <Dialog open={!!cancelTarget} onOpenChange={(o) => { if (!o) { setCancelTarget(null); setCancelReason(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>예약 취소</DialogTitle>
+            <DialogDescription>
+              {cancelTarget && (
+                <>
+                  <span className="block font-medium text-foreground">{cancelTarget.room_title}</span>
+                  <span className="block text-xs mt-1">
+                    {new Date(cancelTarget.start_at).toLocaleString("ko-KR")} ~ {new Date(cancelTarget.end_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-xs font-medium">취소 사유 <span className="text-destructive">*</span></label>
+            <Textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="취소 사유를 입력해주세요"
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => { setCancelTarget(null); setCancelReason(""); }}
+              disabled={cancelling}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
+            >
+              닫기
+            </button>
+            <button
+              onClick={confirmCancel}
+              disabled={cancelling || !cancelReason.trim()}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {cancelling ? "취소 중..." : "예약 취소"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 };
