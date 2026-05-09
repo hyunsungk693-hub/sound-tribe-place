@@ -102,6 +102,37 @@ const ProfilePage = () => {
     await fetchReservations();
   };
 
+  const fetchApplications = async () => {
+    if (!user) return;
+    const { data: apps } = await supabase
+      .from("job_applications" as any)
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    const list = (apps as any[]) || [];
+    const jobIds = Array.from(new Set(list.map((a) => a.job_id))).filter(Boolean);
+    let jobsById: Record<string, any> = {};
+    if (jobIds.length > 0) {
+      const { data: jobs } = await supabase
+        .from("posts")
+        .select("id,title,venue,pay,category")
+        .in("id", jobIds);
+      (jobs || []).forEach((j: any) => { jobsById[j.id] = j; });
+    }
+    setMyApplications(list.map((a) => ({ ...a, job: jobsById[a.job_id] || null })));
+  };
+
+  const confirmCancelApplication = async () => {
+    if (!cancelAppTarget) return;
+    setCancellingApp(true);
+    const { error } = await supabase.from("job_applications" as any).delete().eq("id", cancelAppTarget.id);
+    setCancellingApp(false);
+    if (error) { toast.error("지원 취소에 실패했습니다"); return; }
+    toast.success("지원이 취소되었습니다");
+    setCancelAppTarget(null);
+    await fetchApplications();
+  };
+
   const themeOptions: { value: "light" | "dark" | "system"; icon: typeof Sun; label: string }[] = [
     { value: "light", icon: Sun, label: "라이트" },
     { value: "dark", icon: Moon, label: "다크" },
