@@ -295,13 +295,7 @@ const ProfilePage = () => {
                       </span>
                       {upcoming && (
                         <button
-                          onClick={async () => {
-                            if (!confirm("예약을 취소하시겠습니까?")) return;
-                            const { error } = await supabase.from("room_reservations" as any).delete().eq("id", r.id);
-                            if (error) { toast.error("취소 실패"); return; }
-                            toast.success("예약이 취소되었습니다");
-                            setMyReservations((prev) => prev.filter((x) => x.id !== r.id));
-                          }}
+                          onClick={() => { setCancelTarget(r); setCancelReason(""); }}
                           className="p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
