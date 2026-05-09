@@ -64,11 +64,26 @@ const Jobs = () => {
   const [editPay, setEditPay] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
+  // Application state
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
+  const [applyTarget, setApplyTarget] = useState<JobItem | null>(null);
+  const [applyMessage, setApplyMessage] = useState("");
+  const [applying, setApplying] = useState(false);
+
   const fetchJobs = async () => {
     setLoadingJobs(true);
     const { data } = await supabase.from("posts").select("*").eq("post_type", "job").order("created_at", { ascending: false });
     setDbJobs(data || []);
     setLoadingJobs(false);
+  };
+
+  const fetchApplications = async () => {
+    if (!user) { setAppliedJobIds(new Set()); return; }
+    const { data } = await supabase
+      .from("job_applications" as any)
+      .select("job_id")
+      .eq("user_id", user.id);
+    setAppliedJobIds(new Set(((data as any[]) || []).map((a) => a.job_id)));
   };
 
   useEffect(() => {
@@ -77,6 +92,41 @@ const Jobs = () => {
     window.addEventListener("post-created", handler);
     return () => window.removeEventListener("post-created", handler);
   }, []);
+
+  useEffect(() => { fetchApplications(); }, [user]);
+
+  const openApply = (job: JobItem) => {
+    if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
+    if (!job.id || !job.user_id) { toast.error("샘플 공고는 지원할 수 없습니다"); return; }
+    if (appliedJobIds.has(job.id)) { toast.info("이미 지원한 공고입니다"); return; }
+    setApplyTarget(job);
+    setApplyMessage(`"${job.title}" 공고에 지원합니다. 잘 부탁드립니다!`);
+  };
+
+  const submitApply = async () => {
+    if (!applyTarget?.id || !user) return;
+    setApplying(true);
+    const { error } = await supabase.from("job_applications" as any).insert({
+      job_id: applyTarget.id,
+      user_id: user.id,
+      message: applyMessage.trim() || null,
+    });
+    setApplying(false);
+    if (error) {
+      if ((error as any).code === "23505") {
+        toast.info("이미 지원한 공고입니다");
+        setAppliedJobIds((prev) => new Set(prev).add(applyTarget.id!));
+      } else {
+        toast.error("지원에 실패했습니다");
+      }
+      return;
+    }
+    toast.success("지원이 완료되었습니다");
+    setAppliedJobIds((prev) => new Set(prev).add(applyTarget.id!));
+    setApplyTarget(null);
+    setApplyMessage("");
+    setSelectedJob(null);
+  };
 
   const allJobs: JobItem[] = [
     ...dbJobs.map((j) => ({
