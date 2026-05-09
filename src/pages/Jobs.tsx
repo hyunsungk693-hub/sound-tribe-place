@@ -173,6 +173,7 @@ const Jobs = () => {
     }
     toast.success("지원이 완료되었습니다");
     setAppliedJobIds((prev) => new Set(prev).add(applyTarget.id!));
+    setAppliedStatusByJob((prev) => ({ ...prev, [applyTarget.id!]: "applied" }));
     setApplyTarget(null);
     setApplyMessage("");
     setSelectedJob(null);
