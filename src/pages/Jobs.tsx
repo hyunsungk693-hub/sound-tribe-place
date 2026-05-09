@@ -1,5 +1,5 @@
 import { Search, SlidersHorizontal, ArrowLeft, Pencil, Trash2, MessageCircle, Check } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
