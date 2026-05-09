@@ -11,6 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 
 const categories = ["전체", "공연", "녹음", "레슨", "행사", "기타"];
 
+const APPLY_STATUSES: { value: string; label: string; cls: string }[] = [
+  { value: "applied", label: "검토중", cls: "bg-primary/10 text-primary" },
+  { value: "accepted", label: "합격", cls: "bg-green-500/10 text-green-600" },
+  { value: "rejected", label: "불합격", cls: "bg-destructive/10 text-destructive" },
+];
+const statusMeta = (s: string) => APPLY_STATUSES.find((x) => x.value === s) || APPLY_STATUSES[0];
+
 const SAMPLE_AUTHORS = [
   "4cef9ad6-633d-42b6-adf6-a352853b05a5",
   "c2c088e8-341c-46f4-b0cf-b7683f35f0e8",
