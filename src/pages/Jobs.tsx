@@ -285,6 +285,7 @@ const Jobs = () => {
             {job.user_id && job.user_id !== user?.id && (
               (() => {
                 const applied = !!job.id && appliedJobIds.has(job.id);
+                const meta = applied ? statusMeta(appliedStatusByJob[job.id!] || "applied") : null;
                 return (
                   <button
                     onClick={(e) => { e.stopPropagation(); if (applied) return; openApply(job); }}
@@ -295,7 +296,12 @@ const Jobs = () => {
                         : "bg-primary text-primary-foreground hover:bg-primary/90"
                     }`}
                   >
-                    {applied ? (<span className="inline-flex items-center gap-1"><Check className="w-3.5 h-3.5" /> 지원 완료</span>) : "지원하기"}
+                    {applied && meta ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5" /> 지원 완료
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${meta.cls}`}>{meta.label}</span>
+                      </span>
+                    ) : "지원하기"}
                   </button>
                 );
               })()
