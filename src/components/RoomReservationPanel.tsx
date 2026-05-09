@@ -95,6 +95,32 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
     const endM = endSlot % 2 === 0 ? "00" : "30";
     const start_at = new Date(`${date}T${String(startH).padStart(2, "0")}:${startM}:00`).toISOString();
     const end_at = new Date(`${date}T${String(endH).padStart(2, "0")}:${endM}:00`).toISOString();
+
+    // DB-side overlap pre-check: any existing reservation where start_at < new end AND end_at > new start
+    const { data: conflicts, error: checkError } = await supabase
+      .from("room_reservations" as any)
+      .select("id,start_at,end_at")
+      .eq("room_id", roomId)
+      .lt("start_at", end_at)
+      .gt("end_at", start_at)
+      .limit(1);
+    if (checkError) {
+      setSubmitting(false);
+      toast.error("예약 확인 실패: " + checkError.message);
+      return;
+    }
+    if (conflicts && conflicts.length > 0) {
+      setSubmitting(false);
+      const c: any = conflicts[0];
+      const fmt = (iso: string) => {
+        const d = new Date(iso);
+        return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+      };
+      toast.error(`이미 ${fmt(c.start_at)}-${fmt(c.end_at)} 예약이 있습니다`);
+      fetchReservations();
+      return;
+    }
+
     const { error } = await supabase.from("room_reservations" as any).insert({
       room_id: roomId,
       user_id: user.id,
