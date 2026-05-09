@@ -2,7 +2,6 @@ import { Briefcase, MapPin, MessageCircle, ChevronRight, Megaphone, Star } from 
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import PageShell from "@/components/PageShell";
-import CreatePostDialog from "@/components/CreatePostDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { HomeSkeleton } from "@/components/skeletons/PostSkeleton";
 import logoIcon from "@/assets/logo-icon.png";
@@ -184,7 +183,7 @@ const Index = () => {
         ))}
       </section>
 
-      <CreatePostDialog postType="promotion" fields={promoFields} onCreated={fetchData} />
+      
       </>}
     </PageShell>
   );

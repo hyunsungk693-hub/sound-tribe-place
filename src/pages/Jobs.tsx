@@ -2,7 +2,6 @@ import { Search, SlidersHorizontal, ArrowLeft, Pencil, Trash2, MessageCircle } f
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
-import CreatePostDialog from "@/components/CreatePostDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -70,7 +69,12 @@ const Jobs = () => {
     setLoadingJobs(false);
   };
 
-  useEffect(() => { fetchJobs(); }, []);
+  useEffect(() => {
+    fetchJobs();
+    const handler = (e: any) => { if (e.detail?.type === "job") fetchJobs(); };
+    window.addEventListener("post-created", handler);
+    return () => window.removeEventListener("post-created", handler);
+  }, []);
 
   const allJobs: JobItem[] = [
     ...dbJobs.map((j) => ({
@@ -173,7 +177,7 @@ const Jobs = () => {
         {!loadingJobs && filtered.length === 0 && <div className="text-center py-10 text-muted-foreground text-sm">구인글이 없습니다</div>}
       </div>
 
-      <CreatePostDialog postType="job" fields={jobFields} onCreated={fetchJobs} />
+      
 
       {/* Detail Modal */}
       {selectedJob && (

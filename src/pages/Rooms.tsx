@@ -2,7 +2,6 @@ import { Search, MapPin, Clock, Star, Music, ArrowLeft, Pencil, Trash2, MessageC
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
-import CreatePostDialog from "@/components/CreatePostDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -69,7 +68,12 @@ const Rooms = () => {
     setLoadingRooms(false);
   };
 
-  useEffect(() => { fetchRooms(); }, []);
+  useEffect(() => {
+    fetchRooms();
+    const handler = (e: any) => { if (e.detail?.type === "room") fetchRooms(); };
+    window.addEventListener("post-created", handler);
+    return () => window.removeEventListener("post-created", handler);
+  }, []);
 
   const allRooms: RoomItem[] = [
     ...dbRooms.map((r) => ({
@@ -174,7 +178,7 @@ const Rooms = () => {
         {!loadingRooms && allRooms.length === 0 && <div className="text-center py-10 text-muted-foreground text-sm">연습실이 없습니다</div>}
       </div>
 
-      <CreatePostDialog postType="room" fields={roomFields} onCreated={fetchRooms} />
+      
 
       {/* Detail Modal */}
       {selectedRoom && (

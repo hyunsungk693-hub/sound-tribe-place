@@ -2,7 +2,6 @@ import { Heart, MessageSquare, Share2, TrendingUp, ArrowLeft, Send, Search, X, M
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
-import CreatePostDialog from "@/components/CreatePostDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -116,7 +115,12 @@ const Community = () => {
     }
   }, [user]);
 
-  useEffect(() => { fetchPosts(); }, [fetchPosts]);
+  useEffect(() => {
+    fetchPosts();
+    const handler = (e: any) => { if (e.detail?.type === "community") fetchPosts(); };
+    window.addEventListener("post-created", handler);
+    return () => window.removeEventListener("post-created", handler);
+  }, [fetchPosts]);
 
   useEffect(() => {
     const ids = dbPosts.map((p) => p.id);
@@ -400,7 +404,7 @@ const Community = () => {
         ))}
       </div>
 
-      <CreatePostDialog postType="community" fields={communityFields} onCreated={fetchPosts} />
+      
 
       {/* Post Detail Modal */}
       {selectedPost && (

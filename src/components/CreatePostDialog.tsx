@@ -19,11 +19,16 @@ interface CreatePostDialogProps {
   postType: string;
   fields: Field[];
   onCreated?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideButton?: boolean;
 }
 
-const CreatePostDialog = ({ postType, fields, onCreated }: CreatePostDialogProps) => {
+const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenChange, hideButton }: CreatePostDialogProps) => {
   const { user } = useAuth();
-  const [open, setOpen] = useState(false);
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = (v: boolean) => { if (onOpenChange) onOpenChange(v); else setOpenState(v); };
   const [submitting, setSubmitting] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -118,6 +123,7 @@ const CreatePostDialog = ({ postType, fields, onCreated }: CreatePostDialogProps
   };
 
   if (!open) {
+    if (hideButton) return null;
     return (
       <button
         onClick={() => setOpen(true)}
