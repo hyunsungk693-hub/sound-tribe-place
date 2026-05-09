@@ -179,7 +179,7 @@ const Rooms = () => {
         {!loadingRooms && allRooms.length === 0 && <div className="text-center py-10 text-muted-foreground text-sm">연습실이 없습니다</div>}
       </div>
 
-      <CreatePostDialog postType="room" fields={roomFields} onCreated={fetchRooms} />
+      
 
       {/* Detail Modal */}
       {selectedRoom && (
