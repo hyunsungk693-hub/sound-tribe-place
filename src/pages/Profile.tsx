@@ -292,7 +292,11 @@ const ProfilePage = () => {
                 const fmtT = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
                 const upcoming = e.getTime() > Date.now();
                 return (
-                  <div key={r.id} className="p-3 rounded-xl bg-secondary/50">
+                  <div
+                    key={r.id}
+                    onClick={() => setDetailTarget(r)}
+                    className="p-3 rounded-xl bg-secondary/50 hover:bg-surface-hover cursor-pointer transition-colors active:scale-[0.98]"
+                  >
                     <div className="flex items-center gap-2 mb-1">
                       <Calendar className="w-3 h-3 text-primary" />
                       <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${upcoming ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
@@ -303,7 +307,7 @@ const ProfilePage = () => {
                       </span>
                       {upcoming && (
                         <button
-                          onClick={() => { setCancelTarget(r); setCancelReason(""); }}
+                          onClick={(e) => { e.stopPropagation(); setCancelTarget(r); setCancelReason(""); }}
                           className="p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
