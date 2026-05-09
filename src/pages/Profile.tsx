@@ -27,7 +27,14 @@ const menuItems = [
   { icon: HelpCircle, label: "고객센터" },
 ];
 
-const activityTabs = ["내 게시물", "내 댓글", "내 예약"];
+const activityTabs = ["내 게시물", "내 댓글", "내 예약", "내 지원"];
+
+const APPLY_STATUS_META: Record<string, { label: string; cls: string }> = {
+  applied: { label: "검토중", cls: "bg-primary/10 text-primary" },
+  reviewing: { label: "검토중", cls: "bg-primary/10 text-primary" },
+  accepted: { label: "합격", cls: "bg-green-500/10 text-green-600" },
+  rejected: { label: "불합격", cls: "bg-destructive/10 text-destructive" },
+};
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
