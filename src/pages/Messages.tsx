@@ -83,6 +83,7 @@ const Messages = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const targetUserId = searchParams.get("to");
+  const prefillText = searchParams.get("prefill");
   const handledTargetRef = useRef<string | null>(null);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
