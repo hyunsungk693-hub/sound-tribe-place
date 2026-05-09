@@ -405,7 +405,7 @@ const Community = () => {
         ))}
       </div>
 
-      <CreatePostDialog postType="community" fields={communityFields} onCreated={fetchPosts} />
+      
 
       {/* Post Detail Modal */}
       {selectedPost && (
