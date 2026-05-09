@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Settings, ChevronRight, Music, Award, Edit3, Bell, Shield, HelpCircle, LogOut, Heart, MessageSquare, Trash2, Sun, Moon, Monitor } from "lucide-react";
+import { Settings, ChevronRight, Music, Award, Edit3, Bell, Shield, HelpCircle, LogOut, Heart, MessageSquare, Trash2, Sun, Moon, Monitor, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,7 +25,7 @@ const menuItems = [
   { icon: HelpCircle, label: "고객센터" },
 ];
 
-const activityTabs = ["내 게시물", "내 댓글"];
+const activityTabs = ["내 게시물", "내 댓글", "내 예약"];
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
@@ -35,6 +35,7 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState("내 게시물");
   const [myPosts, setMyPosts] = useState<any[]>([]);
   const [myComments, setMyComments] = useState<any[]>([]);
+  const [myReservations, setMyReservations] = useState<any[]>([]);
   const [editOpen, setEditOpen] = useState(false);
   const [notiOpen, setNotiOpen] = useState(false);
   const { count: unreadCount } = useUnreadCount();
@@ -72,6 +73,26 @@ const ProfilePage = () => {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .then(({ data }) => setMyComments(data || []));
+
+    // Fetch my room reservations (with room title)
+    (async () => {
+      const { data: rsv } = await supabase
+        .from("room_reservations" as any)
+        .select("*")
+        .eq("user_id", user.id)
+        .order("start_at", { ascending: false });
+      const rsvList = (rsv as any[]) || [];
+      const roomIds = Array.from(new Set(rsvList.map((r) => r.room_id))).filter(Boolean);
+      let titlesById: Record<string, string> = {};
+      if (roomIds.length > 0) {
+        const { data: rooms } = await supabase
+          .from("posts")
+          .select("id,title,venue")
+          .in("id", roomIds);
+        (rooms || []).forEach((p: any) => { titlesById[p.id] = p.title || p.venue || "연습실"; });
+      }
+      setMyReservations(rsvList.map((r) => ({ ...r, room_title: titlesById[r.room_id] || "삭제된 연습실" })));
+    })();
   }, [user]);
 
   const handleLogout = async () => {
@@ -158,7 +179,7 @@ const ProfilePage = () => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {tab} ({tab === "내 게시물" ? myPosts.length : myComments.length})
+              {tab} ({tab === "내 게시물" ? myPosts.length : tab === "내 댓글" ? myComments.length : myReservations.length})
             </button>
           ))}
         </div>
@@ -203,13 +224,10 @@ const ProfilePage = () => {
             ) : (
               <p className="text-xs text-muted-foreground text-center py-6">작성한 게시물이 없습니다.</p>
             )
-          ) : (
+          ) : activeTab === "내 댓글" ? (
             myComments.length > 0 ? (
               myComments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="p-3 rounded-xl bg-secondary/50"
-                >
+                <div key={comment.id} className="p-3 rounded-xl bg-secondary/50">
                   <div className="flex items-center gap-2 mb-1">
                     <MessageSquare className="w-3 h-3 text-muted-foreground" />
                     <span className="text-[10px] text-muted-foreground">
@@ -233,6 +251,46 @@ const ProfilePage = () => {
               ))
             ) : (
               <p className="text-xs text-muted-foreground text-center py-6">작성한 댓글이 없습니다.</p>
+            )
+          ) : (
+            myReservations.length > 0 ? (
+              myReservations.map((r) => {
+                const s = new Date(r.start_at);
+                const e = new Date(r.end_at);
+                const fmtT = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                const upcoming = e.getTime() > Date.now();
+                return (
+                  <div key={r.id} className="p-3 rounded-xl bg-secondary/50">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calendar className="w-3 h-3 text-primary" />
+                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${upcoming ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                        {upcoming ? "예정" : "지난 예약"}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground ml-auto">
+                        {s.toLocaleDateString("ko-KR")}
+                      </span>
+                      {upcoming && (
+                        <button
+                          onClick={async () => {
+                            if (!confirm("예약을 취소하시겠습니까?")) return;
+                            const { error } = await supabase.from("room_reservations" as any).delete().eq("id", r.id);
+                            if (error) { toast.error("취소 실패"); return; }
+                            toast.success("예약이 취소되었습니다");
+                            setMyReservations((prev) => prev.filter((x) => x.id !== r.id));
+                          }}
+                          className="p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <h4 className="text-sm font-semibold truncate">{r.room_title}</h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">{fmtT(s)} - {fmtT(e)}</p>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-6">예약 내역이 없습니다.</p>
             )
           )}
         </div>
