@@ -60,7 +60,7 @@ const ProfilePage = () => {
     if (roomIds.length > 0) {
       const { data: rooms } = await supabase
         .from("posts")
-        .select("id,title,venue,area")
+        .select("id,title,venue,area,lat,lng")
         .in("id", roomIds);
       (rooms || []).forEach((p: any) => { roomsById[p.id] = p; });
     }
@@ -70,6 +70,8 @@ const ProfilePage = () => {
         ...r,
         room_title: room?.title || room?.venue || "삭제된 연습실",
         room_address: room?.area || room?.venue || "",
+        room_lat: room?.lat ?? null,
+        room_lng: room?.lng ?? null,
       };
     }));
   };
