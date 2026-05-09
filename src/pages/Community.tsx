@@ -116,7 +116,12 @@ const Community = () => {
     }
   }, [user]);
 
-  useEffect(() => { fetchPosts(); }, [fetchPosts]);
+  useEffect(() => {
+    fetchPosts();
+    const handler = (e: any) => { if (e.detail?.type === "community") fetchPosts(); };
+    window.addEventListener("post-created", handler);
+    return () => window.removeEventListener("post-created", handler);
+  }, [fetchPosts]);
 
   useEffect(() => {
     const ids = dbPosts.map((p) => p.id);
