@@ -61,27 +61,39 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
     );
   }
 
-  // Build a Set of booked hours for visual disable
-  const bookedHours = new Set<number>();
+  // Build a Set of booked 30-min slots for visual disable
+  const bookedSlots = new Set<number>();
   reservations.forEach((r) => {
     const s = new Date(r.start_at);
     const e = new Date(r.end_at);
-    for (let h = s.getHours(); h < e.getHours(); h++) bookedHours.add(h);
+    const startIdx = s.getHours() * 2 + Math.floor(s.getMinutes() / 30);
+    const endIdx = e.getHours() * 2 + Math.ceil(e.getMinutes() / 30);
+    for (let i = startIdx; i < endIdx; i++) bookedSlots.add(i);
   });
+
+  const slotToHM = (slot: number) => {
+    const h = Math.floor(slot / 2);
+    const m = slot % 2 === 0 ? "00" : "30";
+    return `${String(h).padStart(2, "0")}:${m}`;
+  };
 
   const handleReserve = async () => {
     if (!user) { toast.error("로그인이 필요합니다"); return; }
-    if (endHour <= startHour) { toast.error("종료 시간은 시작 시간 이후여야 합니다"); return; }
+    if (endSlot <= startSlot) { toast.error("종료 시간은 시작 시간 이후여야 합니다"); return; }
     // Check overlap client-side first
-    for (let h = startHour; h < endHour; h++) {
-      if (bookedHours.has(h)) {
-        toast.error(`${h}시는 이미 예약되어 있습니다`);
+    for (let i = startSlot; i < endSlot; i++) {
+      if (bookedSlots.has(i)) {
+        toast.error(`${slotToHM(i)}는 이미 예약되어 있습니다`);
         return;
       }
     }
     setSubmitting(true);
-    const start_at = new Date(`${date}T${String(startHour).padStart(2, "0")}:00:00`).toISOString();
-    const end_at = new Date(`${date}T${String(endHour).padStart(2, "0")}:00:00`).toISOString();
+    const startH = Math.floor(startSlot / 2);
+    const startM = startSlot % 2 === 0 ? "00" : "30";
+    const endH = Math.floor(endSlot / 2);
+    const endM = endSlot % 2 === 0 ? "00" : "30";
+    const start_at = new Date(`${date}T${String(startH).padStart(2, "0")}:${startM}:00`).toISOString();
+    const end_at = new Date(`${date}T${String(endH).padStart(2, "0")}:${endM}:00`).toISOString();
     const { error } = await supabase.from("room_reservations" as any).insert({
       room_id: roomId,
       user_id: user.id,
