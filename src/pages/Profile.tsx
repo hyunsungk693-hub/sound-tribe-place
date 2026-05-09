@@ -168,6 +168,7 @@ const ProfilePage = () => {
 
     // Fetch my room reservations (with room title)
     fetchReservations();
+    fetchApplications();
   }, [user]);
 
   const handleLogout = async () => {
