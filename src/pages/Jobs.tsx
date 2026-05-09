@@ -462,11 +462,51 @@ const Jobs = () => {
 
                   {selectedJob.id && selectedJob.user_id === user?.id && (
                     <div className="mt-5 pt-4 border-t border-border/40">
-                      <h3 className="text-sm font-semibold mb-3">받은 지원 ({jobApplicants.length})</h3>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <h3 className="text-sm font-semibold">
+                          받은 지원 ({filteredApplicants.length}{applicantStatusFilter !== "all" ? ` / ${jobApplicants.length}` : ""})
+                        </h3>
+                      </div>
+                      {jobApplicants.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                          <div className="flex flex-wrap gap-1">
+                            {[{ value: "all", label: "전체" }, ...APPLY_STATUSES].map((s) => {
+                              const active = applicantStatusFilter === s.value;
+                              const count = s.value === "all"
+                                ? jobApplicants.length
+                                : jobApplicants.filter((a) => a.status === s.value).length;
+                              return (
+                                <button
+                                  key={s.value}
+                                  type="button"
+                                  onClick={() => setApplicantStatusFilter(s.value)}
+                                  className={`h-7 px-2.5 rounded-full text-[11px] font-medium transition-colors ${
+                                    active
+                                      ? "bg-primary text-primary-foreground"
+                                      : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+                                  }`}
+                                >
+                                  {s.label} {count}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <select
+                            value={applicantSortOrder}
+                            onChange={(e) => setApplicantSortOrder(e.target.value as "newest" | "oldest")}
+                            className="ml-auto h-7 rounded-md border border-input bg-background px-2 text-[11px] outline-none focus:ring-2 focus:ring-primary/30"
+                          >
+                            <option value="newest">최신 지원순</option>
+                            <option value="oldest">오래된 지원순</option>
+                          </select>
+                        </div>
+                      )}
                       {loadingApplicants ? (
                         <p className="text-xs text-muted-foreground py-2">불러오는 중...</p>
                       ) : jobApplicants.length === 0 ? (
                         <p className="text-xs text-muted-foreground py-2">아직 받은 지원이 없습니다.</p>
+                      ) : filteredApplicants.length === 0 ? (
+                        <p className="text-xs text-muted-foreground py-2">선택한 상태에 해당하는 지원이 없습니다.</p>
                       ) : (
                         <div className="space-y-2">
                           {jobApplicants.slice(0, applicantsVisible).map((a) => {
