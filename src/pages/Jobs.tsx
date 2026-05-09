@@ -164,21 +164,28 @@ const Jobs = () => {
       setJobApplicants([]);
     }
     setApplicantsVisible(APPLICANTS_PAGE_SIZE);
+    setApplicantStatusFilter("all");
+    setApplicantSortOrder("newest");
   }, [selectedJob, user]);
+
+  // Reset pagination when filter/sort changes
+  useEffect(() => {
+    setApplicantsVisible(APPLICANTS_PAGE_SIZE);
+  }, [applicantStatusFilter, applicantSortOrder]);
 
   // Infinite scroll: load more applicants when sentinel enters viewport
   useEffect(() => {
     const node = applicantsSentinelRef.current;
     if (!node) return;
-    if (applicantsVisible >= jobApplicants.length) return;
+    if (applicantsVisible >= filteredApplicants.length) return;
     const io = new IntersectionObserver((entries) => {
       if (entries.some((e) => e.isIntersecting)) {
-        setApplicantsVisible((v) => Math.min(v + APPLICANTS_PAGE_SIZE, jobApplicants.length));
+        setApplicantsVisible((v) => Math.min(v + APPLICANTS_PAGE_SIZE, filteredApplicants.length));
       }
     }, { rootMargin: "120px" });
     io.observe(node);
     return () => io.disconnect();
-  }, [applicantsVisible, jobApplicants.length, selectedJob?.id]);
+  }, [applicantsVisible, filteredApplicants.length, selectedJob?.id]);
 
   const openApply = (job: JobItem) => {
     if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
