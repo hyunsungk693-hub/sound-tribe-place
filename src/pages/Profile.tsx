@@ -186,10 +186,6 @@ const ProfilePage = () => {
 
         <div className="p-3 space-y-2 max-h-[300px] overflow-y-auto">
           {activeTab === "내 게시물" ? (
-        </div>
-
-        <div className="p-3 space-y-2 max-h-[300px] overflow-y-auto">
-          {activeTab === "내 게시물" ? (
             myPosts.length > 0 ? (
               myPosts.map((post) => (
                 <div
@@ -228,13 +224,10 @@ const ProfilePage = () => {
             ) : (
               <p className="text-xs text-muted-foreground text-center py-6">작성한 게시물이 없습니다.</p>
             )
-          ) : (
+          ) : activeTab === "내 댓글" ? (
             myComments.length > 0 ? (
               myComments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="p-3 rounded-xl bg-secondary/50"
-                >
+                <div key={comment.id} className="p-3 rounded-xl bg-secondary/50">
                   <div className="flex items-center gap-2 mb-1">
                     <MessageSquare className="w-3 h-3 text-muted-foreground" />
                     <span className="text-[10px] text-muted-foreground">
@@ -258,6 +251,46 @@ const ProfilePage = () => {
               ))
             ) : (
               <p className="text-xs text-muted-foreground text-center py-6">작성한 댓글이 없습니다.</p>
+            )
+          ) : (
+            myReservations.length > 0 ? (
+              myReservations.map((r) => {
+                const s = new Date(r.start_at);
+                const e = new Date(r.end_at);
+                const fmtT = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                const upcoming = e.getTime() > Date.now();
+                return (
+                  <div key={r.id} className="p-3 rounded-xl bg-secondary/50">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calendar className="w-3 h-3 text-primary" />
+                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${upcoming ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                        {upcoming ? "예정" : "지난 예약"}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground ml-auto">
+                        {s.toLocaleDateString("ko-KR")}
+                      </span>
+                      {upcoming && (
+                        <button
+                          onClick={async () => {
+                            if (!confirm("예약을 취소하시겠습니까?")) return;
+                            const { error } = await supabase.from("room_reservations" as any).delete().eq("id", r.id);
+                            if (error) { toast.error("취소 실패"); return; }
+                            toast.success("예약이 취소되었습니다");
+                            setMyReservations((prev) => prev.filter((x) => x.id !== r.id));
+                          }}
+                          className="p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <h4 className="text-sm font-semibold truncate">{r.room_title}</h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">{fmtT(s)} - {fmtT(e)}</p>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-6">예약 내역이 없습니다.</p>
             )
           )}
         </div>
