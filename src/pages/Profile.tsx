@@ -42,6 +42,45 @@ const ProfilePage = () => {
   const [notiOpen, setNotiOpen] = useState(false);
   const { count: unreadCount } = useUnreadCount();
   const { theme, setTheme } = useTheme();
+  const [cancelTarget, setCancelTarget] = useState<any | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+
+  const fetchReservations = async () => {
+    if (!user) return;
+    const { data: rsv } = await supabase
+      .from("room_reservations" as any)
+      .select("*")
+      .eq("user_id", user.id)
+      .order("start_at", { ascending: false });
+    const rsvList = (rsv as any[]) || [];
+    const roomIds = Array.from(new Set(rsvList.map((r) => r.room_id))).filter(Boolean);
+    let titlesById: Record<string, string> = {};
+    if (roomIds.length > 0) {
+      const { data: rooms } = await supabase
+        .from("posts")
+        .select("id,title,venue")
+        .in("id", roomIds);
+      (rooms || []).forEach((p: any) => { titlesById[p.id] = p.title || p.venue || "연습실"; });
+    }
+    setMyReservations(rsvList.map((r) => ({ ...r, room_title: titlesById[r.room_id] || "삭제된 연습실" })));
+  };
+
+  const confirmCancel = async () => {
+    if (!cancelTarget) return;
+    if (!cancelReason.trim()) {
+      toast.error("취소 사유를 입력해주세요");
+      return;
+    }
+    setCancelling(true);
+    const { error } = await supabase.from("room_reservations" as any).delete().eq("id", cancelTarget.id);
+    setCancelling(false);
+    if (error) { toast.error("취소 실패"); return; }
+    toast.success(`예약이 취소되었습니다 (사유: ${cancelReason.trim()})`);
+    setCancelTarget(null);
+    setCancelReason("");
+    await fetchReservations();
+  };
 
   const themeOptions: { value: "light" | "dark" | "system"; icon: typeof Sun; label: string }[] = [
     { value: "light", icon: Sun, label: "라이트" },
