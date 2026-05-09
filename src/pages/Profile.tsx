@@ -396,6 +396,49 @@ const ProfilePage = () => {
       )}
 
       <NotificationsPanel open={notiOpen} onClose={() => setNotiOpen(false)} />
+
+      <Dialog open={!!cancelTarget} onOpenChange={(o) => { if (!o) { setCancelTarget(null); setCancelReason(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>예약 취소</DialogTitle>
+            <DialogDescription>
+              {cancelTarget && (
+                <>
+                  <span className="block font-medium text-foreground">{cancelTarget.room_title}</span>
+                  <span className="block text-xs mt-1">
+                    {new Date(cancelTarget.start_at).toLocaleString("ko-KR")} ~ {new Date(cancelTarget.end_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-xs font-medium">취소 사유 <span className="text-destructive">*</span></label>
+            <Textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="취소 사유를 입력해주세요"
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => { setCancelTarget(null); setCancelReason(""); }}
+              disabled={cancelling}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
+            >
+              닫기
+            </button>
+            <button
+              onClick={confirmCancel}
+              disabled={cancelling || !cancelReason.trim()}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {cancelling ? "취소 중..." : "예약 취소"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 };
