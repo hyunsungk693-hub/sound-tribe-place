@@ -11,6 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 
 const categories = ["전체", "공연", "녹음", "레슨", "행사", "기타"];
 
+const APPLY_STATUSES: { value: string; label: string; cls: string }[] = [
+  { value: "applied", label: "검토중", cls: "bg-primary/10 text-primary" },
+  { value: "accepted", label: "합격", cls: "bg-green-500/10 text-green-600" },
+  { value: "rejected", label: "불합격", cls: "bg-destructive/10 text-destructive" },
+];
+const statusMeta = (s: string) => APPLY_STATUSES.find((x) => x.value === s) || APPLY_STATUSES[0];
+
 const SAMPLE_AUTHORS = [
   "4cef9ad6-633d-42b6-adf6-a352853b05a5",
   "c2c088e8-341c-46f4-b0cf-b7683f35f0e8",
@@ -66,9 +73,14 @@ const Jobs = () => {
 
   // Application state
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
+  const [appliedStatusByJob, setAppliedStatusByJob] = useState<Record<string, string>>({});
   const [applyTarget, setApplyTarget] = useState<JobItem | null>(null);
   const [applyMessage, setApplyMessage] = useState("");
   const [applying, setApplying] = useState(false);
+
+  // Owner: applicants for selected job
+  const [jobApplicants, setJobApplicants] = useState<any[]>([]);
+  const [loadingApplicants, setLoadingApplicants] = useState(false);
 
   const fetchJobs = async () => {
     setLoadingJobs(true);
@@ -78,12 +90,49 @@ const Jobs = () => {
   };
 
   const fetchApplications = async () => {
-    if (!user) { setAppliedJobIds(new Set()); return; }
+    if (!user) { setAppliedJobIds(new Set()); setAppliedStatusByJob({}); return; }
     const { data } = await supabase
       .from("job_applications" as any)
-      .select("job_id")
+      .select("job_id,status")
       .eq("user_id", user.id);
-    setAppliedJobIds(new Set(((data as any[]) || []).map((a) => a.job_id)));
+    const list = (data as any[]) || [];
+    setAppliedJobIds(new Set(list.map((a) => a.job_id)));
+    const m: Record<string, string> = {};
+    list.forEach((a) => { m[a.job_id] = a.status; });
+    setAppliedStatusByJob(m);
+  };
+
+  const fetchJobApplicants = async (jobId: string) => {
+    setLoadingApplicants(true);
+    const { data: apps } = await supabase
+      .from("job_applications" as any)
+      .select("*")
+      .eq("job_id", jobId)
+      .order("created_at", { ascending: false });
+    const list = (apps as any[]) || [];
+    const userIds = Array.from(new Set(list.map((a) => a.user_id)));
+    let profilesById: Record<string, any> = {};
+    if (userIds.length > 0) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id,display_name,avatar_url")
+        .in("user_id", userIds);
+      (profs || []).forEach((p: any) => { profilesById[p.user_id] = p; });
+    }
+    setJobApplicants(list.map((a) => ({ ...a, applicant: profilesById[a.user_id] || null })));
+    setLoadingApplicants(false);
+  };
+
+  const updateApplicationStatus = async (appId: string, status: string) => {
+    const prev = jobApplicants;
+    setJobApplicants((cur) => cur.map((a) => a.id === appId ? { ...a, status } : a));
+    const { error } = await supabase.from("job_applications" as any).update({ status }).eq("id", appId);
+    if (error) {
+      toast.error("상태 변경 실패");
+      setJobApplicants(prev);
+      return;
+    }
+    toast.success("상태가 변경되었습니다");
   };
 
   useEffect(() => {
@@ -94,6 +143,14 @@ const Jobs = () => {
   }, []);
 
   useEffect(() => { fetchApplications(); }, [user]);
+
+  useEffect(() => {
+    if (selectedJob?.id && selectedJob.user_id === user?.id) {
+      fetchJobApplicants(selectedJob.id);
+    } else {
+      setJobApplicants([]);
+    }
+  }, [selectedJob, user]);
 
   const openApply = (job: JobItem) => {
     if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
@@ -123,6 +180,7 @@ const Jobs = () => {
     }
     toast.success("지원이 완료되었습니다");
     setAppliedJobIds((prev) => new Set(prev).add(applyTarget.id!));
+    setAppliedStatusByJob((prev) => ({ ...prev, [applyTarget.id!]: "applied" }));
     setApplyTarget(null);
     setApplyMessage("");
     setSelectedJob(null);
@@ -227,6 +285,7 @@ const Jobs = () => {
             {job.user_id && job.user_id !== user?.id && (
               (() => {
                 const applied = !!job.id && appliedJobIds.has(job.id);
+                const meta = applied ? statusMeta(appliedStatusByJob[job.id!] || "applied") : null;
                 return (
                   <button
                     onClick={(e) => { e.stopPropagation(); if (applied) return; openApply(job); }}
@@ -237,7 +296,12 @@ const Jobs = () => {
                         : "bg-primary text-primary-foreground hover:bg-primary/90"
                     }`}
                   >
-                    {applied ? (<span className="inline-flex items-center gap-1"><Check className="w-3.5 h-3.5" /> 지원 완료</span>) : "지원하기"}
+                    {applied && meta ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5" /> 지원 완료
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${meta.cls}`}>{meta.label}</span>
+                      </span>
+                    ) : "지원하기"}
                   </button>
                 );
               })()
@@ -338,6 +402,7 @@ const Jobs = () => {
                       </button>
                       {(() => {
                         const applied = !!selectedJob.id && appliedJobIds.has(selectedJob.id);
+                        const meta = applied ? statusMeta(appliedStatusByJob[selectedJob.id!] || "applied") : null;
                         return (
                           <button
                             onClick={() => { if (!applied) openApply(selectedJob); }}
@@ -348,10 +413,68 @@ const Jobs = () => {
                                 : "bg-primary text-primary-foreground hover:bg-primary/90"
                             }`}
                           >
-                            {applied ? (<span className="inline-flex items-center justify-center gap-1"><Check className="w-4 h-4" /> 지원 완료</span>) : "지원하기"}
+                            {applied && meta ? (
+                              <span className="inline-flex items-center justify-center gap-1.5">
+                                <Check className="w-4 h-4" /> 지원 완료
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${meta.cls}`}>{meta.label}</span>
+                              </span>
+                            ) : "지원하기"}
                           </button>
                         );
                       })()}
+                    </div>
+                  )}
+
+                  {selectedJob.id && selectedJob.user_id === user?.id && (
+                    <div className="mt-5 pt-4 border-t border-border/40">
+                      <h3 className="text-sm font-semibold mb-3">받은 지원 ({jobApplicants.length})</h3>
+                      {loadingApplicants ? (
+                        <p className="text-xs text-muted-foreground py-2">불러오는 중...</p>
+                      ) : jobApplicants.length === 0 ? (
+                        <p className="text-xs text-muted-foreground py-2">아직 받은 지원이 없습니다.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {jobApplicants.map((a) => {
+                            const meta = statusMeta(a.status);
+                            return (
+                              <div key={a.id} className="p-3 rounded-xl bg-secondary/50 space-y-2">
+                                <div className="flex items-center gap-2">
+                                  {a.applicant?.avatar_url ? (
+                                    <img src={a.applicant.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
+                                  ) : (
+                                    <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
+                                      {(a.applicant?.display_name || "?").charAt(0).toUpperCase()}
+                                    </div>
+                                  )}
+                                  <span className="text-sm font-medium flex-1 truncate">{a.applicant?.display_name || "익명"}</span>
+                                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${meta.cls}`}>{meta.label}</span>
+                                </div>
+                                {a.message && (
+                                  <p className="text-xs text-muted-foreground whitespace-pre-wrap">{a.message}</p>
+                                )}
+                                <div className="flex items-center gap-2 pt-1">
+                                  <span className="text-[10px] text-muted-foreground">{new Date(a.created_at).toLocaleDateString("ko-KR")}</span>
+                                  <select
+                                    value={a.status}
+                                    onChange={(e) => updateApplicationStatus(a.id, e.target.value)}
+                                    className="ml-auto h-8 rounded-md border border-input bg-background px-2 text-xs outline-none focus:ring-2 focus:ring-primary/30"
+                                  >
+                                    {APPLY_STATUSES.map((s) => (
+                                      <option key={s.value} value={s.value}>{s.label}</option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    onClick={() => navigate(`/messages?to=${a.user_id}`)}
+                                    className="h-8 px-2 rounded-md bg-secondary text-secondary-foreground text-xs hover:bg-surface-hover transition-colors flex items-center gap-1"
+                                  >
+                                    <MessageCircle className="w-3 h-3" /> 메시지
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </>

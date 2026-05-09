@@ -27,7 +27,14 @@ const menuItems = [
   { icon: HelpCircle, label: "고객센터" },
 ];
 
-const activityTabs = ["내 게시물", "내 댓글", "내 예약"];
+const activityTabs = ["내 게시물", "내 댓글", "내 예약", "내 지원"];
+
+const APPLY_STATUS_META: Record<string, { label: string; cls: string }> = {
+  applied: { label: "검토중", cls: "bg-primary/10 text-primary" },
+  reviewing: { label: "검토중", cls: "bg-primary/10 text-primary" },
+  accepted: { label: "합격", cls: "bg-green-500/10 text-green-600" },
+  rejected: { label: "불합격", cls: "bg-destructive/10 text-destructive" },
+};
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
@@ -38,6 +45,9 @@ const ProfilePage = () => {
   const [myPosts, setMyPosts] = useState<any[]>([]);
   const [myComments, setMyComments] = useState<any[]>([]);
   const [myReservations, setMyReservations] = useState<any[]>([]);
+  const [myApplications, setMyApplications] = useState<any[]>([]);
+  const [cancelAppTarget, setCancelAppTarget] = useState<any | null>(null);
+  const [cancellingApp, setCancellingApp] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [notiOpen, setNotiOpen] = useState(false);
   const { count: unreadCount } = useUnreadCount();
@@ -92,6 +102,37 @@ const ProfilePage = () => {
     await fetchReservations();
   };
 
+  const fetchApplications = async () => {
+    if (!user) return;
+    const { data: apps } = await supabase
+      .from("job_applications" as any)
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    const list = (apps as any[]) || [];
+    const jobIds = Array.from(new Set(list.map((a) => a.job_id))).filter(Boolean);
+    let jobsById: Record<string, any> = {};
+    if (jobIds.length > 0) {
+      const { data: jobs } = await supabase
+        .from("posts")
+        .select("id,title,venue,pay,category")
+        .in("id", jobIds);
+      (jobs || []).forEach((j: any) => { jobsById[j.id] = j; });
+    }
+    setMyApplications(list.map((a) => ({ ...a, job: jobsById[a.job_id] || null })));
+  };
+
+  const confirmCancelApplication = async () => {
+    if (!cancelAppTarget) return;
+    setCancellingApp(true);
+    const { error } = await supabase.from("job_applications" as any).delete().eq("id", cancelAppTarget.id);
+    setCancellingApp(false);
+    if (error) { toast.error("지원 취소에 실패했습니다"); return; }
+    toast.success("지원이 취소되었습니다");
+    setCancelAppTarget(null);
+    await fetchApplications();
+  };
+
   const themeOptions: { value: "light" | "dark" | "system"; icon: typeof Sun; label: string }[] = [
     { value: "light", icon: Sun, label: "라이트" },
     { value: "dark", icon: Moon, label: "다크" },
@@ -127,6 +168,7 @@ const ProfilePage = () => {
 
     // Fetch my room reservations (with room title)
     fetchReservations();
+    fetchApplications();
   }, [user]);
 
   const handleLogout = async () => {
@@ -213,7 +255,7 @@ const ProfilePage = () => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {tab} ({tab === "내 게시물" ? myPosts.length : tab === "내 댓글" ? myComments.length : myReservations.length})
+              {tab} ({tab === "내 게시물" ? myPosts.length : tab === "내 댓글" ? myComments.length : tab === "내 예약" ? myReservations.length : myApplications.length})
             </button>
           ))}
         </div>
@@ -286,7 +328,7 @@ const ProfilePage = () => {
             ) : (
               <p className="text-xs text-muted-foreground text-center py-6">작성한 댓글이 없습니다.</p>
             )
-          ) : (
+          ) : activeTab === "내 예약" ? (
             myReservations.length > 0 ? (
               myReservations.map((r) => {
                 const s = new Date(r.start_at);
@@ -323,6 +365,50 @@ const ProfilePage = () => {
               })
             ) : (
               <p className="text-xs text-muted-foreground text-center py-6">예약 내역이 없습니다.</p>
+            )
+          ) : (
+            myApplications.length > 0 ? (
+              myApplications.map((a) => {
+                const meta = APPLY_STATUS_META[a.status] || APPLY_STATUS_META.applied;
+                const cancellable = a.status === "applied" || a.status === "reviewing";
+                return (
+                  <div
+                    key={a.id}
+                    onClick={() => navigate("/jobs")}
+                    className="p-3 rounded-xl bg-secondary/50 hover:bg-surface-hover cursor-pointer transition-colors active:scale-[0.98]"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${meta.cls}`}>
+                        {meta.label}
+                      </span>
+                      {a.job?.category && (
+                        <span className="text-[10px] text-muted-foreground">{a.job.category}</span>
+                      )}
+                      <span className="text-[10px] text-muted-foreground ml-auto">
+                        {new Date(a.created_at).toLocaleDateString("ko-KR")}
+                      </span>
+                      {cancellable && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setCancelAppTarget(a); }}
+                          className="p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                          title="지원 취소"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <h4 className="text-sm font-semibold truncate">{a.job?.title || "삭제된 공고"}</h4>
+                    {a.job?.venue && (
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{a.job.venue}{a.job.pay ? ` · ${a.job.pay}` : ""}</p>
+                    )}
+                    {a.message && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">"{a.message}"</p>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-6">지원 내역이 없습니다.</p>
             )
           )}
         </div>
@@ -532,6 +618,38 @@ const ProfilePage = () => {
               className="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
             >
               닫기
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!cancelAppTarget} onOpenChange={(o) => { if (!o) setCancelAppTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>지원 취소</DialogTitle>
+            <DialogDescription>
+              {cancelAppTarget && (
+                <>
+                  <span className="block font-medium text-foreground">{cancelAppTarget.job?.title || "삭제된 공고"}</span>
+                  <span className="block text-xs mt-1">정말로 이 공고에 대한 지원을 취소하시겠습니까? 취소 후에는 다시 지원할 수 있습니다.</span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <button
+              onClick={() => setCancelAppTarget(null)}
+              disabled={cancellingApp}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
+            >
+              닫기
+            </button>
+            <button
+              onClick={confirmCancelApplication}
+              disabled={cancellingApp}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {cancellingApp ? "취소 중..." : "지원 취소"}
             </button>
           </DialogFooter>
         </DialogContent>
