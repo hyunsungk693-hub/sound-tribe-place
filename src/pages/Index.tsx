@@ -184,7 +184,7 @@ const Index = () => {
         ))}
       </section>
 
-      <CreatePostDialog postType="promotion" fields={promoFields} onCreated={fetchData} />
+      
       </>}
     </PageShell>
   );
