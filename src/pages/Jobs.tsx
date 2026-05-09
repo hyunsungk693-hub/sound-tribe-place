@@ -388,12 +388,12 @@ const Jobs = () => {
                   ) : (
                     <p className="text-sm text-muted-foreground italic">상세 내용이 없습니다.</p>
                   )}
-                  {selectedJob.user_id !== user?.id && (
+                  {/* 액션 영역: 작성자 정보가 있고 본인 글이 아닐 때만 노출 (샘플/본인 글은 숨김) */}
+                  {!!selectedJob.user_id && selectedJob.user_id !== user?.id && (
                     <div className="mt-5 flex gap-2">
                       <button
                         onClick={() => {
                           if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
-                          if (!selectedJob.user_id) { toast.error("샘플 공고는 메시지를 보낼 수 없습니다"); return; }
                           navigate(`/messages?to=${selectedJob.user_id}`);
                         }}
                         className="flex-1 h-11 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:bg-secondary/80 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
