@@ -123,6 +123,7 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
   };
 
   if (!open) {
+    if (hideButton) return null;
     return (
       <button
         onClick={() => setOpen(true)}
