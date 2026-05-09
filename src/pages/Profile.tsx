@@ -45,6 +45,7 @@ const ProfilePage = () => {
   const [cancelTarget, setCancelTarget] = useState<any | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
+  const [detailTarget, setDetailTarget] = useState<any | null>(null);
 
   const fetchReservations = async () => {
     if (!user) return;
