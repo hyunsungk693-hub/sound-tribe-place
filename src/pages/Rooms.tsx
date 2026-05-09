@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { RoomCardSkeleton } from "@/components/skeletons/PostSkeleton";
+import RoomReservationPanel from "@/components/RoomReservationPanel";
 
 const SAMPLE_AUTHORS = [
   "4cef9ad6-633d-42b6-adf6-a352853b05a5",
@@ -275,6 +276,7 @@ const Rooms = () => {
                       <MessageCircle className="w-4 h-4" /> 메시지 보내기
                     </button>
                   )}
+                  <RoomReservationPanel roomId={selectedRoom.id} ownerId={selectedRoom.user_id} />
                 </>
               )}
             </div>
