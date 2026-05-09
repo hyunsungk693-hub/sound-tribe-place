@@ -55,15 +55,22 @@ const ProfilePage = () => {
       .order("start_at", { ascending: false });
     const rsvList = (rsv as any[]) || [];
     const roomIds = Array.from(new Set(rsvList.map((r) => r.room_id))).filter(Boolean);
-    let titlesById: Record<string, string> = {};
+    let roomsById: Record<string, any> = {};
     if (roomIds.length > 0) {
       const { data: rooms } = await supabase
         .from("posts")
-        .select("id,title,venue")
+        .select("id,title,venue,area")
         .in("id", roomIds);
-      (rooms || []).forEach((p: any) => { titlesById[p.id] = p.title || p.venue || "연습실"; });
+      (rooms || []).forEach((p: any) => { roomsById[p.id] = p; });
     }
-    setMyReservations(rsvList.map((r) => ({ ...r, room_title: titlesById[r.room_id] || "삭제된 연습실" })));
+    setMyReservations(rsvList.map((r) => {
+      const room = roomsById[r.room_id];
+      return {
+        ...r,
+        room_title: room?.title || room?.venue || "삭제된 연습실",
+        room_address: room?.area || room?.venue || "",
+      };
+    }));
   };
 
   const confirmCancel = async () => {
