@@ -364,6 +364,36 @@ export type Database = {
         }
         Relationships: []
       }
+      room_reservations: {
+        Row: {
+          created_at: string
+          end_at: string
+          id: string
+          note: string | null
+          room_id: string
+          start_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_at: string
+          id?: string
+          note?: string | null
+          room_id: string
+          start_at: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_at?: string
+          id?: string
+          note?: string | null
+          room_id?: string
+          start_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
