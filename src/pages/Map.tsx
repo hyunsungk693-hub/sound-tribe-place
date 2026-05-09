@@ -623,46 +623,49 @@ const MapPage = () => {
                 )}
               </div>
 
-              {/* Contact actions */}
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!selected.phone) {
-                      toast.error("등록된 전화번호가 없습니다.");
-                      return;
-                    }
-                    window.location.href = `tel:${selected.phone.replace(/[^0-9+]/g, "")}`;
-                  }}
-                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold active:scale-[0.98] transition-all bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  <Phone className="w-4 h-4" />
-                  전화하기
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!user) {
-                      toast.error("메시지를 보내려면 로그인이 필요합니다.");
-                      navigate("/auth");
-                      return;
-                    }
-                    if (!selected.userId) {
-                      toast.error("이 게시물에는 연결된 사용자가 없습니다.");
-                      return;
-                    }
-                    if (selected.userId === user.id) {
-                      toast.error("본인에게는 메시지를 보낼 수 없습니다.");
-                      return;
-                    }
-                    navigate(`/messages?to=${selected.userId}`);
-                  }}
-                  className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold active:scale-[0.98] transition-all bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  메시지 보내기
-                </button>
-              </div>
+              {/* Contact actions
+                  메시지 버튼 표시 규칙:
+                  - 표시: selected.userId가 있고 본인 게시물이 아닐 때
+                  - 비로그인은 표시하되 클릭 시 로그인 유도
+                  - 숨김: 작성자 정보 없는 샘플 마커, 본인 게시물 */}
+              {(() => {
+                const canMessage = !!selected.userId && selected.userId !== user?.id;
+                return (
+                  <div className={`grid ${canMessage ? "grid-cols-2" : "grid-cols-1"} gap-2 mb-2`}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!selected.phone) {
+                          toast.error("등록된 전화번호가 없습니다.");
+                          return;
+                        }
+                        window.location.href = `tel:${selected.phone.replace(/[^0-9+]/g, "")}`;
+                      }}
+                      className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold active:scale-[0.98] transition-all bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                      <Phone className="w-4 h-4" />
+                      전화하기
+                    </button>
+                    {canMessage && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!user) {
+                            toast.error("메시지를 보내려면 로그인이 필요합니다.");
+                            navigate("/auth");
+                            return;
+                          }
+                          navigate(`/messages?to=${selected.userId}`);
+                        }}
+                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold active:scale-[0.98] transition-all bg-primary text-primary-foreground hover:bg-primary/90"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        메시지 보내기
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Directions */}
               <div className="grid grid-cols-2 gap-2 mb-4">
