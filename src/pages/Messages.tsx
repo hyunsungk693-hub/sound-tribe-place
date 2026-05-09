@@ -185,6 +185,7 @@ const Messages = () => {
       const existingConv = conversations.find((c) => c.otherUserId === targetUserId);
       if (existingConv) {
         setSelectedConv(existingConv);
+        if (prefillText) setNewMsg(prefillText);
         setSearchParams({}, { replace: true });
         return;
       }
