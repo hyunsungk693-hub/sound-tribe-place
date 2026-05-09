@@ -81,6 +81,9 @@ const Jobs = () => {
   // Owner: applicants for selected job
   const [jobApplicants, setJobApplicants] = useState<any[]>([]);
   const [loadingApplicants, setLoadingApplicants] = useState(false);
+  const APPLICANTS_PAGE_SIZE = 10;
+  const [applicantsVisible, setApplicantsVisible] = useState(APPLICANTS_PAGE_SIZE);
+  const applicantsSentinelRef = useRef<HTMLDivElement | null>(null);
 
   const fetchJobs = async () => {
     setLoadingJobs(true);
