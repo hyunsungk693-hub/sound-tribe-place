@@ -66,9 +66,14 @@ const Jobs = () => {
 
   // Application state
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
+  const [appliedStatusByJob, setAppliedStatusByJob] = useState<Record<string, string>>({});
   const [applyTarget, setApplyTarget] = useState<JobItem | null>(null);
   const [applyMessage, setApplyMessage] = useState("");
   const [applying, setApplying] = useState(false);
+
+  // Owner: applicants for selected job
+  const [jobApplicants, setJobApplicants] = useState<any[]>([]);
+  const [loadingApplicants, setLoadingApplicants] = useState(false);
 
   const fetchJobs = async () => {
     setLoadingJobs(true);
@@ -78,12 +83,49 @@ const Jobs = () => {
   };
 
   const fetchApplications = async () => {
-    if (!user) { setAppliedJobIds(new Set()); return; }
+    if (!user) { setAppliedJobIds(new Set()); setAppliedStatusByJob({}); return; }
     const { data } = await supabase
       .from("job_applications" as any)
-      .select("job_id")
+      .select("job_id,status")
       .eq("user_id", user.id);
-    setAppliedJobIds(new Set(((data as any[]) || []).map((a) => a.job_id)));
+    const list = (data as any[]) || [];
+    setAppliedJobIds(new Set(list.map((a) => a.job_id)));
+    const m: Record<string, string> = {};
+    list.forEach((a) => { m[a.job_id] = a.status; });
+    setAppliedStatusByJob(m);
+  };
+
+  const fetchJobApplicants = async (jobId: string) => {
+    setLoadingApplicants(true);
+    const { data: apps } = await supabase
+      .from("job_applications" as any)
+      .select("*")
+      .eq("job_id", jobId)
+      .order("created_at", { ascending: false });
+    const list = (apps as any[]) || [];
+    const userIds = Array.from(new Set(list.map((a) => a.user_id)));
+    let profilesById: Record<string, any> = {};
+    if (userIds.length > 0) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id,display_name,avatar_url")
+        .in("user_id", userIds);
+      (profs || []).forEach((p: any) => { profilesById[p.user_id] = p; });
+    }
+    setJobApplicants(list.map((a) => ({ ...a, applicant: profilesById[a.user_id] || null })));
+    setLoadingApplicants(false);
+  };
+
+  const updateApplicationStatus = async (appId: string, status: string) => {
+    const prev = jobApplicants;
+    setJobApplicants((cur) => cur.map((a) => a.id === appId ? { ...a, status } : a));
+    const { error } = await supabase.from("job_applications" as any).update({ status }).eq("id", appId);
+    if (error) {
+      toast.error("상태 변경 실패");
+      setJobApplicants(prev);
+      return;
+    }
+    toast.success("상태가 변경되었습니다");
   };
 
   useEffect(() => {
@@ -94,6 +136,14 @@ const Jobs = () => {
   }, []);
 
   useEffect(() => { fetchApplications(); }, [user]);
+
+  useEffect(() => {
+    if (selectedJob?.id && selectedJob.user_id === user?.id) {
+      fetchJobApplicants(selectedJob.id);
+    } else {
+      setJobApplicants([]);
+    }
+  }, [selectedJob, user]);
 
   const openApply = (job: JobItem) => {
     if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
