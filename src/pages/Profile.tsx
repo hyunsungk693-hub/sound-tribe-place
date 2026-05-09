@@ -179,9 +179,13 @@ const ProfilePage = () => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {tab} ({tab === "내 게시물" ? myPosts.length : myComments.length})
+              {tab} ({tab === "내 게시물" ? myPosts.length : tab === "내 댓글" ? myComments.length : myReservations.length})
             </button>
           ))}
+        </div>
+
+        <div className="p-3 space-y-2 max-h-[300px] overflow-y-auto">
+          {activeTab === "내 게시물" ? (
         </div>
 
         <div className="p-3 space-y-2 max-h-[300px] overflow-y-auto">
