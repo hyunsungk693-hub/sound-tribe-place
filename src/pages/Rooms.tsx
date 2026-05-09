@@ -69,7 +69,12 @@ const Rooms = () => {
     setLoadingRooms(false);
   };
 
-  useEffect(() => { fetchRooms(); }, []);
+  useEffect(() => {
+    fetchRooms();
+    const handler = (e: any) => { if (e.detail?.type === "room") fetchRooms(); };
+    window.addEventListener("post-created", handler);
+    return () => window.removeEventListener("post-created", handler);
+  }, []);
 
   const allRooms: RoomItem[] = [
     ...dbRooms.map((r) => ({
