@@ -452,7 +452,7 @@ const Jobs = () => {
                         <p className="text-xs text-muted-foreground py-2">아직 받은 지원이 없습니다.</p>
                       ) : (
                         <div className="space-y-2">
-                          {jobApplicants.map((a) => {
+                          {jobApplicants.slice(0, applicantsVisible).map((a) => {
                             const meta = statusMeta(a.status);
                             return (
                               <div key={a.id} className="p-3 rounded-xl bg-secondary/50 space-y-2">
@@ -491,6 +491,13 @@ const Jobs = () => {
                               </div>
                             );
                           })}
+                          {applicantsVisible < jobApplicants.length ? (
+                            <div ref={applicantsSentinelRef} className="py-3 text-center text-[11px] text-muted-foreground">
+                              더 불러오는 중... ({applicantsVisible}/{jobApplicants.length})
+                            </div>
+                          ) : jobApplicants.length > APPLICANTS_PAGE_SIZE ? (
+                            <p className="py-2 text-center text-[11px] text-muted-foreground">모든 지원자를 불러왔습니다</p>
+                          ) : null}
                         </div>
                       )}
                     </div>
