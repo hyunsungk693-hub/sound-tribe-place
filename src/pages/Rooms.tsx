@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { RoomCardSkeleton } from "@/components/skeletons/PostSkeleton";
+import RoomReservationPanel from "@/components/RoomReservationPanel";
 
 const SAMPLE_AUTHORS = [
   "4cef9ad6-633d-42b6-adf6-a352853b05a5",
