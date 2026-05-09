@@ -1,4 +1,4 @@
-import { Search, SlidersHorizontal, ArrowLeft, Pencil, Trash2, MessageCircle } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowLeft, Pencil, Trash2, MessageCircle, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { JobCardSkeleton } from "@/components/skeletons/PostSkeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 const categories = ["전체", "공연", "녹음", "레슨", "행사", "기타"];
 
@@ -62,11 +64,26 @@ const Jobs = () => {
   const [editPay, setEditPay] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
+  // Application state
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
+  const [applyTarget, setApplyTarget] = useState<JobItem | null>(null);
+  const [applyMessage, setApplyMessage] = useState("");
+  const [applying, setApplying] = useState(false);
+
   const fetchJobs = async () => {
     setLoadingJobs(true);
     const { data } = await supabase.from("posts").select("*").eq("post_type", "job").order("created_at", { ascending: false });
     setDbJobs(data || []);
     setLoadingJobs(false);
+  };
+
+  const fetchApplications = async () => {
+    if (!user) { setAppliedJobIds(new Set()); return; }
+    const { data } = await supabase
+      .from("job_applications" as any)
+      .select("job_id")
+      .eq("user_id", user.id);
+    setAppliedJobIds(new Set(((data as any[]) || []).map((a) => a.job_id)));
   };
 
   useEffect(() => {
@@ -75,6 +92,41 @@ const Jobs = () => {
     window.addEventListener("post-created", handler);
     return () => window.removeEventListener("post-created", handler);
   }, []);
+
+  useEffect(() => { fetchApplications(); }, [user]);
+
+  const openApply = (job: JobItem) => {
+    if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
+    if (!job.id || !job.user_id) { toast.error("샘플 공고는 지원할 수 없습니다"); return; }
+    if (appliedJobIds.has(job.id)) { toast.info("이미 지원한 공고입니다"); return; }
+    setApplyTarget(job);
+    setApplyMessage(`"${job.title}" 공고에 지원합니다. 잘 부탁드립니다!`);
+  };
+
+  const submitApply = async () => {
+    if (!applyTarget?.id || !user) return;
+    setApplying(true);
+    const { error } = await supabase.from("job_applications" as any).insert({
+      job_id: applyTarget.id,
+      user_id: user.id,
+      message: applyMessage.trim() || null,
+    });
+    setApplying(false);
+    if (error) {
+      if ((error as any).code === "23505") {
+        toast.info("이미 지원한 공고입니다");
+        setAppliedJobIds((prev) => new Set(prev).add(applyTarget.id!));
+      } else {
+        toast.error("지원에 실패했습니다");
+      }
+      return;
+    }
+    toast.success("지원이 완료되었습니다");
+    setAppliedJobIds((prev) => new Set(prev).add(applyTarget.id!));
+    setApplyTarget(null);
+    setApplyMessage("");
+    setSelectedJob(null);
+  };
 
   const allJobs: JobItem[] = [
     ...dbJobs.map((j) => ({
@@ -173,17 +225,22 @@ const Jobs = () => {
               <span className="text-[10px] text-muted-foreground">{job.date}</span>
             </div>
             {job.user_id && job.user_id !== user?.id && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
-                  const msg = `[지원] "${job.title}" 공고에 지원합니다. 자세한 내용을 알려주세요!`;
-                  navigate(`/messages?to=${job.user_id}&prefill=${encodeURIComponent(msg)}`);
-                }}
-                className="mt-3 w-full h-9 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 active:scale-[0.98] transition-all"
-              >
-                지원하기
-              </button>
+              (() => {
+                const applied = !!job.id && appliedJobIds.has(job.id);
+                return (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); if (applied) return; openApply(job); }}
+                    disabled={applied}
+                    className={`mt-3 w-full h-9 rounded-lg text-xs font-medium active:scale-[0.98] transition-all ${
+                      applied
+                        ? "bg-secondary text-muted-foreground cursor-default"
+                        : "bg-primary text-primary-foreground hover:bg-primary/90"
+                    }`}
+                  >
+                    {applied ? (<span className="inline-flex items-center gap-1"><Check className="w-3.5 h-3.5" /> 지원 완료</span>) : "지원하기"}
+                  </button>
+                );
+              })()
             )}
           </div>
         ))}
@@ -279,17 +336,22 @@ const Jobs = () => {
                       >
                         <MessageCircle className="w-4 h-4" /> 메시지
                       </button>
-                      <button
-                        onClick={() => {
-                          if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
-                          if (!selectedJob.user_id) { toast.error("샘플 공고는 지원할 수 없습니다"); return; }
-                          const msg = `[지원] "${selectedJob.title}" 공고에 지원합니다. 자세한 내용을 알려주세요!`;
-                          navigate(`/messages?to=${selectedJob.user_id}&prefill=${encodeURIComponent(msg)}`);
-                        }}
-                        className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 active:scale-[0.98] transition-all"
-                      >
-                        지원하기
-                      </button>
+                      {(() => {
+                        const applied = !!selectedJob.id && appliedJobIds.has(selectedJob.id);
+                        return (
+                          <button
+                            onClick={() => { if (!applied) openApply(selectedJob); }}
+                            disabled={applied}
+                            className={`flex-1 h-11 rounded-xl text-sm font-medium active:scale-[0.98] transition-all ${
+                              applied
+                                ? "bg-secondary text-muted-foreground cursor-default"
+                                : "bg-primary text-primary-foreground hover:bg-primary/90"
+                            }`}
+                          >
+                            {applied ? (<span className="inline-flex items-center justify-center gap-1"><Check className="w-4 h-4" /> 지원 완료</span>) : "지원하기"}
+                          </button>
+                        );
+                      })()}
                     </div>
                   )}
                 </>
@@ -298,6 +360,47 @@ const Jobs = () => {
           </div>
         </div>
       )}
+
+      <Dialog open={!!applyTarget} onOpenChange={(o) => { if (!o) { setApplyTarget(null); setApplyMessage(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>구인 지원</DialogTitle>
+            <DialogDescription>
+              {applyTarget && (
+                <>
+                  <span className="block font-medium text-foreground">{applyTarget.title}</span>
+                  <span className="block text-xs mt-1">{applyTarget.venue}{applyTarget.pay ? ` · ${applyTarget.pay}` : ""}</span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-xs font-medium">지원 메시지 (선택)</label>
+            <Textarea
+              value={applyMessage}
+              onChange={(e) => setApplyMessage(e.target.value)}
+              placeholder="자기소개나 가능한 일정 등을 적어주세요"
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => { setApplyTarget(null); setApplyMessage(""); }}
+              disabled={applying}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
+            >
+              취소
+            </button>
+            <button
+              onClick={submitApply}
+              disabled={applying}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {applying ? "지원 중..." : "지원 완료"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 };
