@@ -509,7 +509,7 @@ const Jobs = () => {
                         <p className="text-xs text-muted-foreground py-2">선택한 상태에 해당하는 지원이 없습니다.</p>
                       ) : (
                         <div className="space-y-2">
-                          {jobApplicants.slice(0, applicantsVisible).map((a) => {
+                          {filteredApplicants.slice(0, applicantsVisible).map((a) => {
                             const meta = statusMeta(a.status);
                             return (
                               <div key={a.id} className="p-3 rounded-xl bg-secondary/50 space-y-2">
