@@ -116,24 +116,7 @@ const ProfilePage = () => {
       .then(({ data }) => setMyComments(data || []));
 
     // Fetch my room reservations (with room title)
-    (async () => {
-      const { data: rsv } = await supabase
-        .from("room_reservations" as any)
-        .select("*")
-        .eq("user_id", user.id)
-        .order("start_at", { ascending: false });
-      const rsvList = (rsv as any[]) || [];
-      const roomIds = Array.from(new Set(rsvList.map((r) => r.room_id))).filter(Boolean);
-      let titlesById: Record<string, string> = {};
-      if (roomIds.length > 0) {
-        const { data: rooms } = await supabase
-          .from("posts")
-          .select("id,title,venue")
-          .in("id", roomIds);
-        (rooms || []).forEach((p: any) => { titlesById[p.id] = p.title || p.venue || "연습실"; });
-      }
-      setMyReservations(rsvList.map((r) => ({ ...r, room_title: titlesById[r.room_id] || "삭제된 연습실" })));
-    })();
+    fetchReservations();
   }, [user]);
 
   const handleLogout = async () => {
