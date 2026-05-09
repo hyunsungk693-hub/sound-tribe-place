@@ -144,13 +144,17 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-1 block">시작 시간</label>
           <select
-            value={startHour}
-            onChange={(e) => setStartHour(Number(e.target.value))}
+            value={startSlot}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              setStartSlot(v);
+              if (endSlot <= v) setEndSlot(v + 1);
+            }}
             className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
           >
-            {Array.from({ length: 24 }, (_, h) => (
-              <option key={h} value={h} disabled={bookedHours.has(h)}>
-                {String(h).padStart(2, "0")}:00 {bookedHours.has(h) ? "(예약됨)" : ""}
+            {Array.from({ length: 48 }, (_, i) => (
+              <option key={i} value={i} disabled={bookedSlots.has(i)}>
+                {slotToHM(i)} {bookedSlots.has(i) ? "(예약됨)" : ""}
               </option>
             ))}
           </select>
@@ -158,13 +162,13 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-1 block">종료 시간</label>
           <select
-            value={endHour}
-            onChange={(e) => setEndHour(Number(e.target.value))}
+            value={endSlot}
+            onChange={(e) => setEndSlot(Number(e.target.value))}
             className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
           >
-            {Array.from({ length: 24 }, (_, i) => i + 1).map((h) => (
-              <option key={h} value={h} disabled={h <= startHour}>
-                {String(h).padStart(2, "0")}:00
+            {Array.from({ length: 48 }, (_, i) => i + 1).map((i) => (
+              <option key={i} value={i} disabled={i <= startSlot}>
+                {i === 48 ? "24:00" : slotToHM(i)}
               </option>
             ))}
           </select>
@@ -176,7 +180,7 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
         disabled={submitting || !user}
         className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 active:scale-[0.98] transition-all"
       >
-        {submitting ? "예약 중..." : `${String(startHour).padStart(2, "0")}:00 - ${String(endHour).padStart(2, "0")}:00 예약하기`}
+        {submitting ? "예약 중..." : `${slotToHM(startSlot)} - ${endSlot === 48 ? "24:00" : slotToHM(endSlot)} 예약하기`}
       </button>
 
       <div>
