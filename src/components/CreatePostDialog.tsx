@@ -121,9 +121,10 @@ const CreatePostDialog = ({ postType, fields, onCreated }: CreatePostDialogProps
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-4 z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 active:scale-90 transition-all"
+        aria-label="게시물 작성"
+        className="absolute top-3 right-14 z-[2100] w-9 h-9 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 active:scale-90 transition-all"
       >
-        <Plus className="w-6 h-6" />
+        <Plus className="w-4 h-4" />
       </button>
     );
   }
