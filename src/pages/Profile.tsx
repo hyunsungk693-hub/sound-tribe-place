@@ -451,6 +451,57 @@ const ProfilePage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!detailTarget} onOpenChange={(o) => { if (!o) setDetailTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>예약 상세</DialogTitle>
+          </DialogHeader>
+          {detailTarget && (() => {
+            const s = new Date(detailTarget.start_at);
+            const e = new Date(detailTarget.end_at);
+            const now = Date.now();
+            const status = e.getTime() < now ? { label: "완료", cls: "bg-muted text-muted-foreground" }
+              : s.getTime() <= now ? { label: "이용 중", cls: "bg-green-500/10 text-green-600" }
+              : { label: "예정", cls: "bg-primary/10 text-primary" };
+            const fmtT = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+            return (
+              <div className="space-y-3 text-sm">
+                <div>
+                  <h3 className="font-semibold text-base">{detailTarget.room_title}</h3>
+                  <span className={`inline-block mt-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${status.cls}`}>
+                    {status.label}
+                  </span>
+                </div>
+                <div className="flex items-start gap-2 text-muted-foreground">
+                  <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span className="text-xs">{detailTarget.room_address || "주소 정보 없음"}</span>
+                </div>
+                <div className="flex items-start gap-2 text-muted-foreground">
+                  <Calendar className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span className="text-xs">{s.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "short" })}</span>
+                </div>
+                <div className="flex items-start gap-2 text-muted-foreground">
+                  <Clock className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span className="text-xs">{fmtT(s)} ~ {fmtT(e)}</span>
+                </div>
+                <div className="flex items-start gap-2 text-muted-foreground">
+                  <Users className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span className="text-xs">{detailTarget.note || "인원 정보 없음"}</span>
+                </div>
+              </div>
+            );
+          })()}
+          <DialogFooter>
+            <button
+              onClick={() => setDetailTarget(null)}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
+            >
+              닫기
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 };
