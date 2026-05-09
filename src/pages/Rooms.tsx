@@ -276,6 +276,7 @@ const Rooms = () => {
                       <MessageCircle className="w-4 h-4" /> 메시지 보내기
                     </button>
                   )}
+                  <RoomReservationPanel roomId={selectedRoom.id} ownerId={selectedRoom.user_id} />
                 </>
               )}
             </div>
