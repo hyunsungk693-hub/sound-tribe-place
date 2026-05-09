@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Settings, ChevronRight, Music, Award, Edit3, Bell, Shield, HelpCircle, LogOut, Heart, MessageSquare, Trash2, Sun, Moon, Monitor, Calendar } from "lucide-react";
+import { Settings, ChevronRight, Music, Award, Edit3, Bell, Shield, HelpCircle, LogOut, Heart, MessageSquare, Trash2, Sun, Moon, Monitor, Calendar, MapPin, Users, Clock } from "lucide-react";
 import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -45,6 +45,7 @@ const ProfilePage = () => {
   const [cancelTarget, setCancelTarget] = useState<any | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
+  const [detailTarget, setDetailTarget] = useState<any | null>(null);
 
   const fetchReservations = async () => {
     if (!user) return;
@@ -55,15 +56,22 @@ const ProfilePage = () => {
       .order("start_at", { ascending: false });
     const rsvList = (rsv as any[]) || [];
     const roomIds = Array.from(new Set(rsvList.map((r) => r.room_id))).filter(Boolean);
-    let titlesById: Record<string, string> = {};
+    let roomsById: Record<string, any> = {};
     if (roomIds.length > 0) {
       const { data: rooms } = await supabase
         .from("posts")
-        .select("id,title,venue")
+        .select("id,title,venue,area")
         .in("id", roomIds);
-      (rooms || []).forEach((p: any) => { titlesById[p.id] = p.title || p.venue || "연습실"; });
+      (rooms || []).forEach((p: any) => { roomsById[p.id] = p; });
     }
-    setMyReservations(rsvList.map((r) => ({ ...r, room_title: titlesById[r.room_id] || "삭제된 연습실" })));
+    setMyReservations(rsvList.map((r) => {
+      const room = roomsById[r.room_id];
+      return {
+        ...r,
+        room_title: room?.title || room?.venue || "삭제된 연습실",
+        room_address: room?.area || room?.venue || "",
+      };
+    }));
   };
 
   const confirmCancel = async () => {
@@ -284,7 +292,11 @@ const ProfilePage = () => {
                 const fmtT = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
                 const upcoming = e.getTime() > Date.now();
                 return (
-                  <div key={r.id} className="p-3 rounded-xl bg-secondary/50">
+                  <div
+                    key={r.id}
+                    onClick={() => setDetailTarget(r)}
+                    className="p-3 rounded-xl bg-secondary/50 hover:bg-surface-hover cursor-pointer transition-colors active:scale-[0.98]"
+                  >
                     <div className="flex items-center gap-2 mb-1">
                       <Calendar className="w-3 h-3 text-primary" />
                       <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${upcoming ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
@@ -295,7 +307,7 @@ const ProfilePage = () => {
                       </span>
                       {upcoming && (
                         <button
-                          onClick={() => { setCancelTarget(r); setCancelReason(""); }}
+                          onClick={(e) => { e.stopPropagation(); setCancelTarget(r); setCancelReason(""); }}
                           className="p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -435,6 +447,57 @@ const ProfilePage = () => {
               className="px-4 py-2 text-sm font-medium rounded-lg bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {cancelling ? "취소 중..." : "예약 취소"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!detailTarget} onOpenChange={(o) => { if (!o) setDetailTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>예약 상세</DialogTitle>
+          </DialogHeader>
+          {detailTarget && (() => {
+            const s = new Date(detailTarget.start_at);
+            const e = new Date(detailTarget.end_at);
+            const now = Date.now();
+            const status = e.getTime() < now ? { label: "완료", cls: "bg-muted text-muted-foreground" }
+              : s.getTime() <= now ? { label: "이용 중", cls: "bg-green-500/10 text-green-600" }
+              : { label: "예정", cls: "bg-primary/10 text-primary" };
+            const fmtT = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+            return (
+              <div className="space-y-3 text-sm">
+                <div>
+                  <h3 className="font-semibold text-base">{detailTarget.room_title}</h3>
+                  <span className={`inline-block mt-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${status.cls}`}>
+                    {status.label}
+                  </span>
+                </div>
+                <div className="flex items-start gap-2 text-muted-foreground">
+                  <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span className="text-xs">{detailTarget.room_address || "주소 정보 없음"}</span>
+                </div>
+                <div className="flex items-start gap-2 text-muted-foreground">
+                  <Calendar className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span className="text-xs">{s.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "short" })}</span>
+                </div>
+                <div className="flex items-start gap-2 text-muted-foreground">
+                  <Clock className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span className="text-xs">{fmtT(s)} ~ {fmtT(e)}</span>
+                </div>
+                <div className="flex items-start gap-2 text-muted-foreground">
+                  <Users className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span className="text-xs">{detailTarget.note || "인원 정보 없음"}</span>
+                </div>
+              </div>
+            );
+          })()}
+          <DialogFooter>
+            <button
+              onClick={() => setDetailTarget(null)}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
+            >
+              닫기
             </button>
           </DialogFooter>
         </DialogContent>
