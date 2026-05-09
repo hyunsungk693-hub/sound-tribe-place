@@ -84,6 +84,16 @@ const Jobs = () => {
   const APPLICANTS_PAGE_SIZE = 10;
   const [applicantsVisible, setApplicantsVisible] = useState(APPLICANTS_PAGE_SIZE);
   const applicantsSentinelRef = useRef<HTMLDivElement | null>(null);
+  const [applicantStatusFilter, setApplicantStatusFilter] = useState<string>("all");
+  const [applicantSortOrder, setApplicantSortOrder] = useState<"newest" | "oldest">("newest");
+
+  const filteredApplicants = jobApplicants
+    .filter((a) => applicantStatusFilter === "all" ? true : a.status === applicantStatusFilter)
+    .sort((a, b) => {
+      const ta = new Date(a.created_at).getTime();
+      const tb = new Date(b.created_at).getTime();
+      return applicantSortOrder === "newest" ? tb - ta : ta - tb;
+    });
 
   const fetchJobs = async () => {
     setLoadingJobs(true);
