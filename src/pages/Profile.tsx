@@ -255,7 +255,7 @@ const ProfilePage = () => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {tab} ({tab === "내 게시물" ? myPosts.length : tab === "내 댓글" ? myComments.length : myReservations.length})
+              {tab} ({tab === "내 게시물" ? myPosts.length : tab === "내 댓글" ? myComments.length : tab === "내 예약" ? myReservations.length : myApplications.length})
             </button>
           ))}
         </div>
