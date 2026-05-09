@@ -28,8 +28,9 @@ const todayStr = () => {
 const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
   const { user } = useAuth();
   const [date, setDate] = useState<string>(todayStr());
-  const [startHour, setStartHour] = useState<number>(10);
-  const [endHour, setEndHour] = useState<number>(11);
+  // Slots: 0..47 representing 00:00, 00:30, ... 23:30. End slot can be 1..48 (=24:00)
+  const [startSlot, setStartSlot] = useState<number>(20); // 10:00
+  const [endSlot, setEndSlot] = useState<number>(22);     // 11:00
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -60,27 +61,39 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
     );
   }
 
-  // Build a Set of booked hours for visual disable
-  const bookedHours = new Set<number>();
+  // Build a Set of booked 30-min slots for visual disable
+  const bookedSlots = new Set<number>();
   reservations.forEach((r) => {
     const s = new Date(r.start_at);
     const e = new Date(r.end_at);
-    for (let h = s.getHours(); h < e.getHours(); h++) bookedHours.add(h);
+    const startIdx = s.getHours() * 2 + Math.floor(s.getMinutes() / 30);
+    const endIdx = e.getHours() * 2 + Math.ceil(e.getMinutes() / 30);
+    for (let i = startIdx; i < endIdx; i++) bookedSlots.add(i);
   });
+
+  const slotToHM = (slot: number) => {
+    const h = Math.floor(slot / 2);
+    const m = slot % 2 === 0 ? "00" : "30";
+    return `${String(h).padStart(2, "0")}:${m}`;
+  };
 
   const handleReserve = async () => {
     if (!user) { toast.error("로그인이 필요합니다"); return; }
-    if (endHour <= startHour) { toast.error("종료 시간은 시작 시간 이후여야 합니다"); return; }
+    if (endSlot <= startSlot) { toast.error("종료 시간은 시작 시간 이후여야 합니다"); return; }
     // Check overlap client-side first
-    for (let h = startHour; h < endHour; h++) {
-      if (bookedHours.has(h)) {
-        toast.error(`${h}시는 이미 예약되어 있습니다`);
+    for (let i = startSlot; i < endSlot; i++) {
+      if (bookedSlots.has(i)) {
+        toast.error(`${slotToHM(i)}는 이미 예약되어 있습니다`);
         return;
       }
     }
     setSubmitting(true);
-    const start_at = new Date(`${date}T${String(startHour).padStart(2, "0")}:00:00`).toISOString();
-    const end_at = new Date(`${date}T${String(endHour).padStart(2, "0")}:00:00`).toISOString();
+    const startH = Math.floor(startSlot / 2);
+    const startM = startSlot % 2 === 0 ? "00" : "30";
+    const endH = Math.floor(endSlot / 2);
+    const endM = endSlot % 2 === 0 ? "00" : "30";
+    const start_at = new Date(`${date}T${String(startH).padStart(2, "0")}:${startM}:00`).toISOString();
+    const end_at = new Date(`${date}T${String(endH).padStart(2, "0")}:${endM}:00`).toISOString();
     const { error } = await supabase.from("room_reservations" as any).insert({
       room_id: roomId,
       user_id: user.id,
@@ -131,13 +144,17 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-1 block">시작 시간</label>
           <select
-            value={startHour}
-            onChange={(e) => setStartHour(Number(e.target.value))}
+            value={startSlot}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              setStartSlot(v);
+              if (endSlot <= v) setEndSlot(v + 1);
+            }}
             className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
           >
-            {Array.from({ length: 24 }, (_, h) => (
-              <option key={h} value={h} disabled={bookedHours.has(h)}>
-                {String(h).padStart(2, "0")}:00 {bookedHours.has(h) ? "(예약됨)" : ""}
+            {Array.from({ length: 48 }, (_, i) => (
+              <option key={i} value={i} disabled={bookedSlots.has(i)}>
+                {slotToHM(i)} {bookedSlots.has(i) ? "(예약됨)" : ""}
               </option>
             ))}
           </select>
@@ -145,13 +162,13 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-1 block">종료 시간</label>
           <select
-            value={endHour}
-            onChange={(e) => setEndHour(Number(e.target.value))}
+            value={endSlot}
+            onChange={(e) => setEndSlot(Number(e.target.value))}
             className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
           >
-            {Array.from({ length: 24 }, (_, i) => i + 1).map((h) => (
-              <option key={h} value={h} disabled={h <= startHour}>
-                {String(h).padStart(2, "0")}:00
+            {Array.from({ length: 48 }, (_, i) => i + 1).map((i) => (
+              <option key={i} value={i} disabled={i <= startSlot}>
+                {i === 48 ? "24:00" : slotToHM(i)}
               </option>
             ))}
           </select>
@@ -163,7 +180,7 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
         disabled={submitting || !user}
         className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 active:scale-[0.98] transition-all"
       >
-        {submitting ? "예약 중..." : `${String(startHour).padStart(2, "0")}:00 - ${String(endHour).padStart(2, "0")}:00 예약하기`}
+        {submitting ? "예약 중..." : `${slotToHM(startSlot)} - ${endSlot === 48 ? "24:00" : slotToHM(endSlot)} 예약하기`}
       </button>
 
       <div>
