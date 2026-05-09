@@ -548,11 +548,11 @@ const Jobs = () => {
                               </div>
                             );
                           })}
-                          {applicantsVisible < jobApplicants.length ? (
+                          {applicantsVisible < filteredApplicants.length ? (
                             <div ref={applicantsSentinelRef} className="py-3 text-center text-[11px] text-muted-foreground">
-                              더 불러오는 중... ({applicantsVisible}/{jobApplicants.length})
+                              더 불러오는 중... ({applicantsVisible}/{filteredApplicants.length})
                             </div>
-                          ) : jobApplicants.length > APPLICANTS_PAGE_SIZE ? (
+                          ) : filteredApplicants.length > APPLICANTS_PAGE_SIZE ? (
                             <p className="py-2 text-center text-[11px] text-muted-foreground">모든 지원자를 불러왔습니다</p>
                           ) : null}
                         </div>
