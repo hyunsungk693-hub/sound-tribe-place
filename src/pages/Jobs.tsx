@@ -336,17 +336,22 @@ const Jobs = () => {
                       >
                         <MessageCircle className="w-4 h-4" /> 메시지
                       </button>
-                      <button
-                        onClick={() => {
-                          if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
-                          if (!selectedJob.user_id) { toast.error("샘플 공고는 지원할 수 없습니다"); return; }
-                          const msg = `[지원] "${selectedJob.title}" 공고에 지원합니다. 자세한 내용을 알려주세요!`;
-                          navigate(`/messages?to=${selectedJob.user_id}&prefill=${encodeURIComponent(msg)}`);
-                        }}
-                        className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 active:scale-[0.98] transition-all"
-                      >
-                        지원하기
-                      </button>
+                      {(() => {
+                        const applied = !!selectedJob.id && appliedJobIds.has(selectedJob.id);
+                        return (
+                          <button
+                            onClick={() => { if (!applied) openApply(selectedJob); }}
+                            disabled={applied}
+                            className={`flex-1 h-11 rounded-xl text-sm font-medium active:scale-[0.98] transition-all ${
+                              applied
+                                ? "bg-secondary text-muted-foreground cursor-default"
+                                : "bg-primary text-primary-foreground hover:bg-primary/90"
+                            }`}
+                          >
+                            {applied ? (<span className="inline-flex items-center justify-center gap-1"><Check className="w-4 h-4" /> 지원 완료</span>) : "지원하기"}
+                          </button>
+                        );
+                      })()}
                     </div>
                   )}
                 </>
@@ -355,6 +360,47 @@ const Jobs = () => {
           </div>
         </div>
       )}
+
+      <Dialog open={!!applyTarget} onOpenChange={(o) => { if (!o) { setApplyTarget(null); setApplyMessage(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>구인 지원</DialogTitle>
+            <DialogDescription>
+              {applyTarget && (
+                <>
+                  <span className="block font-medium text-foreground">{applyTarget.title}</span>
+                  <span className="block text-xs mt-1">{applyTarget.venue}{applyTarget.pay ? ` · ${applyTarget.pay}` : ""}</span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-xs font-medium">지원 메시지 (선택)</label>
+            <Textarea
+              value={applyMessage}
+              onChange={(e) => setApplyMessage(e.target.value)}
+              placeholder="자기소개나 가능한 일정 등을 적어주세요"
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => { setApplyTarget(null); setApplyMessage(""); }}
+              disabled={applying}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
+            >
+              취소
+            </button>
+            <button
+              onClick={submitApply}
+              disabled={applying}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {applying ? "지원 중..." : "지원 완료"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 };
