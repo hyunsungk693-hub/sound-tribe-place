@@ -2,7 +2,6 @@ import { Search, MapPin, Clock, Star, Music, ArrowLeft, Pencil, Trash2, MessageC
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
-import CreatePostDialog from "@/components/CreatePostDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";

@@ -2,7 +2,6 @@ import { Heart, MessageSquare, Share2, TrendingUp, ArrowLeft, Send, Search, X, M
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
-import CreatePostDialog from "@/components/CreatePostDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
