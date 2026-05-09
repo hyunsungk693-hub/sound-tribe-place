@@ -84,6 +84,16 @@ const Jobs = () => {
   const APPLICANTS_PAGE_SIZE = 10;
   const [applicantsVisible, setApplicantsVisible] = useState(APPLICANTS_PAGE_SIZE);
   const applicantsSentinelRef = useRef<HTMLDivElement | null>(null);
+  const [applicantStatusFilter, setApplicantStatusFilter] = useState<string>("all");
+  const [applicantSortOrder, setApplicantSortOrder] = useState<"newest" | "oldest">("newest");
+
+  const filteredApplicants = jobApplicants
+    .filter((a) => applicantStatusFilter === "all" ? true : a.status === applicantStatusFilter)
+    .sort((a, b) => {
+      const ta = new Date(a.created_at).getTime();
+      const tb = new Date(b.created_at).getTime();
+      return applicantSortOrder === "newest" ? tb - ta : ta - tb;
+    });
 
   const fetchJobs = async () => {
     setLoadingJobs(true);
@@ -154,21 +164,28 @@ const Jobs = () => {
       setJobApplicants([]);
     }
     setApplicantsVisible(APPLICANTS_PAGE_SIZE);
+    setApplicantStatusFilter("all");
+    setApplicantSortOrder("newest");
   }, [selectedJob, user]);
+
+  // Reset pagination when filter/sort changes
+  useEffect(() => {
+    setApplicantsVisible(APPLICANTS_PAGE_SIZE);
+  }, [applicantStatusFilter, applicantSortOrder]);
 
   // Infinite scroll: load more applicants when sentinel enters viewport
   useEffect(() => {
     const node = applicantsSentinelRef.current;
     if (!node) return;
-    if (applicantsVisible >= jobApplicants.length) return;
+    if (applicantsVisible >= filteredApplicants.length) return;
     const io = new IntersectionObserver((entries) => {
       if (entries.some((e) => e.isIntersecting)) {
-        setApplicantsVisible((v) => Math.min(v + APPLICANTS_PAGE_SIZE, jobApplicants.length));
+        setApplicantsVisible((v) => Math.min(v + APPLICANTS_PAGE_SIZE, filteredApplicants.length));
       }
     }, { rootMargin: "120px" });
     io.observe(node);
     return () => io.disconnect();
-  }, [applicantsVisible, jobApplicants.length, selectedJob?.id]);
+  }, [applicantsVisible, filteredApplicants.length, selectedJob?.id]);
 
   const openApply = (job: JobItem) => {
     if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
@@ -445,14 +462,54 @@ const Jobs = () => {
 
                   {selectedJob.id && selectedJob.user_id === user?.id && (
                     <div className="mt-5 pt-4 border-t border-border/40">
-                      <h3 className="text-sm font-semibold mb-3">받은 지원 ({jobApplicants.length})</h3>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <h3 className="text-sm font-semibold">
+                          받은 지원 ({filteredApplicants.length}{applicantStatusFilter !== "all" ? ` / ${jobApplicants.length}` : ""})
+                        </h3>
+                      </div>
+                      {jobApplicants.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                          <div className="flex flex-wrap gap-1">
+                            {[{ value: "all", label: "전체" }, ...APPLY_STATUSES].map((s) => {
+                              const active = applicantStatusFilter === s.value;
+                              const count = s.value === "all"
+                                ? jobApplicants.length
+                                : jobApplicants.filter((a) => a.status === s.value).length;
+                              return (
+                                <button
+                                  key={s.value}
+                                  type="button"
+                                  onClick={() => setApplicantStatusFilter(s.value)}
+                                  className={`h-7 px-2.5 rounded-full text-[11px] font-medium transition-colors ${
+                                    active
+                                      ? "bg-primary text-primary-foreground"
+                                      : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+                                  }`}
+                                >
+                                  {s.label} {count}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <select
+                            value={applicantSortOrder}
+                            onChange={(e) => setApplicantSortOrder(e.target.value as "newest" | "oldest")}
+                            className="ml-auto h-7 rounded-md border border-input bg-background px-2 text-[11px] outline-none focus:ring-2 focus:ring-primary/30"
+                          >
+                            <option value="newest">최신 지원순</option>
+                            <option value="oldest">오래된 지원순</option>
+                          </select>
+                        </div>
+                      )}
                       {loadingApplicants ? (
                         <p className="text-xs text-muted-foreground py-2">불러오는 중...</p>
                       ) : jobApplicants.length === 0 ? (
                         <p className="text-xs text-muted-foreground py-2">아직 받은 지원이 없습니다.</p>
+                      ) : filteredApplicants.length === 0 ? (
+                        <p className="text-xs text-muted-foreground py-2">선택한 상태에 해당하는 지원이 없습니다.</p>
                       ) : (
                         <div className="space-y-2">
-                          {jobApplicants.slice(0, applicantsVisible).map((a) => {
+                          {filteredApplicants.slice(0, applicantsVisible).map((a) => {
                             const meta = statusMeta(a.status);
                             return (
                               <div key={a.id} className="p-3 rounded-xl bg-secondary/50 space-y-2">
@@ -491,11 +548,11 @@ const Jobs = () => {
                               </div>
                             );
                           })}
-                          {applicantsVisible < jobApplicants.length ? (
+                          {applicantsVisible < filteredApplicants.length ? (
                             <div ref={applicantsSentinelRef} className="py-3 text-center text-[11px] text-muted-foreground">
-                              더 불러오는 중... ({applicantsVisible}/{jobApplicants.length})
+                              더 불러오는 중... ({applicantsVisible}/{filteredApplicants.length})
                             </div>
-                          ) : jobApplicants.length > APPLICANTS_PAGE_SIZE ? (
+                          ) : filteredApplicants.length > APPLICANTS_PAGE_SIZE ? (
                             <p className="py-2 text-center text-[11px] text-muted-foreground">모든 지원자를 불러왔습니다</p>
                           ) : null}
                         </div>
