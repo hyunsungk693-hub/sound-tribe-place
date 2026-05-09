@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Settings, ChevronRight, Music, Award, Edit3, Bell, Shield, HelpCircle, LogOut, Heart, MessageSquare, Trash2, Sun, Moon, Monitor, Calendar } from "lucide-react";
+import { Settings, ChevronRight, Music, Award, Edit3, Bell, Shield, HelpCircle, LogOut, Heart, MessageSquare, Trash2, Sun, Moon, Monitor, Calendar, MapPin, Users, Clock } from "lucide-react";
 import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/contexts/AuthContext";
