@@ -70,7 +70,12 @@ const Jobs = () => {
     setLoadingJobs(false);
   };
 
-  useEffect(() => { fetchJobs(); }, []);
+  useEffect(() => {
+    fetchJobs();
+    const handler = (e: any) => { if (e.detail?.type === "job") fetchJobs(); };
+    window.addEventListener("post-created", handler);
+    return () => window.removeEventListener("post-created", handler);
+  }, []);
 
   const allJobs: JobItem[] = [
     ...dbJobs.map((j) => ({
