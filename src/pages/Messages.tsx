@@ -230,6 +230,7 @@ const Messages = () => {
         lastMessageAt: convRow.created_at,
         unreadCount: 0,
       });
+      if (prefillText) setNewMsg(prefillText);
       setSearchParams({}, { replace: true });
       fetchConversations();
     };
