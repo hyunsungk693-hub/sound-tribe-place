@@ -225,17 +225,22 @@ const Jobs = () => {
               <span className="text-[10px] text-muted-foreground">{job.date}</span>
             </div>
             {job.user_id && job.user_id !== user?.id && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
-                  const msg = `[지원] "${job.title}" 공고에 지원합니다. 자세한 내용을 알려주세요!`;
-                  navigate(`/messages?to=${job.user_id}&prefill=${encodeURIComponent(msg)}`);
-                }}
-                className="mt-3 w-full h-9 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 active:scale-[0.98] transition-all"
-              >
-                지원하기
-              </button>
+              (() => {
+                const applied = !!job.id && appliedJobIds.has(job.id);
+                return (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); if (applied) return; openApply(job); }}
+                    disabled={applied}
+                    className={`mt-3 w-full h-9 rounded-lg text-xs font-medium active:scale-[0.98] transition-all ${
+                      applied
+                        ? "bg-secondary text-muted-foreground cursor-default"
+                        : "bg-primary text-primary-foreground hover:bg-primary/90"
+                    }`}
+                  >
+                    {applied ? (<span className="inline-flex items-center gap-1"><Check className="w-3.5 h-3.5" /> 지원 완료</span>) : "지원하기"}
+                  </button>
+                );
+              })()
             )}
           </div>
         ))}
