@@ -9,6 +9,8 @@ import ProfileEditModal from "@/components/ProfileEditModal";
 import NotificationsPanel, { useUnreadCount } from "@/components/NotificationsPanel";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAdmin } from "@/hooks/useAdmin";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Profile {
   display_name: string | null;
