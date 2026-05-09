@@ -1,5 +1,5 @@
 import { Search, SlidersHorizontal, ArrowLeft, Pencil, Trash2, MessageCircle, Check } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,6 +81,9 @@ const Jobs = () => {
   // Owner: applicants for selected job
   const [jobApplicants, setJobApplicants] = useState<any[]>([]);
   const [loadingApplicants, setLoadingApplicants] = useState(false);
+  const APPLICANTS_PAGE_SIZE = 10;
+  const [applicantsVisible, setApplicantsVisible] = useState(APPLICANTS_PAGE_SIZE);
+  const applicantsSentinelRef = useRef<HTMLDivElement | null>(null);
 
   const fetchJobs = async () => {
     setLoadingJobs(true);
@@ -150,7 +153,22 @@ const Jobs = () => {
     } else {
       setJobApplicants([]);
     }
+    setApplicantsVisible(APPLICANTS_PAGE_SIZE);
   }, [selectedJob, user]);
+
+  // Infinite scroll: load more applicants when sentinel enters viewport
+  useEffect(() => {
+    const node = applicantsSentinelRef.current;
+    if (!node) return;
+    if (applicantsVisible >= jobApplicants.length) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        setApplicantsVisible((v) => Math.min(v + APPLICANTS_PAGE_SIZE, jobApplicants.length));
+      }
+    }, { rootMargin: "120px" });
+    io.observe(node);
+    return () => io.disconnect();
+  }, [applicantsVisible, jobApplicants.length, selectedJob?.id]);
 
   const openApply = (job: JobItem) => {
     if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
@@ -434,7 +452,7 @@ const Jobs = () => {
                         <p className="text-xs text-muted-foreground py-2">아직 받은 지원이 없습니다.</p>
                       ) : (
                         <div className="space-y-2">
-                          {jobApplicants.map((a) => {
+                          {jobApplicants.slice(0, applicantsVisible).map((a) => {
                             const meta = statusMeta(a.status);
                             return (
                               <div key={a.id} className="p-3 rounded-xl bg-secondary/50 space-y-2">
@@ -473,6 +491,13 @@ const Jobs = () => {
                               </div>
                             );
                           })}
+                          {applicantsVisible < jobApplicants.length ? (
+                            <div ref={applicantsSentinelRef} className="py-3 text-center text-[11px] text-muted-foreground">
+                              더 불러오는 중... ({applicantsVisible}/{jobApplicants.length})
+                            </div>
+                          ) : jobApplicants.length > APPLICANTS_PAGE_SIZE ? (
+                            <p className="py-2 text-center text-[11px] text-muted-foreground">모든 지원자를 불러왔습니다</p>
+                          ) : null}
                         </div>
                       )}
                     </div>
