@@ -328,7 +328,7 @@ const ProfilePage = () => {
             ) : (
               <p className="text-xs text-muted-foreground text-center py-6">작성한 댓글이 없습니다.</p>
             )
-          ) : (
+          ) : activeTab === "내 예약" ? (
             myReservations.length > 0 ? (
               myReservations.map((r) => {
                 const s = new Date(r.start_at);
@@ -365,6 +365,50 @@ const ProfilePage = () => {
               })
             ) : (
               <p className="text-xs text-muted-foreground text-center py-6">예약 내역이 없습니다.</p>
+            )
+          ) : (
+            myApplications.length > 0 ? (
+              myApplications.map((a) => {
+                const meta = APPLY_STATUS_META[a.status] || APPLY_STATUS_META.applied;
+                const cancellable = a.status === "applied" || a.status === "reviewing";
+                return (
+                  <div
+                    key={a.id}
+                    onClick={() => navigate("/jobs")}
+                    className="p-3 rounded-xl bg-secondary/50 hover:bg-surface-hover cursor-pointer transition-colors active:scale-[0.98]"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${meta.cls}`}>
+                        {meta.label}
+                      </span>
+                      {a.job?.category && (
+                        <span className="text-[10px] text-muted-foreground">{a.job.category}</span>
+                      )}
+                      <span className="text-[10px] text-muted-foreground ml-auto">
+                        {new Date(a.created_at).toLocaleDateString("ko-KR")}
+                      </span>
+                      {cancellable && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setCancelAppTarget(a); }}
+                          className="p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                          title="지원 취소"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <h4 className="text-sm font-semibold truncate">{a.job?.title || "삭제된 공고"}</h4>
+                    {a.job?.venue && (
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{a.job.venue}{a.job.pay ? ` · ${a.job.pay}` : ""}</p>
+                    )}
+                    {a.message && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">"{a.message}"</p>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-6">지원 내역이 없습니다.</p>
             )
           )}
         </div>
