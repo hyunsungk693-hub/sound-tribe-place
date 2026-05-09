@@ -25,7 +25,7 @@ const menuItems = [
   { icon: HelpCircle, label: "고객센터" },
 ];
 
-const activityTabs = ["내 게시물", "내 댓글"];
+const activityTabs = ["내 게시물", "내 댓글", "내 예약"];
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
