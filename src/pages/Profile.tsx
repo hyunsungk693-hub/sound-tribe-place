@@ -491,6 +491,38 @@ const ProfilePage = () => {
                   <Users className="w-4 h-4 mt-0.5 shrink-0" />
                   <span className="text-xs">{detailTarget.note || "인원 정보 없음"}</span>
                 </div>
+                {detailTarget.room_lat != null && detailTarget.room_lng != null ? (
+                  <div className="space-y-2 pt-1">
+                    <div className="rounded-xl overflow-hidden border border-border/40">
+                      <iframe
+                        title="연습실 위치"
+                        src={`https://www.openstreetmap.org/export/embed.html?bbox=${detailTarget.room_lng - 0.005},${detailTarget.room_lat - 0.003},${detailTarget.room_lng + 0.005},${detailTarget.room_lat + 0.003}&layer=mapnik&marker=${detailTarget.room_lat},${detailTarget.room_lng}`}
+                        className="w-full h-44 border-0"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${detailTarget.room_lat},${detailTarget.room_lng}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-1 text-center px-3 py-2 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                      >
+                        Google 지도 길찾기
+                      </a>
+                      <a
+                        href={`https://map.kakao.com/link/to/${encodeURIComponent(detailTarget.room_title)},${detailTarget.room_lat},${detailTarget.room_lng}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-1 text-center px-3 py-2 text-xs font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
+                      >
+                        카카오맵 길찾기
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground pt-1">위치 좌표가 등록되어 있지 않습니다.</p>
+                )}
               </div>
             );
           })()}
