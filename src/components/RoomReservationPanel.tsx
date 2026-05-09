@@ -28,8 +28,9 @@ const todayStr = () => {
 const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
   const { user } = useAuth();
   const [date, setDate] = useState<string>(todayStr());
-  const [startHour, setStartHour] = useState<number>(10);
-  const [endHour, setEndHour] = useState<number>(11);
+  // Slots: 0..47 representing 00:00, 00:30, ... 23:30. End slot can be 1..48 (=24:00)
+  const [startSlot, setStartSlot] = useState<number>(20); // 10:00
+  const [endSlot, setEndSlot] = useState<number>(22);     // 11:00
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
