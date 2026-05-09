@@ -1,4 +1,4 @@
-import { Search, SlidersHorizontal, ArrowLeft, Pencil, Trash2, MessageCircle } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowLeft, Pencil, Trash2, MessageCircle, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { JobCardSkeleton } from "@/components/skeletons/PostSkeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 const categories = ["전체", "공연", "녹음", "레슨", "행사", "기타"];
 
