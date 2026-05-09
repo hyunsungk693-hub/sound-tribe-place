@@ -45,6 +45,9 @@ const ProfilePage = () => {
   const [myPosts, setMyPosts] = useState<any[]>([]);
   const [myComments, setMyComments] = useState<any[]>([]);
   const [myReservations, setMyReservations] = useState<any[]>([]);
+  const [myApplications, setMyApplications] = useState<any[]>([]);
+  const [cancelAppTarget, setCancelAppTarget] = useState<any | null>(null);
+  const [cancellingApp, setCancellingApp] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [notiOpen, setNotiOpen] = useState(false);
   const { count: unreadCount } = useUnreadCount();
