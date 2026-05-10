@@ -392,7 +392,7 @@ const Messages = () => {
       .eq("id", selectedConv.id);
 
     // 잠금화면 푸시 알림 (수신자에게)
-    const otherId = selectedConv.user1_id === user.id ? selectedConv.user2_id : selectedConv.user1_id;
+    const otherId = selectedConv.otherUserId;
     if (otherId) {
       const { sendPushTo } = await import("@/lib/push");
       sendPushTo({
