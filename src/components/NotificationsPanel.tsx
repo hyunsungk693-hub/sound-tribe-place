@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { Bell, Heart, MessageSquare, Check, Trash2 } from "lucide-react";
+import { Bell, Heart, MessageSquare, BellOff, BellRing } from "lucide-react";
+import { toast } from "sonner";
+import { enablePushNotifications, disablePushNotifications, isPushSupported, getPushPermission } from "@/lib/push";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
