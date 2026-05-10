@@ -391,6 +391,19 @@ const Messages = () => {
       .update({ updated_at: new Date().toISOString() } as any)
       .eq("id", selectedConv.id);
 
+    // 잠금화면 푸시 알림 (수신자에게)
+    const otherId = selectedConv.user1_id === user.id ? selectedConv.user2_id : selectedConv.user1_id;
+    if (otherId) {
+      const { sendPushTo } = await import("@/lib/push");
+      sendPushTo({
+        userId: otherId,
+        title: `💬 ${user.user_metadata?.full_name || user.email?.split("@")[0] || "새 메시지"}`,
+        body: (newMsg.trim() || (fileData ? `📎 ${fileData.name}` : "새 메시지가 도착했습니다")).slice(0, 120),
+        url: "/messages",
+        tag: `msg-${selectedConv.id}`,
+      });
+    }
+
     setNewMsg("");
     clearFile();
     setSending(false);

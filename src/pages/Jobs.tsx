@@ -138,6 +138,7 @@ const Jobs = () => {
 
   const updateApplicationStatus = async (appId: string, status: string) => {
     const prev = jobApplicants;
+    const target = jobApplicants.find((a) => a.id === appId);
     setJobApplicants((cur) => cur.map((a) => a.id === appId ? { ...a, status } : a));
     const { error } = await supabase.from("job_applications" as any).update({ status }).eq("id", appId);
     if (error) {
@@ -146,6 +147,11 @@ const Jobs = () => {
       return;
     }
     toast.success("상태가 변경되었습니다");
+    if (target && selectedJob) {
+      const label = status === "accepted" ? "✅ 합격" : status === "rejected" ? "❌ 불합격" : "🔍 검토중";
+      const { sendPushTo } = await import("@/lib/push");
+      sendPushTo({ userId: target.user_id, title: `${label} 알림`, body: `"${selectedJob.title}" 지원 상태가 변경되었습니다.`, url: "/profile", tag: `app-${appId}` });
+    }
   };
 
   useEffect(() => {
@@ -216,6 +222,11 @@ const Jobs = () => {
     toast.success("지원이 완료되었습니다");
     setAppliedJobIds((prev) => new Set(prev).add(applyTarget.id!));
     setAppliedStatusByJob((prev) => ({ ...prev, [applyTarget.id!]: "applied" }));
+    if (applyTarget.user_id && applyTarget.user_id !== user.id) {
+      const actor = user.user_metadata?.full_name || user.email?.split("@")[0] || "지원자";
+      const { sendPushTo } = await import("@/lib/push");
+      sendPushTo({ userId: applyTarget.user_id, title: `📩 새 지원자: ${actor}`, body: `"${applyTarget.title}" 공고에 지원했습니다.`, url: "/jobs", tag: `apply-${applyTarget.id}` });
+    }
     setApplyTarget(null);
     setApplyMessage("");
     setSelectedJob(null);
