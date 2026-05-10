@@ -177,13 +177,16 @@ const Community = () => {
       // Send notification to post owner
       const ownerPost = dbPosts.find((p) => p.id === post.id);
       if (ownerPost && ownerPost.user_id !== user.id) {
+        const actor = user.user_metadata?.full_name || user.email?.split("@")[0] || "익명";
         await supabase.from("notifications").insert({
           user_id: ownerPost.user_id,
-          actor_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "익명",
+          actor_name: actor,
           type: "like",
           post_id: post.id,
           post_title: post.title,
         } as any);
+        const { sendPushTo } = await import("@/lib/push");
+        sendPushTo({ userId: ownerPost.user_id, title: `❤️ ${actor}님이 좋아요`, body: post.title, url: `/post/${post.id}`, tag: `like-${post.id}` });
       }
     }
 
@@ -239,13 +242,16 @@ const Community = () => {
       // Send notification to post owner
       const ownerPost = dbPosts.find((p) => p.id === selectedPost.id);
       if (ownerPost && ownerPost.user_id !== user.id) {
+        const actor = user.user_metadata?.full_name || user.email?.split("@")[0] || "익명";
         await supabase.from("notifications").insert({
           user_id: ownerPost.user_id,
-          actor_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "익명",
+          actor_name: actor,
           type: "comment",
           post_id: selectedPost.id,
           post_title: selectedPost.title,
         } as any);
+        const { sendPushTo } = await import("@/lib/push");
+        sendPushTo({ userId: ownerPost.user_id, title: `💬 ${actor}님의 댓글`, body: newComment.trim().slice(0, 120), url: `/post/${selectedPost.id}`, tag: `cmt-${selectedPost.id}` });
       }
     }
     setSubmittingComment(false);

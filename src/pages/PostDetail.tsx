@@ -67,13 +67,16 @@ const PostDetail = () => {
     } else {
       await supabase.from("post_likes").insert({ post_id: postId, user_id: user.id } as any);
       if (post && post.user_id !== user.id) {
+        const actor = user.user_metadata?.full_name || user.email?.split("@")[0] || "익명";
         await supabase.from("notifications").insert({
           user_id: post.user_id,
-          actor_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "익명",
+          actor_name: actor,
           type: "like",
           post_id: postId,
           post_title: post.title,
         } as any);
+        const { sendPushTo } = await import("@/lib/push");
+        sendPushTo({ userId: post.user_id, title: `❤️ ${actor}님이 좋아요`, body: post.title, url: `/post/${postId}`, tag: `like-${postId}` });
       }
     }
     await fetchMeta();
@@ -95,13 +98,16 @@ const PostDetail = () => {
       toast.success("댓글이 등록되었습니다");
       setNewComment("");
       if (post && post.user_id !== user.id) {
+        const actor = user.user_metadata?.full_name || user.email?.split("@")[0] || "익명";
         await supabase.from("notifications").insert({
           user_id: post.user_id,
-          actor_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "익명",
+          actor_name: actor,
           type: "comment",
           post_id: postId,
           post_title: post.title,
         } as any);
+        const { sendPushTo } = await import("@/lib/push");
+        sendPushTo({ userId: post.user_id, title: `💬 ${actor}님의 댓글`, body: newComment.trim().slice(0, 120), url: `/post/${postId}`, tag: `cmt-${postId}` });
       }
       await fetchMeta();
     }

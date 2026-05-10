@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { Bell, Heart, MessageSquare, Check, Trash2 } from "lucide-react";
+import { Bell, Heart, MessageSquare, BellOff, BellRing } from "lucide-react";
+import { toast } from "sonner";
+import { enablePushNotifications, disablePushNotifications, isPushSupported, getPushPermission } from "@/lib/push";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -66,6 +68,40 @@ const NotificationsPanel = ({ open, onClose }: Props) => {
     setNotifications([]);
   };
 
+  // 푸시 구독 상태
+  const [pushPerm, setPushPerm] = useState<NotificationPermission>("default");
+  const [subscribed, setSubscribed] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  useEffect(() => {
+    if (!open || !isPushSupported()) return;
+    setPushPerm(getPushPermission());
+    navigator.serviceWorker.ready.then(async (reg) => {
+      const s = await reg.pushManager.getSubscription();
+      setSubscribed(!!s);
+    });
+  }, [open]);
+
+  const togglePush = async () => {
+    if (!user || pushBusy) return;
+    setPushBusy(true);
+    if (subscribed) {
+      await disablePushNotifications();
+      setSubscribed(false);
+      toast.success("잠금화면 알림을 껐습니다");
+    } else {
+      const r = await enablePushNotifications(user.id);
+      if (r.ok) {
+        setSubscribed(true);
+        setPushPerm("granted");
+        toast.success("잠금화면 알림이 켜졌습니다");
+      } else {
+        toast.error(r.reason || "알림을 켜지 못했습니다");
+      }
+    }
+    setPushBusy(false);
+  };
+
   if (!open) return null;
 
   return (
@@ -79,6 +115,19 @@ const NotificationsPanel = ({ open, onClose }: Props) => {
             <Bell className="w-4 h-4" /> 알림
           </h3>
           <div className="flex items-center gap-2">
+            {isPushSupported() && (
+              <button
+                onClick={togglePush}
+                disabled={pushBusy || pushPerm === "denied"}
+                className={`text-[11px] font-medium px-2 py-1 rounded-lg transition-colors flex items-center gap-1 ${
+                  subscribed ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"
+                } ${pushPerm === "denied" ? "opacity-50 cursor-not-allowed" : ""}`}
+                title={pushPerm === "denied" ? "브라우저 설정에서 알림 권한을 허용하세요" : ""}
+              >
+                {subscribed ? <BellRing className="w-3 h-3" /> : <BellOff className="w-3 h-3" />}
+                {pushPerm === "denied" ? "권한 차단됨" : subscribed ? "잠금화면 ON" : "잠금화면 알림"}
+              </button>
+            )}
             <button onClick={markAllRead} className="text-[11px] text-primary font-medium px-2 py-1 rounded-lg hover:bg-primary/10 transition-colors">
               모두 읽음
             </button>
