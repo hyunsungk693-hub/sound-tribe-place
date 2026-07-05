@@ -18,22 +18,20 @@ const jobFields = [
 const roomFields = [
   { key: "title", label: "연습실 이름", placeholder: "예: 사운드팩토리" },
   { key: "content", label: "상세 설명", placeholder: "연습실 소개를 작성해주세요", type: "textarea" as const },
-  { key: "area", label: "위치", placeholder: "예: 홍대입구역 3분" },
+  { key: "area", label: "위치", placeholder: "장소를 검색해 선택하세요 (예: 홍대입구역)", type: "place" as const },
   { key: "price", label: "가격", placeholder: "예: 시간당 1.5만원" },
   { key: "hours", label: "운영시간", placeholder: "예: 24시간" },
   { key: "instruments", label: "보유 장비 (쉼표 구분)", placeholder: "예: 드럼, 앰프, PA" },
   { key: "author_name", label: "작성자명", placeholder: "닉네임" },
-  { key: "location", label: "지도 위치 (선택)", placeholder: "", type: "location" as const },
 ];
 
 const shopFields = [
   { key: "title", label: "악기사 이름", placeholder: "예: 뮤직랜드 홍대점" },
   { key: "content", label: "소개", placeholder: "취급 품목과 매장 소개를 작성해주세요", type: "textarea" as const },
-  { key: "area", label: "위치/주소", placeholder: "예: 서울 마포구 와우산로 35" },
+  { key: "area", label: "위치/주소", placeholder: "장소를 검색해 선택하세요 (예: 서울 마포구 와우산로)", type: "place" as const },
   { key: "hours", label: "운영시간", placeholder: "예: 11:00 - 21:00" },
   { key: "instruments", label: "취급 악기 (쉼표 구분)", placeholder: "예: 기타, 베이스, 이펙터" },
   { key: "author_name", label: "작성자명", placeholder: "닉네임" },
-  { key: "location", label: "지도 위치 (선택)", placeholder: "", type: "location" as const },
 ];
 
 const communityFields = [
