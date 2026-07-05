@@ -171,6 +171,28 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
+              ) : field.type === "place" ? (
+                <PlaceSearchInput
+                  placeholder={field.placeholder}
+                  value={values[field.key] || ""}
+                  selected={Boolean(values.lat && values.lng)}
+                  onChange={(v) =>
+                    setValues((prev) => {
+                      const next = { ...prev, [field.key]: v };
+                      delete next.lat;
+                      delete next.lng;
+                      return next;
+                    })
+                  }
+                  onSelect={({ name, lat, lng }) =>
+                    setValues((prev) => ({
+                      ...prev,
+                      [field.key]: name,
+                      lat: String(lat),
+                      lng: String(lng),
+                    }))
+                  }
+                />
               ) : field.type === "location" ? (
                 <div className="space-y-2">
                   <div className="flex gap-2">
