@@ -11,7 +11,7 @@ interface Field {
   key: string;
   label: string;
   placeholder: string;
-  type?: "text" | "textarea" | "select" | "location";
+  type?: "text" | "textarea" | "select" | "location" | "place";
   options?: string[];
 }
 
