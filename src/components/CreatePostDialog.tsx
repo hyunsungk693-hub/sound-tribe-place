@@ -6,12 +6,13 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import PlaceSearchInput from "@/components/PlaceSearchInput";
 
 interface Field {
   key: string;
   label: string;
   placeholder: string;
-  type?: "text" | "textarea" | "select" | "location";
+  type?: "text" | "textarea" | "select" | "location" | "place";
   options?: string[];
 }
 
@@ -171,6 +172,28 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
+              ) : field.type === "place" ? (
+                <PlaceSearchInput
+                  placeholder={field.placeholder}
+                  value={values[field.key] || ""}
+                  selected={Boolean(values.lat && values.lng)}
+                  onChange={(v) =>
+                    setValues((prev) => {
+                      const next = { ...prev, [field.key]: v };
+                      delete next.lat;
+                      delete next.lng;
+                      return next;
+                    })
+                  }
+                  onSelect={({ name, lat, lng }) =>
+                    setValues((prev) => ({
+                      ...prev,
+                      [field.key]: name,
+                      lat: String(lat),
+                      lng: String(lng),
+                    }))
+                  }
+                />
               ) : field.type === "location" ? (
                 <div className="space-y-2">
                   <div className="flex gap-2">
