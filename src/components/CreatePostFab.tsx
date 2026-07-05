@@ -10,10 +10,9 @@ const jobFields = [
   { key: "title", label: "제목", placeholder: "예: 밴드 기타리스트 모집" },
   { key: "content", label: "상세 내용", placeholder: "구인 상세 내용을 작성해주세요", type: "textarea" as const },
   { key: "category", label: "카테고리", placeholder: "", type: "select" as const, options: ["공연", "녹음", "레슨", "행사", "기타"] },
-  { key: "venue", label: "장소", placeholder: "예: 홍대 라이브클럽" },
+  { key: "venue", label: "장소", placeholder: "장소를 검색해 선택하세요 (예: 홍대 라이브클럽)", type: "place" as const },
   { key: "pay", label: "급여/페이", placeholder: "예: 회당 15만원" },
   { key: "author_name", label: "작성자명", placeholder: "닉네임" },
-  { key: "location", label: "지도 위치 (선택)", placeholder: "", type: "location" as const },
 ];
 
 const roomFields = [
