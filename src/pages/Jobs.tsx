@@ -215,10 +215,11 @@ const Jobs = () => {
         toast.info("이미 지원한 공고입니다");
         setAppliedJobIds((prev) => new Set(prev).add(applyTarget.id!));
       } else {
-        toast.error("지원에 실패했습니다");
+        toast.error("지원에 실패했습니다: " + ((error as any).message || ""));
       }
       return;
     }
+
     toast.success("지원이 완료되었습니다");
     setAppliedJobIds((prev) => new Set(prev).add(applyTarget.id!));
     setAppliedStatusByJob((prev) => ({ ...prev, [applyTarget.id!]: "applied" }));
@@ -328,30 +329,40 @@ const Jobs = () => {
               <span className="text-xs font-medium text-primary">{job.pay}</span>
               <span className="text-[10px] text-muted-foreground">{job.date}</span>
             </div>
-            {job.user_id && job.user_id !== user?.id && (
-              (() => {
-                const applied = !!job.id && appliedJobIds.has(job.id);
-                const meta = applied ? statusMeta(appliedStatusByJob[job.id!] || "applied") : null;
-                return (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); if (applied) return; openApply(job); }}
-                    disabled={applied}
-                    className={`mt-3 w-full h-9 rounded-lg text-xs font-medium active:scale-[0.98] transition-all ${
-                      applied
-                        ? "bg-secondary text-muted-foreground cursor-default"
-                        : "bg-primary text-primary-foreground hover:bg-primary/90"
-                    }`}
-                  >
-                    {applied && meta ? (
-                      <span className="inline-flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5" /> 지원 완료
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${meta.cls}`}>{meta.label}</span>
-                      </span>
-                    ) : "지원하기"}
-                  </button>
-                );
-              })()
-            )}
+            {job.id ? (
+              job.user_id === user?.id ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setSelectedJob(job); setEditing(false); }}
+                  className="mt-3 w-full h-9 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 active:scale-[0.98] transition-all"
+                >
+                  내 공고 · 지원자 보기
+                </button>
+              ) : (
+                (() => {
+                  const applied = appliedJobIds.has(job.id);
+                  const meta = applied ? statusMeta(appliedStatusByJob[job.id!] || "applied") : null;
+                  return (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); if (applied) return; openApply(job); }}
+                      disabled={applied}
+                      className={`mt-3 w-full h-9 rounded-lg text-xs font-medium active:scale-[0.98] transition-all ${
+                        applied
+                          ? "bg-secondary text-muted-foreground cursor-default"
+                          : "bg-primary text-primary-foreground hover:bg-primary/90"
+                      }`}
+                    >
+                      {applied && meta ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5" /> 지원 완료
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${meta.cls}`}>{meta.label}</span>
+                        </span>
+                      ) : "지원하기"}
+                    </button>
+                  );
+                })()
+              )
+            ) : null}
+
           </div>
         ))}
         {!loadingJobs && filtered.length === 0 && <div className="text-center py-10 text-muted-foreground text-sm">구인글이 없습니다</div>}
