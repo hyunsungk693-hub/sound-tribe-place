@@ -215,10 +215,11 @@ const Jobs = () => {
         toast.info("이미 지원한 공고입니다");
         setAppliedJobIds((prev) => new Set(prev).add(applyTarget.id!));
       } else {
-        toast.error("지원에 실패했습니다");
+        toast.error("지원에 실패했습니다: " + ((error as any).message || ""));
       }
       return;
     }
+
     toast.success("지원이 완료되었습니다");
     setAppliedJobIds((prev) => new Set(prev).add(applyTarget.id!));
     setAppliedStatusByJob((prev) => ({ ...prev, [applyTarget.id!]: "applied" }));
