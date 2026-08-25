@@ -8,8 +8,8 @@ verify_jwt = true
 
 [auth]
 enabled = true
-site_url = "http://localhost:8080"
-additional_redirect_urls = ["http://localhost:8080"]
+site_url = "https://instrut.vercel.app"
+additional_redirect_urls = ["http://localhost:8080", "https://instrut.vercel.app"]
 
 [auth.email]
 enable_signup = true
