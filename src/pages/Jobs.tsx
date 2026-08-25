@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { track } from "@/lib/analytics";
 import { toast } from "sonner";
 import { JobCardSkeleton } from "@/components/skeletons/PostSkeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -210,6 +211,7 @@ const Jobs = () => {
       message: applyMessage.trim() || null,
     });
     setApplying(false);
+    if (!error) track("job_apply");
     if (error) {
       if ((error as any).code === "23505") {
         toast.info("이미 지원한 공고입니다");

@@ -5,3 +5,13 @@ verify_jwt = false
 
 [functions.send-push]
 verify_jwt = true
+
+[auth]
+enabled = true
+site_url = "http://localhost:8080"
+additional_redirect_urls = ["http://localhost:8080"]
+
+[auth.email]
+enable_signup = true
+# 훅 검증 단계: 인증 메일 없이 즉시 가입 (기본 SMTP는 시간당 2건 제한이라 켜면 실가입이 막힘)
+enable_confirmations = false

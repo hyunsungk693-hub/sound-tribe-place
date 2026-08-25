@@ -13,6 +13,10 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Trash2, Pencil, Plus, X, UserPlus, Shield } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  ResponsiveContainer, LineChart, Line, BarChart, Bar,
+  XAxis, YAxis, Tooltip, Legend, CartesianGrid,
+} from "recharts";
 
 type PlaceType = "job" | "room" | "shop";
 type Place = {
@@ -136,10 +140,15 @@ const Admin = () => {
       </header>
 
       <Tabs defaultValue="places" className="p-4">
-        <TabsList className="grid w-full grid-cols-2 mb-4">
+        <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsTrigger value="metrics">지표</TabsTrigger>
           <TabsTrigger value="places">장소 마커</TabsTrigger>
           <TabsTrigger value="admins">관리자 권한</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="metrics" className="mt-0">
+          <MetricsPanel />
+        </TabsContent>
 
         <TabsContent value="places" className="space-y-6 mt-0">
         <Card className="p-4">
@@ -230,6 +239,119 @@ const Admin = () => {
       </Tabs>
 
       <BottomNav />
+    </div>
+  );
+};
+
+type DailyMetric = {
+  day: string;
+  signups: number;
+  job_posts: number;
+  room_posts: number;
+  community_posts: number;
+  promotion_posts: number;
+  applications: number;
+  new_conversations: number;
+  messages_sent: number;
+  reservations: number;
+};
+
+type Totals = {
+  total_users: number;
+  total_job_posts: number;
+  total_posts: number;
+  total_applications: number;
+  accepted_applications: number;
+  total_conversations: number;
+  total_messages: number;
+  total_reservations: number;
+  weekly_active_users: number;
+  weekly_signups: number;
+};
+
+const MetricsPanel = () => {
+  const [totals, setTotals] = useState<Totals | null>(null);
+  const [daily, setDaily] = useState<DailyMetric[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const [t, d] = await Promise.all([
+        (supabase as any).rpc("get_hook_totals"),
+        (supabase as any).rpc("get_hook_metrics", { days: 30 }),
+      ]);
+      if (t.error || d.error) {
+        toast.error("지표를 불러오지 못했습니다. 마이그레이션이 적용됐는지 확인하세요.");
+      } else {
+        setTotals(t.data as Totals);
+        setDaily((d.data as DailyMetric[]) || []);
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) return <p className="text-sm text-muted-foreground py-8 text-center">지표 불러오는 중...</p>;
+  if (!totals) return <p className="text-sm text-muted-foreground py-8 text-center">지표를 불러올 수 없습니다.</p>;
+
+  const chartData = daily.map((r) => ({
+    ...r,
+    label: r.day.slice(5).replace("-", "."),
+    posts: r.job_posts + r.room_posts + r.community_posts + r.promotion_posts,
+  }));
+
+  const stats: { label: string; value: number; sub?: string }[] = [
+    { label: "총 가입", value: totals.total_users, sub: `주간 +${totals.weekly_signups}` },
+    { label: "주간 활성", value: totals.weekly_active_users, sub: "최근 7일 활동" },
+    { label: "총 게시글", value: totals.total_posts, sub: `구인 ${totals.total_job_posts}` },
+    { label: "총 지원", value: totals.total_applications, sub: `수락 ${totals.accepted_applications}` },
+    { label: "대화방", value: totals.total_conversations, sub: `메시지 ${totals.total_messages}` },
+    { label: "합주실 예약", value: totals.total_reservations },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-2">
+        {stats.map((s) => (
+          <Card key={s.label} className="p-3">
+            <p className="text-xs text-muted-foreground">{s.label}</p>
+            <p className="text-2xl font-bold tabular-nums">{s.value}</p>
+            {s.sub && <p className="text-xs text-muted-foreground mt-0.5">{s.sub}</p>}
+          </Card>
+        ))}
+      </div>
+
+      <Card className="p-3">
+        <h3 className="text-sm font-semibold mb-2">일별 가입 (30일)</h3>
+        <ResponsiveContainer width="100%" height={180}>
+          <BarChart data={chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+            <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={6} />
+            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+            <Tooltip />
+            <Bar dataKey="signups" name="가입" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+
+      <Card className="p-3">
+        <h3 className="text-sm font-semibold mb-2">일별 활동 (30일)</h3>
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+            <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={6} />
+            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+            <Tooltip />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Line type="monotone" dataKey="posts" name="글 등록" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="applications" name="지원" stroke="#16a34a" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="new_conversations" name="새 대화" stroke="#d97706" strokeWidth={2} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </Card>
+
+      <p className="text-xs text-muted-foreground">
+        방문·체류·재방문 지표는 PostHog 대시보드에서 확인하세요.
+      </p>
     </div>
   );
 };

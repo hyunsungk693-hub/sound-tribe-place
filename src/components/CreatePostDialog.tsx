@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Plus, X, ImagePlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { track } from "@/lib/analytics";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -111,6 +112,7 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
       const { error } = await supabase.from("posts").insert(postData as any);
       if (error) throw error;
 
+      track("post_create", { post_type: postType });
       toast.success("게시물이 등록되었습니다!");
       setValues({});
       removeImage();

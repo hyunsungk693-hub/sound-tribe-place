@@ -198,6 +198,10 @@ const Messages = () => {
         .single();
 
       let convRow = data;
+      if (!error) {
+        const { track } = await import("@/lib/analytics");
+        track("dm_start");
+      }
       if (error && error.code === "23505") {
         const { data: existing } = await supabase
           .from("conversations")

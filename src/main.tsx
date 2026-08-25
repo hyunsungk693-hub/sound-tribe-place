@@ -1,6 +1,9 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { initAnalytics } from "./lib/analytics";
+
+initAnalytics();
 
 // PWA: Prevent service worker issues in Lovable preview/iframe
 const isInIframe = (() => {

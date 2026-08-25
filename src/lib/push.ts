@@ -1,7 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // VAPID 공개 키 (서버의 VAPID_PUBLIC_KEY와 동일해야 함)
+// 자체 Supabase 이전 시 .env의 VITE_VAPID_PUBLIC_KEY로 교체
 export const VAPID_PUBLIC_KEY =
+  (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined) ||
   "BLLO4Vf5r1vAOvuDp6CQP9a9BocKh7I_FrgfABNm44rokFPJoqbMBeeSItRGOzoffyIDLPs-xzeollecNuax6qY";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
