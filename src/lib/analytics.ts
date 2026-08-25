@@ -1,7 +1,9 @@
 import posthog from "posthog-js";
 
-// PostHog 키가 없으면(로컬 개발 등) 조용히 비활성화된다.
-const KEY = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
+// PostHog Project API Key는 클라이언트 공개용 값이라 기본값 내장이 안전하다.
+const KEY =
+  (import.meta.env.VITE_POSTHOG_KEY as string | undefined) ||
+  "phc_D7XoeS2xqz8Gu7vLVVYqkHQT7uMcj2P6zKS9iC4cYnTf";
 const HOST = (import.meta.env.VITE_POSTHOG_HOST as string | undefined) || "https://us.i.posthog.com";
 
 let enabled = false;

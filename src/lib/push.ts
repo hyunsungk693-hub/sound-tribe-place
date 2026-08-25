@@ -1,10 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// VAPID 공개 키 (서버의 VAPID_PUBLIC_KEY와 동일해야 함)
-// 자체 Supabase 이전 시 .env의 VITE_VAPID_PUBLIC_KEY로 교체
+// VAPID 공개 키 (서버의 VAPID_PUBLIC_KEY 시크릿과 동일해야 함)
 export const VAPID_PUBLIC_KEY =
   (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined) ||
-  "BLLO4Vf5r1vAOvuDp6CQP9a9BocKh7I_FrgfABNm44rokFPJoqbMBeeSItRGOzoffyIDLPs-xzeollecNuax6qY";
+  "BLG5Ws48HgMZY7wjUgqLwmN3ane7FDcex2TOs90v4nnINrRxseWOLlCaVdESwwMw0NRdeF-96UfwtOJLnAMvro0";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
