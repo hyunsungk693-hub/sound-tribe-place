@@ -1,4 +1,4 @@
-import { Search, SlidersHorizontal, ArrowLeft, Pencil, Trash2, MessageCircle, Check, Navigation } from "lucide-react";
+import { Search, ArrowUpDown, ArrowLeft, Pencil, Trash2, MessageCircle, Check, Navigation } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
@@ -54,6 +54,7 @@ type JobItem = {
   tag: string;
   pay: string;
   date: string;
+  createdAt: number;
   content: string;
   image_url: string | null;
   lat: number | null;
@@ -66,6 +67,8 @@ const Jobs = () => {
   const [dbJobs, setDbJobs] = useState<any[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [selectedCat, setSelectedCat] = useState("전체");
+  const [query, setQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<"latest" | "oldest">("latest");
   const [selectedJob, setSelectedJob] = useState<JobItem | null>(null);
 
   // Edit state
@@ -156,7 +159,7 @@ const Jobs = () => {
     if (target && selectedJob) {
       const label = status === "accepted" ? "✅ 합격" : status === "rejected" ? "❌ 불합격" : "🔍 검토중";
       const { sendPushTo } = await import("@/lib/push");
-      sendPushTo({ userId: target.user_id, title: `${label} 알림`, body: `"${selectedJob.title}" 지원 상태가 변경되었습니다.`, url: "/profile", tag: `app-${appId}` });
+      sendPushTo({ userId: target.user_id, title: `${label} 알림`, body: `"${selectedJob.title}" 지원 상태가 변경되었습니다.`, url: `/post/${selectedJob.id}`, tag: `app-${appId}` });
     }
   };
 
@@ -254,15 +257,20 @@ const Jobs = () => {
       tag: j.category || "기타",
       pay: j.pay || "",
       date: new Date(j.created_at).toLocaleDateString("ko-KR"),
+      createdAt: new Date(j.created_at).getTime(),
       content: j.content || "",
       image_url: j.image_url || null,
       lat: j.lat ?? null,
       lng: j.lng ?? null,
     })),
-    ...sampleJobs.map((j) => ({ ...j, image_url: null, lat: null, lng: null })),
+    ...sampleJobs.map((j) => ({ ...j, createdAt: 0, image_url: null, lat: null, lng: null })),
   ];
 
-  const filtered = selectedCat === "전체" ? allJobs : allJobs.filter((j) => j.tag === selectedCat);
+  const q = query.trim();
+  const filtered = allJobs
+    .filter((j) => selectedCat === "전체" || j.tag === selectedCat)
+    .filter((j) => !q || j.title.includes(q) || j.venue.includes(q) || j.content.includes(q))
+    .sort((a, b) => (sortOrder === "latest" ? b.createdAt - a.createdAt : a.createdAt - b.createdAt));
 
   const startEditing = () => {
     if (!selectedJob) return;
@@ -306,13 +314,23 @@ const Jobs = () => {
     <PageShell title="구인구직">
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input type="text" placeholder="포지션, 악기, 지역 검색..." className="w-full h-11 pl-10 pr-10 rounded-xl bg-secondary border-none text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow" />
-        <button className="absolute right-3 top-1/2 -translate-y-1/2 active:scale-90 transition-transform">
-          <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
-        </button>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="포지션, 악기, 지역 검색..."
+          className="w-full h-11 pl-10 pr-4 rounded-xl bg-secondary border-none text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow"
+        />
       </div>
 
-      <div className="flex gap-2 mb-5 overflow-x-auto no-scrollbar pb-1">
+      <div className="flex gap-2 mb-5 overflow-x-auto no-scrollbar pb-1 items-center">
+        <button
+          onClick={() => setSortOrder((o) => (o === "latest" ? "oldest" : "latest"))}
+          className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground hover:bg-surface-hover transition-all active:scale-95"
+        >
+          <ArrowUpDown className="w-3 h-3" />
+          {sortOrder === "latest" ? "최신순" : "오래된순"}
+        </button>
         {categories.map((cat) => (
           <button
             key={cat}
@@ -346,25 +364,7 @@ const Jobs = () => {
             <p className="text-xs text-muted-foreground">{job.venue}</p>
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/30">
               <span className="text-xs font-medium text-primary">{job.pay}</span>
-              <div className="flex items-center gap-2">
-                {hasDirections(job.lat, job.lng, job.venue) && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      window.open(
-                        job.lat != null && job.lng != null
-                          ? naverDirectionsUrl(job.venue || job.title, job.lat, job.lng)
-                          : naverDirectionsUrl(job.venue),
-                        "_blank", "noopener",
-                      );
-                    }}
-                    className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/15 transition-colors active:scale-95"
-                  >
-                    <Navigation className="w-3 h-3" /> 길찾기
-                  </button>
-                )}
-                <span className="text-[10px] text-muted-foreground">{job.date}</span>
-              </div>
+              <span className="text-[10px] text-muted-foreground">{job.date}</span>
             </div>
             {job.id ? (
               job.user_id === user?.id ? (

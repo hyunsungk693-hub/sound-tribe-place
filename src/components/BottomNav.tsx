@@ -87,11 +87,11 @@ const BottomNav = () => {
           let title: string;
           if (n.type === "apply_accepted") title = "🎉 지원에 합격했습니다!";
           else if (n.type === "apply_rejected") title = "📋 지원 결과가 도착했습니다";
-          else {
+          else if (n.type === "like" || n.type === "comment") {
             const icon = n.type === "like" ? "❤️" : "💬";
             const action = n.type === "like" ? "좋아요를 눌렀습니다" : "댓글을 달았습니다";
             title = `${icon} ${n.actor_name || "누군가"}님이 ${action}`;
-          }
+          } else title = "🔔 새 알림이 도착했습니다";
           toast(title, {
             description: n.post_title ? `"${n.post_title}"` : undefined,
             duration: 5000,
@@ -209,7 +209,6 @@ const BottomNav = () => {
           <button onClick={() => navigate("/profile")} className={sideBtnCls(location.pathname === "/profile")}>
             <div className="relative">
               <User className="w-[26px] h-[26px]" strokeWidth={location.pathname === "/profile" ? 2.4 : 2} />
-              <Badge count={unreadNotifications} />
             </div>
             <span className="text-[11px] font-medium leading-none">프로필</span>
           </button>

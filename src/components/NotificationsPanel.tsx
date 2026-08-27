@@ -179,11 +179,13 @@ const NotificationsPanel = ({ open, onClose }: Props) => {
                       <>축하합니다! 지원에 <span className="font-semibold text-green-600">합격</span>했습니다 🎉</>
                     ) : n.type === "apply_rejected" ? (
                       <>아쉽지만 이번 지원은 <span className="font-semibold">불합격</span>했습니다</>
-                    ) : (
+                    ) : n.type === "like" || n.type === "comment" ? (
                       <>
                         <span className="font-semibold">{n.actor_name}</span>
                         {n.type === "like" ? "님이 좋아요를 눌렀습니다" : "님이 댓글을 달았습니다"}
                       </>
+                    ) : (
+                      <>새 알림이 도착했습니다</>
                     )}
                   </p>
                   {n.post_title && (

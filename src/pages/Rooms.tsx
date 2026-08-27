@@ -55,6 +55,7 @@ const Rooms = () => {
   const [loadingRooms, setLoadingRooms] = useState(true);
   const [selectedRoom, setSelectedRoom] = useState<RoomItem | null>(null);
   const [query, setQuery] = useState("");
+  const [sortMode, setSortMode] = useState<"latest" | "name">("latest");
 
   // Edit state
   const [editing, setEditing] = useState(false);
@@ -97,7 +98,9 @@ const Rooms = () => {
       lng: r.lng ?? null,
     })),
     ...(mode === "room" ? sampleRooms : sampleShops),
-  ].filter((r) => !query.trim() || r.name.includes(query.trim()) || r.area.includes(query.trim()));
+  ]
+    .filter((r) => !query.trim() || r.name.includes(query.trim()) || r.area.includes(query.trim()))
+    .sort((a, b) => (sortMode === "name" ? a.name.localeCompare(b.name, "ko") : 0));
 
   const openDetail = (item: RoomItem) => {
     setSelectedRoom(item);
@@ -166,6 +169,20 @@ const Rooms = () => {
           placeholder={mode === "room" ? "지역, 연습실 이름 검색..." : "지역, 악기사 이름 검색..."}
           className="w-full h-11 pl-10 pr-4 rounded-xl bg-secondary border-none text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow"
         />
+      </div>
+
+      <div className="flex gap-2 mb-4 items-center">
+        {([["latest", "최신순"], ["name", "이름순"]] as ["latest" | "name", string][]).map(([m, label]) => (
+          <button
+            key={m}
+            onClick={() => setSortMode(m)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all active:scale-95 ${
+              sortMode === m ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       <div className="space-y-3">
