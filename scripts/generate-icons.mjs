@@ -1,34 +1,28 @@
 // 앱 아이콘 생성 스크립트: node scripts/generate-icons.mjs
-// 로열블루 그라데이션 배경 + 흰색 겹8분음표. 모든 PWA/파비콘 사이즈를 재생성한다.
+// 원본 logo-icon.png(79px)의 디자인·색을 그대로 고해상도로 재현한다.
+// 배경 #E5E9F3 (라이트 라벤더), 음표 #2554B1 (로열블루) — 원본에서 샘플링한 값.
 import sharp from "sharp";
 import pngToIco from "png-to-ico";
 import { writeFileSync } from "node:fs";
 
+const BG = "#E5E9F3";
+const NOTE = "#2554B1";
+
 const svg = `
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#5474E8"/>
-      <stop offset="1" stop-color="#2B49AE"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="0.3" cy="0.25" r="0.9">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <rect width="512" height="512" fill="url(#bg)"/>
-  <rect width="512" height="512" fill="url(#glow)"/>
-  <g fill="#ffffff">
-    <!-- 왼쪽 음표머리 -->
-    <ellipse cx="182" cy="352" rx="44" ry="33" transform="rotate(-16 182 352)"/>
-    <!-- 오른쪽 음표머리 -->
-    <ellipse cx="326" cy="332" rx="44" ry="33" transform="rotate(-16 326 332)"/>
-    <!-- 왼쪽 기둥 -->
-    <rect x="206" y="176" width="18" height="176"/>
+  <rect width="512" height="512" fill="${BG}"/>
+  <!-- 원본 스타일: 뚫린 음표머리(링) + 오른쪽으로 올라가는 빔 -->
+  <g stroke="${NOTE}" fill="none">
+    <circle cx="190" cy="342" r="30" stroke-width="20"/>
+    <circle cx="320" cy="314" r="30" stroke-width="20"/>
+  </g>
+  <g fill="${NOTE}">
+    <!-- 왼쪽 기둥 (음표머리 오른쪽 가장자리에서 위로) -->
+    <rect x="214" y="176" width="16" height="168"/>
     <!-- 오른쪽 기둥 -->
-    <rect x="350" y="156" width="18" height="176"/>
-    <!-- 빔 (위쪽 연결대, 살짝 기울임) -->
-    <path d="M 206 150 L 368 128 L 368 178 L 206 200 Z"/>
+    <rect x="344" y="148" width="16" height="168"/>
+    <!-- 빔: 왼쪽에서 오른쪽으로 상승 -->
+    <path d="M 214 168 L 360 140 L 360 172 L 214 200 Z"/>
   </g>
 </svg>`;
 
