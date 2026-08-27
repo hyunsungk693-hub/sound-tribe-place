@@ -6,72 +6,72 @@
 
 @layer base {
   :root {
-    /* 앱 아이콘(로열블루 그라데이션)과 같은 계열의 라이트 라벤더-블루 팔레트 */
-    --background: 227 56% 96%;
-    --foreground: 227 30% 13%;
+    /* 앱 로고(스카이블루→민트 그라데이션 핀)와 같은 계열의 라이트 팔레트 */
+    --background: 200 45% 97%;
+    --foreground: 206 35% 13%;
 
     --card: 0 0% 100%;
-    --card-foreground: 227 30% 13%;
+    --card-foreground: 206 35% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 227 30% 13%;
+    --popover-foreground: 206 35% 13%;
 
-    --primary: 227 58% 52%;
+    --primary: 204 72% 45%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 227 48% 92%;
-    --secondary-foreground: 227 26% 30%;
+    --secondary: 201 40% 93%;
+    --secondary-foreground: 205 28% 30%;
 
-    --muted: 227 48% 93%;
-    --muted-foreground: 227 15% 45%;
+    --muted: 201 40% 94%;
+    --muted-foreground: 205 15% 45%;
 
-    --accent: 227 48% 92%;
-    --accent-foreground: 227 30% 13%;
+    --accent: 201 40% 93%;
+    --accent-foreground: 206 35% 13%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 227 40% 87%;
-    --input: 227 40% 87%;
-    --ring: 227 58% 52%;
+    --border: 201 35% 88%;
+    --input: 201 35% 88%;
+    --ring: 204 72% 45%;
 
     --radius: 0.75rem;
 
     --surface-elevated: 0 0% 100%;
-    --surface-hover: 227 50% 94%;
+    --surface-hover: 200 45% 95%;
   }
 
   .dark {
-    --background: 227 30% 9%;
-    --foreground: 227 15% 92%;
+    --background: 206 32% 9%;
+    --foreground: 204 18% 92%;
 
-    --card: 227 26% 13%;
-    --card-foreground: 227 15% 92%;
+    --card: 206 28% 13%;
+    --card-foreground: 204 18% 92%;
 
-    --popover: 227 26% 13%;
-    --popover-foreground: 227 15% 92%;
+    --popover: 206 28% 13%;
+    --popover-foreground: 204 18% 92%;
 
-    --primary: 227 65% 66%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 204 78% 63%;
+    --primary-foreground: 206 40% 10%;
 
-    --secondary: 227 22% 18%;
-    --secondary-foreground: 227 15% 80%;
+    --secondary: 205 24% 18%;
+    --secondary-foreground: 204 16% 80%;
 
-    --muted: 227 22% 16%;
-    --muted-foreground: 227 14% 56%;
+    --muted: 205 24% 16%;
+    --muted-foreground: 204 15% 56%;
 
-    --accent: 227 22% 18%;
-    --accent-foreground: 227 15% 92%;
+    --accent: 205 24% 18%;
+    --accent-foreground: 204 18% 92%;
 
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 227 22% 21%;
-    --input: 227 22% 21%;
-    --ring: 227 65% 66%;
+    --border: 205 24% 21%;
+    --input: 205 24% 21%;
+    --ring: 204 78% 63%;
 
-    --surface-elevated: 227 24% 15%;
-    --surface-hover: 227 22% 17%;
+    --surface-elevated: 206 26% 15%;
+    --surface-hover: 205 24% 17%;
   }
 }
 

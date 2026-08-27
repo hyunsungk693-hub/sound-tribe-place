@@ -1,32 +1,17 @@
 // 앱 아이콘 생성 스크립트: node scripts/generate-icons.mjs
-// 원본 logo-icon.png(79px)의 디자인·색을 그대로 고해상도로 재현한다.
-// 배경 #E5E9F3 (라이트 라벤더), 음표 #2554B1 (로열블루) — 원본에서 샘플링한 값.
+// branding/logo.png (2048px 원본 로고)에서 핀 영역을 중심으로 잘라
+// 모든 PWA/파비콘/스플래시 아이콘을 생성한다.
 import sharp from "sharp";
 import pngToIco from "png-to-ico";
 import { writeFileSync } from "node:fs";
 
-const BG = "#E5E9F3";
-const NOTE = "#2554B1";
+const SRC = "branding/logo.png";
 
-const svg = `
-<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <rect width="512" height="512" fill="${BG}"/>
-  <!-- 원본 스타일: 뚫린 음표머리(링) + 오른쪽으로 올라가는 빔 -->
-  <g stroke="${NOTE}" fill="none">
-    <circle cx="190" cy="342" r="30" stroke-width="20"/>
-    <circle cx="320" cy="314" r="30" stroke-width="20"/>
-  </g>
-  <g fill="${NOTE}">
-    <!-- 왼쪽 기둥 (음표머리 오른쪽 가장자리에서 위로) -->
-    <rect x="214" y="176" width="16" height="168"/>
-    <!-- 오른쪽 기둥 -->
-    <rect x="344" y="148" width="16" height="168"/>
-    <!-- 빔: 왼쪽에서 오른쪽으로 상승 -->
-    <path d="M 214 168 L 360 140 L 360 172 L 214 200 Z"/>
-  </g>
-</svg>`;
+// 핀 바운딩박스(사전 분석값): x 624–1424, y 504–1612, 중심 (1024, 1058)
+// 여백 25%를 더한 정사각 크롭
+const CROP = { left: 332, top: 366, width: 1385, height: 1385 };
 
-const buf = Buffer.from(svg);
+const base = sharp(SRC).extract(CROP).flatten({ background: "#ffffff" });
 
 const jobs = [
   { out: "public/pwa-icon-512.png", size: 512 },
@@ -35,11 +20,11 @@ const jobs = [
 ];
 
 for (const { out, size } of jobs) {
-  await sharp(buf).resize(size, size).png().toFile(out);
+  await base.clone().resize(size, size).png().toFile(out);
   console.log("✓", out);
 }
 
-const png32 = await sharp(buf).resize(32, 32).png().toBuffer();
-const png16 = await sharp(buf).resize(16, 16).png().toBuffer();
+const png32 = await base.clone().resize(32, 32).png().toBuffer();
+const png16 = await base.clone().resize(16, 16).png().toBuffer();
 writeFileSync("public/favicon.ico", await pngToIco([png32, png16]));
 console.log("✓ public/favicon.ico");
