@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { addRecentView } from "@/lib/recentViews";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 type Comment = {
   id: string;
@@ -22,6 +23,7 @@ const PostDetail = () => {
   const { user } = useAuth();
 
   const [post, setPost] = useState<any>(null);
+  useDocumentTitle(post?.title);
   const [loading, setLoading] = useState(true);
   const [likeCount, setLikeCount] = useState(0);
   const [commentCount, setCommentCount] = useState(0);

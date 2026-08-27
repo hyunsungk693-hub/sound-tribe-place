@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Trash2, Pencil, Plus, X, UserPlus, Shield } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar,
   XAxis, YAxis, Tooltip, Legend, CartesianGrid,
@@ -57,6 +58,7 @@ const empty = {
 };
 
 const Admin = () => {
+  useDocumentTitle("관리자");
   const { isAdmin, loading } = useAdmin();
   const [places, setPlaces] = useState<Place[]>([]);
   const [form, setForm] = useState<typeof empty>(empty);

@@ -4,6 +4,7 @@ import { Music, Award, ArrowLeft, Mail } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 interface Profile {
   display_name: string | null;
@@ -16,6 +17,7 @@ interface Profile {
 }
 
 const UserProfile = () => {
+  useDocumentTitle("프로필");
   const { userId } = useParams<{ userId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();

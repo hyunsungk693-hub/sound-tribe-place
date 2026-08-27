@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { JobCardSkeleton } from "@/components/skeletons/PostSkeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const categories = ["전체", "공연", "녹음", "레슨", "행사", "기타"];
 
@@ -49,6 +50,7 @@ type JobItem = {
 };
 
 const Jobs = () => {
+  useDocumentTitle("구인구직");
   const { user } = useAuth();
   const navigate = useNavigate();
   const [dbJobs, setDbJobs] = useState<any[]>([]);

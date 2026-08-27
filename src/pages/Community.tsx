@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { addRecentView } from "@/lib/recentViews";
 import { toast } from "sonner";
 import { PostCardSkeleton } from "@/components/skeletons/PostSkeleton";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const tabs = ["전체", "자유", "질문", "거래"];
 
@@ -40,6 +41,7 @@ type Comment = {
 };
 
 const Community = () => {
+  useDocumentTitle("커뮤니티");
   const { user } = useAuth();
   const navigate = useNavigate();
   const [dbPosts, setDbPosts] = useState<any[]>([]);

@@ -11,6 +11,7 @@ import { getRecentViews, RecentView } from "@/lib/recentViews";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 interface Profile {
   display_name: string | null;
@@ -36,6 +37,7 @@ const APPLY_STATUS_META: Record<string, { label: string; cls: string }> = {
 };
 
 const ProfilePage = () => {
+  useDocumentTitle("프로필");
   const { user, signOut } = useAuth();
   const { isAdmin } = useAdmin();
   const navigate = useNavigate();

@@ -1,5 +1,6 @@
 {
   "rewrites": [
-    { "source": "/((?!assets/|sw\\.js|manifest\\.webmanifest|workbox-|favicon|pwa-|apple-touch-icon|robots\\.txt).*)", "destination": "/index.html" }
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/((?!api/|assets/|sw\\.js|manifest\\.webmanifest|workbox-|favicon|pwa-|apple-touch-icon|robots\\.txt|og-image\\.png|sitemap\\.xml).*)", "destination": "/index.html" }
   ]
 }

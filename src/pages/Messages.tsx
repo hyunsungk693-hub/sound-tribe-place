@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 type Conversation = {
   id: string;
@@ -80,6 +81,7 @@ const EmojiPicker = ({ onSelect }: { onSelect: (emoji: string) => void }) => {
 };
 
 const Messages = () => {
+  useDocumentTitle("메시지");
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const targetUserId = searchParams.get("to");

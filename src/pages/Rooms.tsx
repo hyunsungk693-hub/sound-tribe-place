@@ -9,6 +9,7 @@ import { RoomCardSkeleton } from "@/components/skeletons/PostSkeleton";
 import RoomReservationPanel from "@/components/RoomReservationPanel";
 import { naverDirectionsUrl, googleDirectionsUrl, hasDirections } from "@/lib/directions";
 import { addRecentView } from "@/lib/recentViews";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 
 
@@ -35,6 +36,7 @@ const Rooms = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const mode: Mode = location.pathname === "/shops" ? "shop" : "room";
+  useDocumentTitle(mode === "room" ? "연습실" : "악기사");
   const [dbRooms, setDbRooms] = useState<any[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(true);
   const [selectedRoom, setSelectedRoom] = useState<RoomItem | null>(null);
