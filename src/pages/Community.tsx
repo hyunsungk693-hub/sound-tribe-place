@@ -217,6 +217,7 @@ const Community = () => {
   };
 
   const openPost = (post: PostItem) => {
+    if (!user) { toast.error("자세히 보려면 로그인이 필요합니다"); navigate("/auth"); return; }
     setSelectedPost(post);
     setComments([]);
     setNewComment("");

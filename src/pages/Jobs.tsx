@@ -349,7 +349,10 @@ const Jobs = () => {
         {!loadingJobs && filtered.map((job, i) => (
           <div
             key={job.id || `sample-${i}`}
-            onClick={() => { setSelectedJob(job); setEditing(false); }}
+            onClick={() => {
+              if (!user) { toast.error("자세히 보려면 로그인이 필요합니다"); navigate("/auth"); return; }
+              setSelectedJob(job); setEditing(false);
+            }}
             className="glass-card overflow-hidden hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]"
             style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${i * 0.06}s both` }}
           >

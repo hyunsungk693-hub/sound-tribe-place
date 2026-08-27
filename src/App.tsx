@@ -52,12 +52,12 @@ const App = () => {
               <PhoneShell>
                 <Routes>
                   <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
-                  <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                  <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
+                  <Route path="/" element={<Index />} />
+                  <Route path="/jobs" element={<Jobs />} />
                   <Route path="/rooms" element={<ProtectedRoute><Rooms /></ProtectedRoute>} />
                   <Route path="/shops" element={<ProtectedRoute><Rooms /></ProtectedRoute>} />
                   <Route path="/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
-                  <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
+                  <Route path="/community" element={<Community />} />
                   <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                   <Route path="/post/:postId" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
