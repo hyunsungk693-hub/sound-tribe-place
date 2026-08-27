@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Heart, MessageSquare, BellOff, BellRing } from "lucide-react";
+import { Bell, Heart, MessageSquare, BellOff, BellRing, BadgeCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { enablePushNotifications, disablePushNotifications, isPushSupported, getPushPermission } from "@/lib/push";
 import { supabase } from "@/integrations/supabase/client";
@@ -163,14 +163,28 @@ const NotificationsPanel = ({ open, onClose }: Props) => {
                 } ${n.post_id ? "cursor-pointer hover:bg-surface-hover" : ""}`}
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                  n.type === "like" ? "bg-red-100 text-red-500" : "bg-blue-100 text-blue-500"
+                  n.type === "like" ? "bg-red-100 text-red-500"
+                    : n.type === "apply_accepted" ? "bg-green-100 text-green-600"
+                    : n.type === "apply_rejected" ? "bg-gray-200 text-gray-500"
+                    : "bg-blue-100 text-blue-500"
                 }`}>
-                  {n.type === "like" ? <Heart className="w-3.5 h-3.5" /> : <MessageSquare className="w-3.5 h-3.5" />}
+                  {n.type === "like" ? <Heart className="w-3.5 h-3.5" />
+                    : n.type === "apply_accepted" ? <BadgeCheck className="w-3.5 h-3.5" />
+                    : n.type === "apply_rejected" ? <XCircle className="w-3.5 h-3.5" />
+                    : <MessageSquare className="w-3.5 h-3.5" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs leading-relaxed">
-                    <span className="font-semibold">{n.actor_name}</span>
-                    {n.type === "like" ? "님이 좋아요를 눌렀습니다" : "님이 댓글을 달았습니다"}
+                    {n.type === "apply_accepted" ? (
+                      <>축하합니다! 지원에 <span className="font-semibold text-green-600">합격</span>했습니다 🎉</>
+                    ) : n.type === "apply_rejected" ? (
+                      <>아쉽지만 이번 지원은 <span className="font-semibold">불합격</span>했습니다</>
+                    ) : (
+                      <>
+                        <span className="font-semibold">{n.actor_name}</span>
+                        {n.type === "like" ? "님이 좋아요를 눌렀습니다" : "님이 댓글을 달았습니다"}
+                      </>
+                    )}
                   </p>
                   {n.post_title && (
                     <p className="text-[11px] text-muted-foreground truncate mt-0.5">{n.post_title}</p>

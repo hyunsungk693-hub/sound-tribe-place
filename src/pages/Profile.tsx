@@ -28,7 +28,14 @@ const menuItems = [
   { icon: HelpCircle, label: "고객센터" },
 ];
 
-const activityTabs = ["내 게시물", "내 예약", "최근 본"];
+const activityTabs = ["내 게시물", "최근 본"];
+
+const APPLY_STATUS_META: Record<string, { label: string; cls: string }> = {
+  applied: { label: "검토중", cls: "bg-primary/10 text-primary" },
+  reviewing: { label: "검토중", cls: "bg-primary/10 text-primary" },
+  accepted: { label: "합격", cls: "bg-green-500/10 text-green-600" },
+  rejected: { label: "불합격", cls: "bg-destructive/10 text-destructive" },
+};
 
 const ProfilePage = () => {
   const { user, signOut } = useAuth();
@@ -38,6 +45,10 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState("내 게시물");
   const [myPosts, setMyPosts] = useState<any[]>([]);
   const [myReservations, setMyReservations] = useState<any[]>([]);
+  const [myApplications, setMyApplications] = useState<any[]>([]);
+  const [instrutTab, setInstrutTab] = useState<"apply" | "reserve">("apply");
+  const [cancelAppTarget, setCancelAppTarget] = useState<any | null>(null);
+  const [cancellingApp, setCancellingApp] = useState(false);
   const [recentViews] = useState<RecentView[]>(() => getRecentViews());
   const [editOpen, setEditOpen] = useState(false);
   const [notiOpen, setNotiOpen] = useState(false);
@@ -93,6 +104,37 @@ const ProfilePage = () => {
     await fetchReservations();
   };
 
+  const fetchApplications = async () => {
+    if (!user) return;
+    const { data: apps } = await supabase
+      .from("job_applications" as any)
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    const list = (apps as any[]) || [];
+    const jobIds = Array.from(new Set(list.map((a) => a.job_id))).filter(Boolean);
+    let jobsById: Record<string, any> = {};
+    if (jobIds.length > 0) {
+      const { data: jobs } = await supabase
+        .from("posts")
+        .select("id,title,venue,pay,category")
+        .in("id", jobIds);
+      (jobs || []).forEach((j: any) => { jobsById[j.id] = j; });
+    }
+    setMyApplications(list.map((a) => ({ ...a, job: jobsById[a.job_id] || null })));
+  };
+
+  const confirmCancelApplication = async () => {
+    if (!cancelAppTarget) return;
+    setCancellingApp(true);
+    const { error } = await supabase.from("job_applications" as any).delete().eq("id", cancelAppTarget.id);
+    setCancellingApp(false);
+    if (error) { toast.error("지원 취소에 실패했습니다"); return; }
+    toast.success("지원이 취소되었습니다");
+    setCancelAppTarget(null);
+    await fetchApplications();
+  };
+
   // 최근 본 게시물 → 유형별 목록/상세로 이동
   const openRecent = (v: RecentView) => {
     if (v.type === "job") navigate("/jobs");
@@ -125,6 +167,7 @@ const ProfilePage = () => {
 
     // Fetch my room reservations (with room title)
     fetchReservations();
+    fetchApplications();
   }, [user]);
 
   const handleLogout = async () => {
@@ -209,6 +252,112 @@ const ProfilePage = () => {
         </div>
       </div>
 
+      {/* 나의 INSTRUT: 지원현황 · 예약현황 */}
+      <div className="glass-card mb-4 overflow-hidden" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s both" }}>
+        <div className="px-4 pt-4 pb-2">
+          <h3 className="text-sm font-bold">
+            나의 <span className="text-primary">INSTRUT</span>
+          </h3>
+        </div>
+        <div className="flex border-b border-border/40">
+          {([["apply", `지원현황 (${myApplications.length})`], ["reserve", `예약현황 (${myReservations.length})`]] as ["apply" | "reserve", string][]).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setInstrutTab(key)}
+              className={`flex-1 py-2.5 text-xs font-medium transition-colors ${
+                instrutTab === key
+                  ? "text-primary border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="p-3 space-y-2 max-h-[300px] overflow-y-auto">
+          {instrutTab === "apply" ? (
+            myApplications.length > 0 ? (
+              myApplications.map((a) => {
+                const meta = APPLY_STATUS_META[a.status] || APPLY_STATUS_META.applied;
+                const cancellable = a.status === "applied" || a.status === "reviewing";
+                return (
+                  <div
+                    key={a.id}
+                    onClick={() => a.job_id ? navigate(`/post/${a.job_id}`) : navigate("/jobs")}
+                    className="p-3 rounded-xl bg-secondary/50 hover:bg-surface-hover cursor-pointer transition-colors active:scale-[0.98]"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${meta.cls}`}>
+                        {meta.label}
+                      </span>
+                      {a.job?.category && (
+                        <span className="text-[10px] text-muted-foreground">{a.job.category}</span>
+                      )}
+                      <span className="text-[10px] text-muted-foreground ml-auto">
+                        {new Date(a.created_at).toLocaleDateString("ko-KR")}
+                      </span>
+                      {cancellable && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setCancelAppTarget(a); }}
+                          className="p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                          title="지원 취소"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <h4 className="text-sm font-semibold truncate">{a.job?.title || "삭제된 공고"}</h4>
+                    {a.job?.venue && (
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{a.job.venue}{a.job.pay ? ` · ${a.job.pay}` : ""}</p>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-6">지원 내역이 없습니다.</p>
+            )
+          ) : (
+            myReservations.length > 0 ? (
+              myReservations.map((r) => {
+                const s = new Date(r.start_at);
+                const e = new Date(r.end_at);
+                const fmtT = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                const upcoming = e.getTime() > Date.now();
+                return (
+                  <div
+                    key={r.id}
+                    onClick={() => setDetailTarget(r)}
+                    className="p-3 rounded-xl bg-secondary/50 hover:bg-surface-hover cursor-pointer transition-colors active:scale-[0.98]"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calendar className="w-3 h-3 text-primary" />
+                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${upcoming ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                        {upcoming ? "예정" : "지난 예약"}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground ml-auto">
+                        {s.toLocaleDateString("ko-KR")}
+                      </span>
+                      {upcoming && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setCancelTarget(r); setCancelReason(""); }}
+                          className="p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <h4 className="text-sm font-semibold truncate">{r.room_title}</h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">{fmtT(s)} - {fmtT(e)}</p>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-6">예약 내역이 없습니다.</p>
+            )
+          )}
+        </div>
+      </div>
+
       {/* My Activity */}
       <div className="glass-card mb-4 overflow-hidden" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.11s both" }}>
         <div className="flex border-b border-border/40">
@@ -222,7 +371,7 @@ const ProfilePage = () => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {tab} ({tab === "내 게시물" ? myPosts.length : tab === "내 예약" ? myReservations.length : recentViews.length})
+              {tab} ({tab === "내 게시물" ? myPosts.length : recentViews.length})
             </button>
           ))}
         </div>
@@ -266,44 +415,6 @@ const ProfilePage = () => {
               ))
             ) : (
               <p className="text-xs text-muted-foreground text-center py-6">작성한 게시물이 없습니다.</p>
-            )
-          ) : activeTab === "내 예약" ? (
-            myReservations.length > 0 ? (
-              myReservations.map((r) => {
-                const s = new Date(r.start_at);
-                const e = new Date(r.end_at);
-                const fmtT = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-                const upcoming = e.getTime() > Date.now();
-                return (
-                  <div
-                    key={r.id}
-                    onClick={() => setDetailTarget(r)}
-                    className="p-3 rounded-xl bg-secondary/50 hover:bg-surface-hover cursor-pointer transition-colors active:scale-[0.98]"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <Calendar className="w-3 h-3 text-primary" />
-                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${upcoming ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-                        {upcoming ? "예정" : "지난 예약"}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground ml-auto">
-                        {s.toLocaleDateString("ko-KR")}
-                      </span>
-                      {upcoming && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setCancelTarget(r); setCancelReason(""); }}
-                          className="p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                    <h4 className="text-sm font-semibold truncate">{r.room_title}</h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">{fmtT(s)} - {fmtT(e)}</p>
-                  </div>
-                );
-              })
-            ) : (
-              <p className="text-xs text-muted-foreground text-center py-6">예약 내역이 없습니다.</p>
             )
           ) : (
             recentViews.length > 0 ? (
@@ -520,6 +631,37 @@ const ProfilePage = () => {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={!!cancelAppTarget} onOpenChange={(o) => { if (!o) setCancelAppTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>지원 취소</DialogTitle>
+            <DialogDescription>
+              {cancelAppTarget && (
+                <>
+                  <span className="block font-medium text-foreground">{cancelAppTarget.job?.title || "삭제된 공고"}</span>
+                  <span className="block text-xs mt-1">정말로 이 공고에 대한 지원을 취소하시겠습니까? 취소 후에는 다시 지원할 수 있습니다.</span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <button
+              onClick={() => setCancelAppTarget(null)}
+              disabled={cancellingApp}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
+            >
+              닫기
+            </button>
+            <button
+              onClick={confirmCancelApplication}
+              disabled={cancellingApp}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {cancellingApp ? "취소 중..." : "지원 취소"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 };

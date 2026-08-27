@@ -84,9 +84,15 @@ const BottomNav = () => {
         fetchUnreadNotifications();
         const n = payload.new;
         if (n) {
-          const icon = n.type === "like" ? "❤️" : "💬";
-          const action = n.type === "like" ? "좋아요를 눌렀습니다" : "댓글을 달았습니다";
-          toast(`${icon} ${n.actor_name || "누군가"}님이 ${action}`, {
+          let title: string;
+          if (n.type === "apply_accepted") title = "🎉 지원에 합격했습니다!";
+          else if (n.type === "apply_rejected") title = "📋 지원 결과가 도착했습니다";
+          else {
+            const icon = n.type === "like" ? "❤️" : "💬";
+            const action = n.type === "like" ? "좋아요를 눌렀습니다" : "댓글을 달았습니다";
+            title = `${icon} ${n.actor_name || "누군가"}님이 ${action}`;
+          }
+          toast(title, {
             description: n.post_title ? `"${n.post_title}"` : undefined,
             duration: 5000,
           });
