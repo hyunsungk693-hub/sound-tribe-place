@@ -472,7 +472,10 @@ const Messages = () => {
     return (
       <div className="absolute inset-0 z-[2500] flex flex-col bg-background">
         {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-border/50 bg-card/80 backdrop-blur-lg shrink-0">
+        <div
+          className="flex items-center gap-3 p-4 border-b border-border/50 bg-card/80 backdrop-blur-lg shrink-0"
+          style={{ paddingTop: "calc(1rem + var(--safe-top, 0px))" }}
+        >
           <button
             onClick={() => {
               setSelectedConv(null);

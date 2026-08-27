@@ -67,28 +67,31 @@ const Index = () => {
 
   return (
     <PageShell>
-      {/* Header: 로고 텍스트만 왼쪽 정렬 */}
-      <header className="pt-5 pb-3">
-        <h1 className="text-2xl font-bold tracking-tight text-primary">instrut</h1>
-      </header>
-
-      {/* 메뉴바 */}
-      <nav className="mb-5" style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) both" }}>
-        <div className="grid grid-cols-4 gap-2">
-          {menuBar.map(({ icon: Icon, label, path }) => (
-            <button
-              key={path}
-              onClick={() => navigate(path)}
-              className="flex flex-col items-center gap-1.5 py-3 rounded-2xl bg-card border border-border/60 hover:bg-surface-hover transition-colors duration-150 active:scale-95"
-            >
-              <span className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Icon className="w-[18px] h-[18px] text-primary" />
-              </span>
-              <span className="text-[11px] font-semibold">{label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
+      {/* 상단 고정 영역: 로고 + 카테고리 메뉴바 */}
+      <div
+        className="sticky top-0 z-40 -mx-4 px-4 pb-3 bg-background/95 backdrop-blur-lg border-b border-border/30 mb-5"
+        style={{ paddingTop: "calc(1.25rem + var(--safe-top, 0px))" }}
+      >
+        <header className="pb-3">
+          <h1 className="text-2xl font-bold tracking-tight text-primary">instrut</h1>
+        </header>
+        <nav style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) both" }}>
+          <div className="grid grid-cols-4 gap-2">
+            {menuBar.map(({ icon: Icon, label, path }) => (
+              <button
+                key={path}
+                onClick={() => navigate(path)}
+                className="flex flex-col items-center gap-1.5 py-3 rounded-2xl bg-card border border-border/60 hover:bg-surface-hover transition-colors duration-150 active:scale-95"
+              >
+                <span className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Icon className="w-[18px] h-[18px] text-primary" />
+                </span>
+                <span className="text-[11px] font-semibold">{label}</span>
+              </button>
+            ))}
+          </div>
+        </nav>
+      </div>
 
       {loading ? <HomeSkeleton /> : <>
       {/* Ad Banner Carousel */}

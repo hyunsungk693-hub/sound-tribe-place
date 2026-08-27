@@ -78,10 +78,14 @@
 @layer base {
   :root {
     --safe-bottom: 0px;
+    --safe-top: 0px;
   }
   @media (display-mode: standalone) {
+    /* 홈 인디케이터 인셋(보통 34px)을 전부 띄우면 과해 보이므로
+       겹침만 피할 최소 여백(-14px 보정)만 남긴다 */
     :root {
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-bottom: max(calc(env(safe-area-inset-bottom, 0px) - 14px), 0px);
+      --safe-top: env(safe-area-inset-top, 0px);
     }
   }
 
