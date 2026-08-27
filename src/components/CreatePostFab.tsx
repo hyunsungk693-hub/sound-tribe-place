@@ -55,8 +55,8 @@ const CreatePostFab = () => {
   const [selected, setSelected] = useState<PostType | null>(null);
 
   if (!user) return null;
-  const hideOn = ["/", "/messages", "/map", "/profile", "/auth", "/admin"];
-  if (hideOn.some((p) => location.pathname === p || (p !== "/" && location.pathname.startsWith(p + "/")))) return null;
+  const hideOn = ["/messages", "/map", "/profile", "/auth", "/admin"];
+  if (hideOn.some((p) => location.pathname === p || location.pathname.startsWith(p + "/"))) return null;
 
   const handlePick = (t: PostType) => {
     setChooserOpen(false);
