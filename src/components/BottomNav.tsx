@@ -150,7 +150,10 @@ const BottomNav = () => {
       {menuOpen && (
         <div className="fixed inset-0 z-[1999]" onClick={closeMenu} onPointerUp={closeMenu}>
           <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" style={{ animation: menuClosing ? "fade-out 0.12s ease-out both" : "fade-in 0.15s ease both" }} />
-          <div className="absolute bottom-[86px] left-1/2 -translate-x-1/2 flex items-end gap-3.5">
+          <div
+            className="absolute left-1/2 -translate-x-1/2 flex items-end gap-3.5"
+            style={{ bottom: "calc(86px + env(safe-area-inset-bottom, 0px))" }}
+          >
             {holdMenuItems.map(({ path, icon: Icon, label, lift }, i) => (
               <button
                 key={path}

@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Plus, X, ImagePlus } from "lucide-react";
+import { X, ImagePlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { track } from "@/lib/analytics";
@@ -125,23 +125,13 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
     }
   };
 
-  if (!open) {
-    if (hideButton) return null;
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        aria-label="게시물 작성"
-        className="absolute top-3 right-14 z-[2100] w-9 h-9 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 active:scale-90 transition-all"
-      >
-        <Plus className="w-4 h-4" />
-      </button>
-    );
-  }
+  // 작성 버튼은 CreatePostFab(우측 하단 플로팅)이 전담한다
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/40" onClick={() => setOpen(false)}>
       <div
-        className="w-full max-w-lg bg-background rounded-t-2xl p-5 pb-8 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300"
+        className="w-full max-w-lg bg-background rounded-t-2xl p-5 pb-8 max-h-sheet overflow-y-auto animate-in slide-in-from-bottom duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">

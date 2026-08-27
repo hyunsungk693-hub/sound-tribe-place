@@ -228,7 +228,7 @@ const Rooms = () => {
       {selectedRoom && (
         <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end justify-center" onClick={() => { setSelectedRoom(null); setEditing(false); }}>
           <div
-            className="w-full max-w-lg bg-background rounded-t-2xl max-h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-300 overflow-y-auto"
+            className="w-full max-w-lg bg-background rounded-t-2xl max-h-sheet flex flex-col animate-in slide-in-from-bottom duration-300 overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-5">

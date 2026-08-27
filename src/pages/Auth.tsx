@@ -58,7 +58,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
+    <div className="min-h-app bg-background flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex items-center gap-3 justify-center mb-8" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) both" }}>

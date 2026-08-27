@@ -8,7 +8,7 @@ interface PageShellProps {
 }
 
 const PageShell = ({ children, title, headerExtra }: PageShellProps) => (
-  <div className="relative flex flex-col min-h-screen bg-background">
+  <div className="relative flex flex-col min-h-app bg-background">
     {title && (
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border/30">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between gap-3">

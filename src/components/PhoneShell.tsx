@@ -22,8 +22,8 @@ export const usePhoneFrameSize = () => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
 
-      // Mobile: fill the screen entirely
-      if (vw < MOBILE_BREAKPOINT) {
+      // Mobile(가로모드 포함): 화면을 그대로 채움 — 높이가 작으면 프레임이 깨지므로 함께 검사
+      if (vw < MOBILE_BREAKPOINT || vh < MOBILE_BREAKPOINT) {
         setSize({ w: vw, h: vh, isMobile: true });
         return;
       }
@@ -70,7 +70,7 @@ const PhoneShell = ({ children }: { children: ReactNode }) => {
   const { w, h, isMobile } = usePhoneFrameSize();
 
   if (isMobile) {
-    return <div className="w-full min-h-screen bg-background">{children}</div>;
+    return <div className="w-full min-h-app bg-background">{children}</div>;
   }
 
   return (

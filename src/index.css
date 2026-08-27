@@ -89,6 +89,9 @@
   html, body {
     -ms-overflow-style: none;
     scrollbar-width: none;
+    /* iOS 가로모드 회전 시 임의 글자 확대 방지 — 기종 간 타이포 일관성 */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   html::-webkit-scrollbar,
   body::-webkit-scrollbar {
@@ -112,6 +115,28 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* iOS 홈 인디케이터/노치 안전영역 — viewport-fit=cover 와 함께 동작 */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* iOS 사파리 주소창 변동에 안전한 화면 높이 (dvh 미지원 브라우저는 vh 폴백) */
+  .min-h-app {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .max-h-sheet {
+    max-height: 85vh;
+    max-height: 85dvh;
+  }
+  .max-h-sheet-lg {
+    max-height: 90vh;
+    max-height: 90dvh;
   }
 
   .glass-card {

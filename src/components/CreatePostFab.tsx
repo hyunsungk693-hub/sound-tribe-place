@@ -65,7 +65,10 @@ const CreatePostFab = () => {
 
   return (
     <>
-      <div className="sticky bottom-[72px] z-[1990] h-0 max-w-lg w-full mx-auto flex justify-end pr-4 pointer-events-none">
+      <div
+        className="sticky z-[1990] h-0 max-w-lg w-full mx-auto flex justify-end pr-4 pointer-events-none"
+        style={{ bottom: "calc(72px + env(safe-area-inset-bottom, 0px))" }}
+      >
         <button
           onClick={() => setChooserOpen(true)}
           aria-label="게시물 작성"

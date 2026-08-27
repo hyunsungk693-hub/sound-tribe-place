@@ -422,7 +422,7 @@ const Community = () => {
       {selectedPost && (
         <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end justify-center" onClick={() => setSelectedPost(null)}>
           <div
-            className="w-full max-w-lg bg-background rounded-t-2xl max-h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-300"
+            className="w-full max-w-lg bg-background rounded-t-2xl max-h-sheet flex flex-col animate-in slide-in-from-bottom duration-300"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

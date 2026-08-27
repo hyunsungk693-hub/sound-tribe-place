@@ -69,7 +69,7 @@ const Admin = () => {
 
   useEffect(() => { if (isAdmin) fetchPlaces(); }, [isAdmin]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  if (loading) return <div className="min-h-app flex items-center justify-center bg-background"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   if (!isAdmin) return <Navigate to="/" replace />;
 
   const resetForm = () => { setForm(empty); setEditingId(null); };
@@ -134,7 +134,7 @@ const Admin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-app bg-background pb-24">
       <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-4 py-3">
         <h1 className="text-lg font-bold">관리자</h1>
       </header>

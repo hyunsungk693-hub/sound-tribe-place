@@ -165,7 +165,7 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
   return (
     <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end justify-center" onClick={onClose}>
       <div
-        className="w-full max-w-lg bg-background rounded-t-2xl max-h-[90vh] flex flex-col animate-in slide-in-from-bottom duration-300"
+        className="w-full max-w-lg bg-background rounded-t-2xl max-h-sheet-lg flex flex-col animate-in slide-in-from-bottom duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
