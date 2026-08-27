@@ -10,6 +10,10 @@ interface ProfileData {
   genres: string[] | null;
   bio: string | null;
   avatar_url: string | null;
+  video_url?: string | null;
+  purpose?: string | null;
+  available_times?: string[] | null;
+  handle?: string | null;
 }
 
 interface Props {
@@ -53,6 +57,10 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
   const [instruments, setInstruments] = useState<string[]>(profile.instruments || []);
   const [genres, setGenres] = useState<string[]>(profile.genres || []);
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || "");
+  const [videoUrl, setVideoUrl] = useState(profile.video_url || "");
+  const [purpose, setPurpose] = useState<string>(profile.purpose || "");
+  const [availableTimes, setAvailableTimes] = useState((profile.available_times || []).join(", "));
+  const [handle, setHandle] = useState(profile.handle || "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [instrumentSearch, setInstrumentSearch] = useState("");
@@ -134,6 +142,16 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
     if (!displayName.trim()) { toast.error("닉네임을 입력해주세요"); return; }
     if (displayName.length > 50) { toast.error("닉네임은 50자 이내로 입력해주세요"); return; }
     if (bio.length > 300) { toast.error("소개는 300자 이내로 입력해주세요"); return; }
+    const trimmedVideo = videoUrl.trim();
+    if (trimmedVideo && !/(youtube\.com|youtu\.be|instagram\.com)\//.test(trimmedVideo)) {
+      toast.error("연주영상은 YouTube 또는 Instagram 링크만 등록할 수 있습니다");
+      return;
+    }
+    const trimmedHandle = handle.trim().toLowerCase();
+    if (trimmedHandle && !/^[a-z0-9-]{3,20}$/.test(trimmedHandle)) {
+      toast.error("핸들은 소문자 영문·숫자·하이픈 3~20자로 입력해주세요");
+      return;
+    }
 
     setSaving(true);
     const updated: ProfileData = {
@@ -143,15 +161,23 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
       instruments,
       genres,
       avatar_url: avatarUrl || null,
+      video_url: trimmedVideo || null,
+      purpose: purpose || null,
+      available_times: availableTimes.split(",").map((t) => t.trim()).filter(Boolean),
+      handle: trimmedHandle || null,
     };
 
     const { error } = await supabase
       .from("profiles")
-      .update(updated)
+      .update(updated as any)
       .eq("user_id", userId);
 
     if (error) {
-      toast.error("프로필 저장에 실패했습니다");
+      if (error.code === "23505") {
+        toast.error("이미 사용 중인 핸들입니다. 다른 핸들을 입력해주세요");
+      } else {
+        toast.error("프로필 저장에 실패했습니다");
+      }
     } else {
       toast.success("프로필이 저장되었습니다");
       onSaved(updated);
@@ -247,6 +273,68 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
               placeholder="자신을 소개해주세요"
             />
             <p className="text-[10px] text-muted-foreground text-right mt-1">{bio.length}/300</p>
+          </div>
+
+          {/* 연주영상 (A1: 구인 지원에 필수) */}
+          <div>
+            <label className="text-xs font-semibold mb-1.5 block">
+              연주영상 <span className="text-primary">(구인 지원에 필요)</span>
+            </label>
+            <input
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              placeholder="YouTube 또는 Instagram 영상 링크"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">내 연주를 보여줄 수 있는 영상 1개 — 지원할 때 프로필 카드에 함께 표시됩니다</p>
+          </div>
+
+          {/* 목적 */}
+          <div>
+            <label className="text-xs font-semibold mb-1.5 block">활동 목적</label>
+            <div className="flex gap-2">
+              {[["hobby", "취미"], ["pro", "프로"]].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setPurpose(purpose === value ? "" : value)}
+                  className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all active:scale-95 ${
+                    purpose === value
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 합주 가능 시간 */}
+          <div>
+            <label className="text-xs font-semibold mb-1.5 block">합주 가능 요일/시간</label>
+            <input
+              value={availableTimes}
+              onChange={(e) => setAvailableTimes(e.target.value)}
+              className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              placeholder="쉼표로 구분 — 예: 주말 오후, 평일 저녁"
+            />
+          </div>
+
+          {/* 핸들 */}
+          <div>
+            <label className="text-xs font-semibold mb-1.5 block">공개 핸들</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">@</span>
+              <input
+                value={handle}
+                onChange={(e) => setHandle(e.target.value.toLowerCase())}
+                maxLength={20}
+                className="w-full h-10 pl-7 pr-3 rounded-lg border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                placeholder="소문자 영문·숫자·하이픈 3~20자"
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">프로필 공유 주소에 사용됩니다 (추후 /u/핸들)</p>
           </div>
 
           {/* Instruments */}
