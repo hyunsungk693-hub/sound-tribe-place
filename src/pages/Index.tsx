@@ -7,7 +7,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { HomeSkeleton } from "@/components/skeletons/PostSkeleton";
 import NotificationsPanel, { useUnreadCount } from "@/components/NotificationsPanel";
 import banner1 from "@/assets/banner-1.png";
-import banner2 from "@/assets/banner-2.jpg";
 import banner3 from "@/assets/banner-3.jpg";
 import banner4 from "@/assets/banner-4.jpg";
 
@@ -19,16 +18,9 @@ const menuBar = [
 ];
 
 const adBanners = [
-  { title: "음악인을 위한 플랫폼", desc: "함께 만드는 음악의 무대", image: banner1 },
-  { title: "🎸 악기 할인 대전", desc: "최대 50% 할인! 봄맞이 특별 세일", image: banner2 },
-  { title: "🎵 뮤직 페스티벌 2026", desc: "서울 올림픽공원 · 4월 12~13일", image: banner3 },
-  { title: "🎧 온라인 믹싱 클래스", desc: "프로 엔지니어에게 배우는 믹싱 노하우", image: banner4 },
-];
-
-const sampleRecentJobs = [
-  { title: "밴드 기타리스트 모집", venue: "홍대 라이브클럽", tag: "공연" },
-  { title: "레코딩 세션 드러머", venue: "강남 스튜디오", tag: "녹음" },
-  { title: "웨딩 싱어 구함", venue: "서울 전 지역", tag: "행사" },
+  { title: "instrut", desc: "믿을 수 있는 밴드·세션 멤버 찾기", image: banner1, path: "/jobs" },
+  { title: "instrut", desc: "합주할 공간이 필요하다면, 연습실 찾기", image: banner3, path: "/rooms" },
+  { title: "instrut", desc: "음악인들과 자유롭게 이야기 나누기", image: banner4, path: "/community" },
 ];
 
 const Index = () => {
@@ -60,21 +52,19 @@ const Index = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const recentJobs = [
-    ...dbRecentJobs.map((j) => ({
-      id: j.id,
-      title: j.title,
-      venue: j.venue || "",
-      tag: j.category || "기타",
-    })),
-    ...sampleRecentJobs.map((j) => ({ ...j, id: null as string | null })),
-  ].slice(0, 5);
+  const recentJobs = dbRecentJobs.map((j) => ({
+    id: j.id as string,
+    title: j.title,
+    venue: j.venue || "",
+    tag: j.category || "기타",
+  }));
 
   return (
     <PageShell>
+      <div className="lg:max-w-2xl lg:mx-auto lg:pt-4">
       {/* 상단 고정 영역: 로고 + 카테고리 메뉴바 */}
       <div
-        className="sticky top-0 z-40 -mx-4 px-4 pb-3 bg-background/95 backdrop-blur-lg border-b border-border/30 mb-5"
+        className="lg:hidden sticky top-0 z-40 -mx-4 px-4 pb-3 bg-background/95 backdrop-blur-lg border-b border-border/30 mb-5"
         style={{ paddingTop: "calc(1.25rem + var(--safe-top, 0px))" }}
       >
         <header className="pb-3 flex items-center justify-between">
@@ -125,7 +115,7 @@ const Index = () => {
         <div className="relative overflow-hidden rounded-2xl">
           <div className="flex transition-transform duration-500 ease-out" style={{ transform: `translateX(-${currentBanner * 100}%)` }}>
             {adBanners.map((banner, i) => (
-              <div key={i} className="w-full shrink-0 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform min-h-[140px]">
+              <div key={i} onClick={() => navigate(banner.path)} className="w-full shrink-0 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform min-h-[140px]">
                 <img src={banner.image} alt={banner.title} className="w-full h-full object-cover absolute inset-0" loading="lazy" />
                 <div className="relative z-10 p-5 flex flex-col justify-end min-h-[140px] bg-gradient-to-t from-black/60 to-transparent">
                   <p className="text-xs text-white/80">{banner.title}</p>
@@ -148,7 +138,10 @@ const Index = () => {
           <h2 className="font-semibold text-sm">최근 구인글</h2>
           <button onClick={() => navigate("/jobs")} className="text-xs text-primary font-medium active:scale-95 transition-transform">전체보기</button>
         </div>
-        <div className="space-y-2">
+        {recentJobs.length === 0 && (
+          <p className="text-xs text-muted-foreground text-center py-6">아직 구인글이 없습니다. 첫 공고를 올려보세요!</p>
+        )}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
           {recentJobs.map((job, i) => (
             <div key={i} onClick={() => job.id ? navigate(`/post/${job.id}`) : navigate("/jobs")} className="glass-card p-3.5 flex items-center justify-between hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]">
               <div>
@@ -163,6 +156,7 @@ const Index = () => {
       </>}
 
       <NotificationsPanel open={notiOpen} onClose={() => setNotiOpen(false)} />
+      </div>
     </PageShell>
   );
 };

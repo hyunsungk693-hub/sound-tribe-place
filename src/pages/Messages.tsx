@@ -465,7 +465,7 @@ const Messages = () => {
   // Chat view (full-screen overlay inside the phone shell)
   if (selectedConv) {
     return (
-      <div className="absolute inset-0 z-[2500] flex flex-col bg-background">
+      <div className="absolute inset-0 z-[2500] flex flex-col bg-background lg:max-w-3xl lg:mx-auto lg:border-x lg:border-border/50">
         {/* Header */}
         <div
           className="flex items-center gap-3 p-4 border-b border-border/50 bg-card/80 backdrop-blur-lg shrink-0"

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/hooks/useAdmin";
 import BottomNav from "@/components/BottomNav";
+import TopNav from "@/components/TopNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -135,6 +136,7 @@ const Admin = () => {
 
   return (
     <div className="min-h-app bg-background" style={{ paddingBottom: "calc(96px + var(--safe-bottom, 0px))" }}>
+      <TopNav />
       <header
         className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-4 py-3"
         style={{ paddingTop: "calc(0.75rem + var(--safe-top, 0px))" }}

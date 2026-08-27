@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff,woff2}"],
       },
       manifest: {
-        name: "instrut - 음악인을 위한 플랫폼",
+        name: "instrut — 음악인 구인구직·연습실·커뮤니티",
         short_name: "instrut",
         description: "음악인을 위한 커뮤니티, 구인구직, 연습실 플랫폼",
         theme_color: "#2083C5",

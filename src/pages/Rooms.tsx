@@ -10,24 +10,8 @@ import RoomReservationPanel from "@/components/RoomReservationPanel";
 import { naverDirectionsUrl, googleDirectionsUrl, hasDirections } from "@/lib/directions";
 import { addRecentView } from "@/lib/recentViews";
 
-const SAMPLE_AUTHORS = [
-  "4cef9ad6-633d-42b6-adf6-a352853b05a5",
-  "c2c088e8-341c-46f4-b0cf-b7683f35f0e8",
-  "4552f73b-5d17-436f-9c39-4f29d7a3320b",
-];
 
-const sampleRooms = [
-  { id: null, user_id: SAMPLE_AUTHORS[0], name: "사운드팩토리", area: "홍대입구역 3분", price: "시간당 1.5만원", rating: 4.8, instruments: ["드럼", "앰프", "PA"], hours: "24시간", content: "", image_url: null, lat: null, lng: null },
-  { id: null, user_id: SAMPLE_AUTHORS[1], name: "뮤직베이스", area: "강남역 5분", price: "시간당 2만원", rating: 4.6, instruments: ["드럼", "건반", "앰프"], hours: "10:00-02:00", content: "", image_url: null, lat: null, lng: null },
-  { id: null, user_id: SAMPLE_AUTHORS[2], name: "비트룸", area: "합정역 2분", price: "시간당 1.2만원", rating: 4.4, instruments: ["드럼", "앰프"], hours: "09:00-24:00", content: "", image_url: null, lat: null, lng: null },
-  { id: null, user_id: SAMPLE_AUTHORS[0], name: "멜로디하우스", area: "건대입구역 7분", price: "시간당 1.8만원", rating: 4.7, instruments: ["드럼", "건반", "앰프", "PA"], hours: "24시간", content: "", image_url: null, lat: null, lng: null },
-  { id: null, user_id: SAMPLE_AUTHORS[1], name: "리듬스페이스", area: "신촌역 4분", price: "시간당 1.3만원", rating: 4.3, instruments: ["드럼", "앰프"], hours: "11:00-23:00", content: "", image_url: null, lat: null, lng: null },
-];
 
-const sampleShops = [
-  { id: null, user_id: SAMPLE_AUTHORS[0], name: "뮤직랜드 홍대점", area: "서울 마포구 와우산로", price: "", rating: 4.5, instruments: ["기타", "베이스", "이펙터"], hours: "11:00 - 21:00", content: "", image_url: null, lat: null, lng: null },
-  { id: null, user_id: SAMPLE_AUTHORS[1], name: "스쿨뮤직 낙원점", area: "서울 종로구 낙원악기상가", price: "", rating: 4.3, instruments: ["기타", "드럼", "건반"], hours: "10:00 - 20:00", content: "", image_url: null, lat: null, lng: null },
-];
 
 type Mode = "room" | "shop";
 
@@ -97,7 +81,6 @@ const Rooms = () => {
       lat: r.lat ?? null,
       lng: r.lng ?? null,
     })),
-    ...(mode === "room" ? sampleRooms : sampleShops),
   ]
     .filter((r) => !query.trim() || r.name.includes(query.trim()) || r.area.includes(query.trim()))
     .sort((a, b) => (sortMode === "name" ? a.name.localeCompare(b.name, "ko") : 0));
@@ -185,7 +168,7 @@ const Rooms = () => {
         ))}
       </div>
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
         {loadingRooms ? [...Array(4)].map((_, i) => <RoomCardSkeleton key={i} />) : null}
         {!loadingRooms && allItems.map((room, i) => (
           <div
@@ -243,9 +226,9 @@ const Rooms = () => {
 
       {/* Detail Modal */}
       {selectedRoom && (
-        <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end justify-center" onClick={() => { setSelectedRoom(null); setEditing(false); }}>
+        <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center" onClick={() => { setSelectedRoom(null); setEditing(false); }}>
           <div
-            className="w-full max-w-lg bg-background rounded-t-2xl max-h-sheet flex flex-col animate-in slide-in-from-bottom duration-300 overflow-y-auto"
+            className="w-full max-w-lg bg-background rounded-t-2xl lg:rounded-2xl max-h-sheet flex flex-col animate-in slide-in-from-bottom duration-300 overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-5">

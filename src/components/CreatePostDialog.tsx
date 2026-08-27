@@ -129,9 +129,9 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/40" onClick={() => setOpen(false)}>
+    <div className="fixed inset-0 z-[9999] flex items-end lg:items-center justify-center bg-black/40" onClick={() => setOpen(false)}>
       <div
-        className="w-full max-w-lg bg-background rounded-t-2xl p-5 pb-8 max-h-sheet overflow-y-auto animate-in slide-in-from-bottom duration-300"
+        className="w-full max-w-lg bg-background rounded-t-2xl lg:rounded-2xl p-5 pb-8 max-h-sheet overflow-y-auto animate-in slide-in-from-bottom duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">

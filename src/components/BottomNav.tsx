@@ -154,7 +154,7 @@ const BottomNav = () => {
     <>
       {/* 홀드 메뉴 오버레이 */}
       {menuOpen && (
-        <div className="fixed inset-0 z-[1999]" onClick={closeMenu} onPointerUp={closeMenu}>
+        <div className="lg:hidden fixed inset-0 z-[1999]" onClick={closeMenu} onPointerUp={closeMenu}>
           <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" style={{ animation: menuClosing ? "fade-out 0.12s ease-out both" : "fade-in 0.15s ease both" }} />
           <div
             className="absolute left-1/2 -translate-x-1/2 flex items-end gap-3.5"
@@ -178,7 +178,7 @@ const BottomNav = () => {
         </div>
       )}
 
-      <nav className="fixed bottom-0 left-0 right-0 z-[2000] bg-card/95 backdrop-blur-lg border-t border-border/50 pb-safe">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[2000] bg-card/95 backdrop-blur-lg border-t border-border/50 pb-safe">
         <div className="relative flex items-center justify-center gap-44 h-16 max-w-lg mx-auto">
           {/* 메시지 */}
           <button onClick={() => navigate("/messages")} className={sideBtnCls(location.pathname === "/messages")}>

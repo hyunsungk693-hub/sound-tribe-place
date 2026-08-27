@@ -55,7 +55,7 @@ const CreatePostFab = () => {
   const [selected, setSelected] = useState<PostType | null>(null);
 
   if (!user) return null;
-  const hideOn = ["/messages", "/map", "/profile", "/auth", "/admin"];
+  const hideOn = ["/messages", "/profile", "/auth", "/admin"];
   if (hideOn.some((p) => location.pathname === p || location.pathname.startsWith(p + "/"))) return null;
 
   const handlePick = (t: PostType) => {
@@ -68,19 +68,18 @@ const CreatePostFab = () => {
       <button
         onClick={() => setChooserOpen(true)}
         aria-label="게시물 작성"
-        className="fixed right-4 z-[1990] w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 active:scale-90 transition-all"
-        style={{ bottom: "calc(88px + var(--safe-bottom, 0px))" }}
+        className="fab-pos fixed right-4 lg:right-8 z-[1990] w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 active:scale-90 transition-all"
       >
         <Plus className="w-5 h-5" />
       </button>
 
       {chooserOpen && (
         <div
-          className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/40"
+          className="fixed inset-0 z-[9999] flex items-end lg:items-center justify-center bg-black/40"
           onClick={() => setChooserOpen(false)}
         >
           <div
-            className="w-full max-w-lg bg-background rounded-t-2xl p-5 pb-8 animate-in slide-in-from-bottom duration-300"
+            className="w-full max-w-lg bg-background rounded-t-2xl lg:rounded-2xl p-5 pb-8 animate-in slide-in-from-bottom duration-300"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
