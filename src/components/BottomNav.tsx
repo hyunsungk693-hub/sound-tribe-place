@@ -1,4 +1,4 @@
-import { Home, Briefcase, Music2, MessageCircle, Mail, User } from "lucide-react";
+import { Home, Briefcase, Music2, MessageCircle, Mail, User, Store } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -8,9 +8,10 @@ import { useAuth } from "@/contexts/AuthContext";
 const HOLD_MS = 300;
 
 const holdMenuItems = [
-  { path: "/jobs", icon: Briefcase, label: "구인", lift: 6 },
+  { path: "/jobs", icon: Briefcase, label: "구인", lift: 10 },
   { path: "/rooms", icon: Music2, label: "연습실", lift: 0 },
-  { path: "/community", icon: MessageCircle, label: "커뮤", lift: 6 },
+  { path: "/shops", icon: Store, label: "악기사", lift: 0 },
+  { path: "/community", icon: MessageCircle, label: "커뮤", lift: 10 },
 ];
 
 const BottomNav = () => {
@@ -149,7 +150,7 @@ const BottomNav = () => {
       {menuOpen && (
         <div className="fixed inset-0 z-[1999]" onClick={closeMenu} onPointerUp={closeMenu}>
           <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" style={{ animation: menuClosing ? "fade-out 0.12s ease-out both" : "fade-in 0.15s ease both" }} />
-          <div className="absolute bottom-[86px] left-1/2 -translate-x-1/2 flex items-end gap-5">
+          <div className="absolute bottom-[86px] left-1/2 -translate-x-1/2 flex items-end gap-3.5">
             {holdMenuItems.map(({ path, icon: Icon, label, lift }, i) => (
               <button
                 key={path}
@@ -170,13 +171,13 @@ const BottomNav = () => {
 
       <nav className="sticky bottom-0 left-0 right-0 z-[2000] bg-card/95 backdrop-blur-lg border-t border-border/50 pb-safe">
         <div className="relative flex items-center justify-between h-14 max-w-lg mx-auto px-10">
-          {/* 프로필 */}
-          <button onClick={() => navigate("/profile")} className={sideBtnCls(location.pathname === "/profile")}>
+          {/* 메시지 */}
+          <button onClick={() => navigate("/messages")} className={sideBtnCls(location.pathname === "/messages")}>
             <div className="relative">
-              <User className="w-5 h-5" strokeWidth={location.pathname === "/profile" ? 2.5 : 2} />
-              <Badge count={unreadNotifications} />
+              <Mail className="w-5 h-5" strokeWidth={location.pathname === "/messages" ? 2.5 : 2} />
+              <Badge count={unreadMessages} />
             </div>
-            <span className="text-[9px] font-medium leading-none">프로필</span>
+            <span className="text-[9px] font-medium leading-none">메시지</span>
           </button>
 
           {/* 홈 (중앙, 탭=홈 / 홀드=바로가기 메뉴) */}
@@ -195,13 +196,13 @@ const BottomNav = () => {
             <Home className="w-6 h-6" strokeWidth={2.2} />
           </button>
 
-          {/* 메시지 */}
-          <button onClick={() => navigate("/messages")} className={sideBtnCls(location.pathname === "/messages")}>
+          {/* 프로필 */}
+          <button onClick={() => navigate("/profile")} className={sideBtnCls(location.pathname === "/profile")}>
             <div className="relative">
-              <Mail className="w-5 h-5" strokeWidth={location.pathname === "/messages" ? 2.5 : 2} />
-              <Badge count={unreadMessages} />
+              <User className="w-5 h-5" strokeWidth={location.pathname === "/profile" ? 2.5 : 2} />
+              <Badge count={unreadNotifications} />
             </div>
-            <span className="text-[9px] font-medium leading-none">메시지</span>
+            <span className="text-[9px] font-medium leading-none">프로필</span>
           </button>
         </div>
       </nav>

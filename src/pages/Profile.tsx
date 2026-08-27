@@ -97,7 +97,7 @@ const ProfilePage = () => {
   const openRecent = (v: RecentView) => {
     if (v.type === "job") navigate("/jobs");
     else if (v.type === "room") navigate("/rooms");
-    else if (v.type === "shop") navigate("/rooms?tab=shop");
+    else if (v.type === "shop") navigate("/shops");
     else navigate(`/post/${v.id}`);
   };
 

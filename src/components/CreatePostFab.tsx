@@ -55,8 +55,8 @@ const CreatePostFab = () => {
   const [selected, setSelected] = useState<PostType | null>(null);
 
   if (!user) return null;
-  const hideOn = ["/messages", "/map", "/profile", "/auth", "/admin"];
-  if (hideOn.some((p) => location.pathname === p || location.pathname.startsWith(p + "/"))) return null;
+  const hideOn = ["/", "/messages", "/map", "/profile", "/auth", "/admin"];
+  if (hideOn.some((p) => location.pathname === p || (p !== "/" && location.pathname.startsWith(p + "/")))) return null;
 
   const handlePick = (t: PostType) => {
     setChooserOpen(false);
@@ -65,13 +65,15 @@ const CreatePostFab = () => {
 
   return (
     <>
-      <button
-        onClick={() => setChooserOpen(true)}
-        aria-label="게시물 작성"
-        className="absolute top-3 right-14 z-[2100] w-9 h-9 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 active:scale-90 transition-all"
-      >
-        <Plus className="w-4 h-4" />
-      </button>
+      <div className="sticky bottom-[72px] z-[1990] h-0 max-w-lg w-full mx-auto flex justify-end pr-4 pointer-events-none">
+        <button
+          onClick={() => setChooserOpen(true)}
+          aria-label="게시물 작성"
+          className="pointer-events-auto -translate-y-12 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 active:scale-90 transition-all"
+        >
+          <Plus className="w-5 h-5" />
+        </button>
+      </div>
 
       {chooserOpen && (
         <div

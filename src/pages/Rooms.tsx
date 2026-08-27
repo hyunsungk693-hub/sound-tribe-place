@@ -1,6 +1,6 @@
 import { Search, MapPin, Clock, Star, Music, ArrowLeft, Pencil, Trash2, MessageCircle, Navigation } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -49,8 +49,8 @@ type RoomItem = {
 const Rooms = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const mode: Mode = searchParams.get("tab") === "shop" ? "shop" : "room";
+  const location = useLocation();
+  const mode: Mode = location.pathname === "/shops" ? "shop" : "room";
   const [dbRooms, setDbRooms] = useState<any[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(true);
   const [selectedRoom, setSelectedRoom] = useState<RoomItem | null>(null);
@@ -155,24 +155,8 @@ const Rooms = () => {
     fetchRooms(mode);
   };
 
-  const segment = (
-    <div className="flex rounded-xl bg-secondary p-1">
-      {([["room", "연습실"], ["shop", "악기사"]] as [Mode, string][]).map(([m, label]) => (
-        <button
-          key={m}
-          onClick={() => setSearchParams(m === "shop" ? { tab: "shop" } : {}, { replace: true })}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors duration-150 ${
-            mode === m ? "bg-card text-primary shadow-sm" : "text-muted-foreground"
-          }`}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  );
-
   return (
-    <PageShell title={mode === "room" ? "연습실" : "악기사"} headerExtra={segment}>
+    <PageShell title={mode === "room" ? "연습실" : "악기사"}>
       <div className="relative mb-5">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input

@@ -7,8 +7,8 @@ const SplashScreen = ({ onFinish }: { onFinish: () => void }) => {
   const [exiting, setExiting] = useState(false);
 
   useEffect(() => {
-    const timer1 = setTimeout(() => setExiting(true), 1000);
-    const timer2 = setTimeout(() => onFinish(), 1000 + EXPAND_MS);
+    const timer1 = setTimeout(() => setExiting(true), 1150);
+    const timer2 = setTimeout(() => onFinish(), 1150 + EXPAND_MS);
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
@@ -31,7 +31,7 @@ const SplashScreen = ({ onFinish }: { onFinish: () => void }) => {
         style={{
           animation: exiting
             ? `splash-expand ${EXPAND_MS}ms cubic-bezier(0.77, 0, 0.175, 1) both`
-            : "splash-pop 0.6s cubic-bezier(0.16,1,0.3,1) both",
+            : "splash-pop 0.85s cubic-bezier(0.22, 1, 0.36, 1) both",
           willChange: "transform, opacity",
         }}
       />
@@ -40,7 +40,7 @@ const SplashScreen = ({ onFinish }: { onFinish: () => void }) => {
         style={{
           animation: exiting
             ? "fade-out 0.2s ease-out both"
-            : "splash-pop 0.6s 0.2s cubic-bezier(0.16,1,0.3,1) both",
+            : "splash-pop 0.85s 0.15s cubic-bezier(0.22, 1, 0.36, 1) both",
         }}
       >
         instrut

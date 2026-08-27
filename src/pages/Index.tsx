@@ -12,7 +12,7 @@ import banner4 from "@/assets/banner-4.jpg";
 const menuBar = [
   { icon: Briefcase, label: "구인", path: "/jobs" },
   { icon: Music2, label: "연습실", path: "/rooms" },
-  { icon: Store, label: "악기사", path: "/rooms?tab=shop" },
+  { icon: Store, label: "악기사", path: "/shops" },
   { icon: MessageCircle, label: "커뮤니티", path: "/community" },
 ];
 

@@ -6,72 +6,72 @@
 
 @layer base {
   :root {
-    /* 앱 아이콘의 라이트 라벤더-블루 톤 기반 팔레트 */
-    --background: 228 44% 97%;
-    --foreground: 228 26% 14%;
+    /* 앱 아이콘(로열블루 그라데이션)과 같은 계열의 라이트 라벤더-블루 팔레트 */
+    --background: 227 56% 96%;
+    --foreground: 227 30% 13%;
 
     --card: 0 0% 100%;
-    --card-foreground: 228 26% 14%;
+    --card-foreground: 227 30% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 228 26% 14%;
+    --popover-foreground: 227 30% 13%;
 
-    --primary: 226 55% 48%;
+    --primary: 227 58% 52%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 228 36% 93%;
-    --secondary-foreground: 228 22% 30%;
+    --secondary: 227 48% 92%;
+    --secondary-foreground: 227 26% 30%;
 
-    --muted: 228 36% 94%;
-    --muted-foreground: 228 12% 46%;
+    --muted: 227 48% 93%;
+    --muted-foreground: 227 15% 45%;
 
-    --accent: 228 36% 93%;
-    --accent-foreground: 228 26% 14%;
+    --accent: 227 48% 92%;
+    --accent-foreground: 227 30% 13%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 228 30% 89%;
-    --input: 228 30% 89%;
-    --ring: 226 55% 48%;
+    --border: 227 40% 87%;
+    --input: 227 40% 87%;
+    --ring: 227 58% 52%;
 
     --radius: 0.75rem;
 
     --surface-elevated: 0 0% 100%;
-    --surface-hover: 228 40% 95%;
+    --surface-hover: 227 50% 94%;
   }
 
   .dark {
-    --background: 228 22% 9%;
-    --foreground: 228 12% 92%;
+    --background: 227 30% 9%;
+    --foreground: 227 15% 92%;
 
-    --card: 228 20% 13%;
-    --card-foreground: 228 12% 92%;
+    --card: 227 26% 13%;
+    --card-foreground: 227 15% 92%;
 
-    --popover: 228 20% 13%;
-    --popover-foreground: 228 12% 92%;
+    --popover: 227 26% 13%;
+    --popover-foreground: 227 15% 92%;
 
-    --primary: 226 60% 62%;
+    --primary: 227 65% 66%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 228 18% 18%;
-    --secondary-foreground: 228 12% 80%;
+    --secondary: 227 22% 18%;
+    --secondary-foreground: 227 15% 80%;
 
-    --muted: 228 18% 16%;
-    --muted-foreground: 228 12% 55%;
+    --muted: 227 22% 16%;
+    --muted-foreground: 227 14% 56%;
 
-    --accent: 228 18% 18%;
-    --accent-foreground: 228 12% 92%;
+    --accent: 227 22% 18%;
+    --accent-foreground: 227 15% 92%;
 
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 228 18% 21%;
-    --input: 228 18% 21%;
-    --ring: 226 60% 62%;
+    --border: 227 22% 21%;
+    --input: 227 22% 21%;
+    --ring: 227 65% 66%;
 
-    --surface-elevated: 228 20% 15%;
-    --surface-hover: 228 18% 17%;
+    --surface-elevated: 227 24% 15%;
+    --surface-hover: 227 22% 17%;
   }
 }
 
@@ -152,11 +152,13 @@
 @keyframes splash-pop {
   from {
     opacity: 0;
-    transform: scale(0.7);
+    transform: scale(0.88) translateY(8px);
+    filter: blur(6px);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1) translateY(0);
+    filter: blur(0);
   }
 }
 

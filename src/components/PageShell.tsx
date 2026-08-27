@@ -18,8 +18,8 @@ const PageShell = ({ children, title, headerExtra }: PageShellProps) => (
       </header>
     )}
     <main className="flex-1 max-w-lg w-full mx-auto px-4 pb-4 pt-4">{children}</main>
-    <BottomNav />
     <CreatePostFab />
+    <BottomNav />
   </div>
 );
 
