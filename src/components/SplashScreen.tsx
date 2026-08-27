@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import logoIcon from "@/assets/logo-icon.png";
 
+const EXPAND_MS = 450;
+
 const SplashScreen = ({ onFinish }: { onFinish: () => void }) => {
-  const [fadeOut, setFadeOut] = useState(false);
+  const [exiting, setExiting] = useState(false);
 
   useEffect(() => {
-    const timer1 = setTimeout(() => setFadeOut(true), 1200);
-    const timer2 = setTimeout(() => onFinish(), 1700);
+    const timer1 = setTimeout(() => setExiting(true), 1000);
+    const timer2 = setTimeout(() => onFinish(), 1000 + EXPAND_MS);
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
@@ -15,16 +17,32 @@ const SplashScreen = ({ onFinish }: { onFinish: () => void }) => {
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background transition-opacity duration-500 ${
-        fadeOut ? "opacity-0" : "opacity-100"
-      }`}
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background"
+      style={
+        exiting
+          ? { animation: `fade-out 0.35s ease-out ${EXPAND_MS - 350}ms both`, pointerEvents: "none" }
+          : undefined
+      }
     >
       <img
         src={logoIcon}
         alt="instrut"
-        className="w-20 h-20 mb-4 animate-[splash-pop_0.6s_cubic-bezier(0.16,1,0.3,1)_both]"
+        className={`w-24 h-24 rounded-3xl shadow-lg mb-4 ${exiting ? "splash-icon-exit" : ""}`}
+        style={{
+          animation: exiting
+            ? `splash-expand ${EXPAND_MS}ms cubic-bezier(0.77, 0, 0.175, 1) both`
+            : "splash-pop 0.6s cubic-bezier(0.16,1,0.3,1) both",
+          willChange: "transform, opacity",
+        }}
       />
-      <span className="text-xl font-bold tracking-tight text-foreground animate-[splash-pop_0.6s_0.2s_cubic-bezier(0.16,1,0.3,1)_both]">
+      <span
+        className="text-xl font-bold tracking-tight text-foreground"
+        style={{
+          animation: exiting
+            ? "fade-out 0.2s ease-out both"
+            : "splash-pop 0.6s 0.2s cubic-bezier(0.16,1,0.3,1) both",
+        }}
+      >
         instrut
       </span>
     </div>

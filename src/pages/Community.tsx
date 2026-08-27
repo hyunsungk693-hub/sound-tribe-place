@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { addRecentView } from "@/lib/recentViews";
 import { toast } from "sonner";
 import { PostCardSkeleton } from "@/components/skeletons/PostSkeleton";
 
@@ -48,6 +49,11 @@ const Community = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [selectedPost, setSelectedPost] = useState<PostItem | null>(null);
   const [sortBy, setSortBy] = useState<"latest" | "likes" | "comments">("latest");
+
+  // 상세 열람 시 최근 본 게시물 기록
+  useEffect(() => {
+    if (selectedPost?.id) addRecentView({ id: selectedPost.id, title: selectedPost.title, type: "community" });
+  }, [selectedPost?.id]);
 
   // Like/comment counts from DB
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});

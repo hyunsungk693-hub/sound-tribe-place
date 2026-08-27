@@ -4,6 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { addRecentView } from "@/lib/recentViews";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -40,6 +41,7 @@ const PostDetail = () => {
     const { data } = await supabase.from("posts").select("*").eq("id", postId).single();
     setPost(data);
     setLoading(false);
+    if (data) addRecentView({ id: data.id, title: data.title, type: data.post_type || "community" });
   }, [postId]);
 
   const fetchMeta = useCallback(async () => {

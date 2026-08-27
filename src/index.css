@@ -6,71 +6,72 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 220 20% 12%;
+    /* 앱 아이콘의 라이트 라벤더-블루 톤 기반 팔레트 */
+    --background: 228 44% 97%;
+    --foreground: 228 26% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 12%;
+    --card-foreground: 228 26% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 12%;
+    --popover-foreground: 228 26% 14%;
 
-    --primary: 220 65% 42%;
+    --primary: 226 55% 48%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 94%;
-    --secondary-foreground: 220 20% 30%;
+    --secondary: 228 36% 93%;
+    --secondary-foreground: 228 22% 30%;
 
-    --muted: 220 14% 95%;
-    --muted-foreground: 220 10% 46%;
+    --muted: 228 36% 94%;
+    --muted-foreground: 228 12% 46%;
 
-    --accent: 220 14% 94%;
-    --accent-foreground: 220 20% 12%;
+    --accent: 228 36% 93%;
+    --accent-foreground: 228 26% 14%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 14% 90%;
-    --input: 220 14% 90%;
-    --ring: 220 65% 42%;
+    --border: 228 30% 89%;
+    --input: 228 30% 89%;
+    --ring: 226 55% 48%;
 
     --radius: 0.75rem;
 
     --surface-elevated: 0 0% 100%;
-    --surface-hover: 220 14% 96%;
+    --surface-hover: 228 40% 95%;
   }
 
   .dark {
-    --background: 220 20% 8%;
-    --foreground: 220 10% 92%;
+    --background: 228 22% 9%;
+    --foreground: 228 12% 92%;
 
-    --card: 220 18% 12%;
-    --card-foreground: 220 10% 92%;
+    --card: 228 20% 13%;
+    --card-foreground: 228 12% 92%;
 
-    --popover: 220 18% 12%;
-    --popover-foreground: 220 10% 92%;
+    --popover: 228 20% 13%;
+    --popover-foreground: 228 12% 92%;
 
-    --primary: 220 65% 55%;
+    --primary: 226 60% 62%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 16% 18%;
-    --secondary-foreground: 220 10% 80%;
+    --secondary: 228 18% 18%;
+    --secondary-foreground: 228 12% 80%;
 
-    --muted: 220 16% 16%;
-    --muted-foreground: 220 10% 55%;
+    --muted: 228 18% 16%;
+    --muted-foreground: 228 12% 55%;
 
-    --accent: 220 16% 18%;
-    --accent-foreground: 220 10% 92%;
+    --accent: 228 18% 18%;
+    --accent-foreground: 228 12% 92%;
 
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 16% 20%;
-    --input: 220 16% 20%;
-    --ring: 220 65% 55%;
+    --border: 228 18% 21%;
+    --input: 228 18% 21%;
+    --ring: 226 60% 62%;
 
-    --surface-elevated: 220 18% 14%;
-    --surface-hover: 220 16% 16%;
+    --surface-elevated: 228 20% 15%;
+    --surface-hover: 228 18% 17%;
   }
 }
 
@@ -157,4 +158,47 @@
     opacity: 1;
     transform: scale(1);
   }
+}
+
+/* 스플래시 종료: 아이콘이 화면을 덮을 만큼 확대되며 홈을 드러냄 */
+@keyframes splash-expand {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(14);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-icon-exit {
+    animation: fade-out 0.2s ease both !important;
+  }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* 홈 버튼 홀드 메뉴 */
+.hold-menu-item {
+  animation: hold-item-in 0.18s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+.hold-menu-item.closing {
+  animation: hold-item-out 0.12s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+@keyframes hold-item-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.92); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes hold-item-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(10px) scale(0.95); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hold-menu-item { animation: fade-in 0.15s ease both; }
+  .hold-menu-item.closing { animation: fade-out 0.12s ease both; }
 }

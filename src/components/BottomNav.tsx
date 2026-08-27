@@ -1,17 +1,16 @@
-import { Home, Briefcase, Map, MapPin, MessageCircle, Mail, User, Bell, Heart, MessageSquare } from "lucide-react";
+import { Home, Briefcase, Music2, MessageCircle, Mail, User } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-const navItems = [
-  { path: "/", icon: Home, label: "홈" },
-  { path: "/jobs", icon: Briefcase, label: "구인" },
-  { path: "/rooms", icon: MapPin, label: "연습실" },
-  { path: "/map", icon: Map, label: "지도" },
-  { path: "/community", icon: MessageCircle, label: "커뮤" },
-  { path: "/profile", icon: User, label: "프로필" },
+const HOLD_MS = 300;
+
+const holdMenuItems = [
+  { path: "/jobs", icon: Briefcase, label: "구인", lift: 6 },
+  { path: "/rooms", icon: Music2, label: "연습실", lift: 0 },
+  { path: "/community", icon: MessageCircle, label: "커뮤", lift: 6 },
 ];
 
 const BottomNav = () => {
@@ -20,6 +19,10 @@ const BottomNav = () => {
   const { user } = useAuth();
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuClosing, setMenuClosing] = useState(false);
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openedByHold = useRef(false);
 
   const fetchUnreadMessages = useCallback(async () => {
     if (!user) return;
@@ -60,7 +63,6 @@ const BottomNav = () => {
       .channel("unread-msg-badge")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload: any) => {
         fetchUnreadMessages();
-        // Show toast for new messages from others
         if (payload.new && payload.new.sender_id !== user.id) {
           toast("💬 새 메시지가 도착했습니다", {
             description: payload.new.content?.slice(0, 50) || "새 메시지",
@@ -99,42 +101,111 @@ const BottomNav = () => {
     };
   }, [user, fetchUnreadMessages, fetchUnreadNotifications]);
 
-  const getBadgeCount = (path: string) => {
-    if (path === "/messages") return unreadMessages;
-    if (path === "/profile") return unreadNotifications;
-    return 0;
+  const closeMenu = useCallback(() => {
+    if (!menuOpen) return;
+    setMenuClosing(true);
+    setTimeout(() => { setMenuOpen(false); setMenuClosing(false); }, 130);
+  }, [menuOpen]);
+
+  // 페이지 이동 시 메뉴 정리
+  useEffect(() => { setMenuOpen(false); setMenuClosing(false); }, [location.pathname]);
+
+  const startHold = () => {
+    openedByHold.current = false;
+    holdTimer.current = setTimeout(() => {
+      openedByHold.current = true;
+      setMenuOpen(true);
+      try { navigator.vibrate?.(10); } catch { /* 미지원 무시 */ }
+    }, HOLD_MS);
   };
 
-  return (
-    <nav className="sticky bottom-0 left-0 right-0 z-[2000] bg-card/95 backdrop-blur-lg border-t border-border/50 pb-safe">
-      <div className="flex items-center justify-around h-12 max-w-lg mx-auto">
-        {navItems.map(({ path, icon: Icon, label }) => {
-          const isActive = location.pathname === path;
-          const badgeCount = getBadgeCount(path);
-          return (
-            <button
-              key={path}
-              onClick={() => navigate(path)}
-              className={`relative flex flex-col items-center gap-0 px-1 py-1 rounded-lg transition-all duration-200 active:scale-95 min-w-0 flex-1 ${
-                isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <div className="relative">
-                <Icon className="w-4 h-4" strokeWidth={isActive ? 2.5 : 2} />
-                {badgeCount > 0 && (
-                  <div className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-[9px] font-bold">
-                    {badgeCount > 99 ? "99+" : badgeCount}
-                  </div>
-                )}
-              </div>
-              <span className="text-[9px] font-medium whitespace-nowrap leading-none">{label}</span>
-            </button>
-          );
-        })}
+  const endHold = () => {
+    if (holdTimer.current) { clearTimeout(holdTimer.current); holdTimer.current = null; }
+    if (!openedByHold.current) {
+      if (menuOpen) { closeMenu(); return; }
+      navigate("/");
+    }
+  };
+
+  const cancelHold = () => {
+    if (holdTimer.current) { clearTimeout(holdTimer.current); holdTimer.current = null; }
+  };
+
+  const sideBtnCls = (active: boolean) =>
+    `relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-colors duration-150 active:scale-95 ${
+      active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+    }`;
+
+  const Badge = ({ count }: { count: number }) =>
+    count > 0 ? (
+      <div className="absolute -top-1 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-[9px] font-bold">
+        {count > 99 ? "99+" : count}
       </div>
-    </nav>
+    ) : null;
+
+  return (
+    <>
+      {/* 홀드 메뉴 오버레이 */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-[1999]" onClick={closeMenu} onPointerUp={closeMenu}>
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" style={{ animation: menuClosing ? "fade-out 0.12s ease-out both" : "fade-in 0.15s ease both" }} />
+          <div className="absolute bottom-[86px] left-1/2 -translate-x-1/2 flex items-end gap-5">
+            {holdMenuItems.map(({ path, icon: Icon, label, lift }, i) => (
+              <button
+                key={path}
+                onClick={(e) => { e.stopPropagation(); navigate(path); }}
+                onPointerUp={(e) => e.stopPropagation()}
+                className={`hold-menu-item ${menuClosing ? "closing" : ""} flex flex-col items-center gap-1.5`}
+                style={{ animationDelay: menuClosing ? `${i * 20}ms` : `${i * 40}ms`, transform: `translateY(${lift}px)` }}
+              >
+                <span className="p-3.5 rounded-2xl bg-card border border-border/60 shadow-lg flex items-center justify-center text-primary">
+                  <Icon className="w-5 h-5" />
+                </span>
+                <span className="text-[11px] font-semibold text-white drop-shadow">{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <nav className="sticky bottom-0 left-0 right-0 z-[2000] bg-card/95 backdrop-blur-lg border-t border-border/50 pb-safe">
+        <div className="relative flex items-center justify-between h-14 max-w-lg mx-auto px-10">
+          {/* 프로필 */}
+          <button onClick={() => navigate("/profile")} className={sideBtnCls(location.pathname === "/profile")}>
+            <div className="relative">
+              <User className="w-5 h-5" strokeWidth={location.pathname === "/profile" ? 2.5 : 2} />
+              <Badge count={unreadNotifications} />
+            </div>
+            <span className="text-[9px] font-medium leading-none">프로필</span>
+          </button>
+
+          {/* 홈 (중앙, 탭=홈 / 홀드=바로가기 메뉴) */}
+          <button
+            onPointerDown={startHold}
+            onPointerUp={endHold}
+            onPointerLeave={cancelHold}
+            onPointerCancel={cancelHold}
+            onContextMenu={(e) => e.preventDefault()}
+            className={`absolute left-1/2 -translate-x-1/2 -top-4 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform duration-150 active:scale-95 select-none ${
+              location.pathname === "/" ? "bg-primary text-primary-foreground" : "bg-primary text-primary-foreground"
+            } ${menuOpen ? "scale-95" : ""}`}
+            style={{ touchAction: "manipulation", WebkitUserSelect: "none", WebkitTouchCallout: "none" } as React.CSSProperties}
+            aria-label="홈 (길게 누르면 바로가기 메뉴)"
+          >
+            <Home className="w-6 h-6" strokeWidth={2.2} />
+          </button>
+
+          {/* 메시지 */}
+          <button onClick={() => navigate("/messages")} className={sideBtnCls(location.pathname === "/messages")}>
+            <div className="relative">
+              <Mail className="w-5 h-5" strokeWidth={location.pathname === "/messages" ? 2.5 : 2} />
+              <Badge count={unreadMessages} />
+            </div>
+            <span className="text-[9px] font-medium leading-none">메시지</span>
+          </button>
+        </div>
+      </nav>
+    </>
   );
 };
 

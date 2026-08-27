@@ -1,10 +1,12 @@
-import { Search, SlidersHorizontal, ArrowLeft, Pencil, Trash2, MessageCircle, Check } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowLeft, Pencil, Trash2, MessageCircle, Check, Navigation } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { track } from "@/lib/analytics";
+import { kakaoDirectionsUrl, hasDirections } from "@/lib/directions";
+import { addRecentView } from "@/lib/recentViews";
 import { toast } from "sonner";
 import { JobCardSkeleton } from "@/components/skeletons/PostSkeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -53,6 +55,9 @@ type JobItem = {
   pay: string;
   date: string;
   content: string;
+  image_url: string | null;
+  lat: number | null;
+  lng: number | null;
 };
 
 const Jobs = () => {
@@ -164,6 +169,11 @@ const Jobs = () => {
 
   useEffect(() => { fetchApplications(); }, [user]);
 
+  // 상세 열람 시 최근 본 게시물 기록
+  useEffect(() => {
+    if (selectedJob?.id) addRecentView({ id: selectedJob.id, title: selectedJob.title, type: "job" });
+  }, [selectedJob?.id]);
+
   useEffect(() => {
     if (selectedJob?.id && selectedJob.user_id === user?.id) {
       fetchJobApplicants(selectedJob.id);
@@ -245,8 +255,11 @@ const Jobs = () => {
       pay: j.pay || "",
       date: new Date(j.created_at).toLocaleDateString("ko-KR"),
       content: j.content || "",
+      image_url: j.image_url || null,
+      lat: j.lat ?? null,
+      lng: j.lng ?? null,
     })),
-    ...sampleJobs,
+    ...sampleJobs.map((j) => ({ ...j, image_url: null, lat: null, lng: null })),
   ];
 
   const filtered = selectedCat === "전체" ? allJobs : allJobs.filter((j) => j.tag === selectedCat);
@@ -319,9 +332,13 @@ const Jobs = () => {
           <div
             key={job.id || `sample-${i}`}
             onClick={() => { setSelectedJob(job); setEditing(false); }}
-            className="glass-card p-4 hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]"
+            className="glass-card overflow-hidden hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]"
             style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${i * 0.06}s both` }}
           >
+            {job.image_url && (
+              <img src={job.image_url} alt={job.title} className="w-full h-36 object-cover" loading="lazy" />
+            )}
+            <div className="p-4">
             <div className="flex items-start justify-between mb-2">
               <h3 className="text-sm font-semibold">{job.title}</h3>
               <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary shrink-0 ml-2">{job.tag}</span>
@@ -329,7 +346,25 @@ const Jobs = () => {
             <p className="text-xs text-muted-foreground">{job.venue}</p>
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/30">
               <span className="text-xs font-medium text-primary">{job.pay}</span>
-              <span className="text-[10px] text-muted-foreground">{job.date}</span>
+              <div className="flex items-center gap-2">
+                {hasDirections(job.lat, job.lng, job.venue) && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(
+                        job.lat != null && job.lng != null
+                          ? kakaoDirectionsUrl(job.venue || job.title, job.lat, job.lng)
+                          : kakaoDirectionsUrl(job.venue),
+                        "_blank", "noopener",
+                      );
+                    }}
+                    className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/15 transition-colors active:scale-95"
+                  >
+                    <Navigation className="w-3 h-3" /> 길찾기
+                  </button>
+                )}
+                <span className="text-[10px] text-muted-foreground">{job.date}</span>
+              </div>
             </div>
             {job.id ? (
               job.user_id === user?.id ? (
@@ -364,7 +399,7 @@ const Jobs = () => {
                 })()
               )
             ) : null}
-
+            </div>
           </div>
         ))}
         {!loadingJobs && filtered.length === 0 && <div className="text-center py-10 text-muted-foreground text-sm">구인글이 없습니다</div>}
@@ -436,10 +471,30 @@ const Jobs = () => {
                 </div>
               ) : (
                 <>
+                  {selectedJob.image_url && (
+                    <div className="rounded-xl overflow-hidden mb-4 -mt-1">
+                      <img src={selectedJob.image_url} alt={selectedJob.title} className="w-full max-h-56 object-cover" />
+                    </div>
+                  )}
                   <h2 className="text-base font-bold mb-2">{selectedJob.title}</h2>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
                     {selectedJob.venue && <span>📍 {selectedJob.venue}</span>}
                     {selectedJob.pay && <span>💰 {selectedJob.pay}</span>}
+                    {hasDirections(selectedJob.lat, selectedJob.lng, selectedJob.venue) && (
+                      <button
+                        onClick={() =>
+                          window.open(
+                            selectedJob.lat != null && selectedJob.lng != null
+                              ? kakaoDirectionsUrl(selectedJob.venue || selectedJob.title, selectedJob.lat, selectedJob.lng)
+                              : kakaoDirectionsUrl(selectedJob.venue),
+                            "_blank", "noopener",
+                          )
+                        }
+                        className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/15 transition-colors active:scale-95"
+                      >
+                        <Navigation className="w-3 h-3" /> 길찾기
+                      </button>
+                    )}
                   </div>
                   <p className="text-[10px] text-muted-foreground mb-4">{selectedJob.date}</p>
                   {selectedJob.content ? (
