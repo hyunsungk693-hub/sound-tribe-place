@@ -134,7 +134,7 @@ const Admin = () => {
   };
 
   return (
-    <div className="min-h-app bg-background pb-24">
+    <div className="min-h-app bg-background" style={{ paddingBottom: "calc(96px + var(--safe-bottom, 0px))" }}>
       <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-4 py-3">
         <h1 className="text-lg font-bold">관리자</h1>
       </header>

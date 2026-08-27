@@ -65,18 +65,14 @@ const CreatePostFab = () => {
 
   return (
     <>
-      <div
-        className="sticky z-[1990] h-0 max-w-lg w-full mx-auto flex justify-end pr-4 pointer-events-none"
-        style={{ bottom: "calc(80px + var(--safe-bottom, 0px))" }}
+      <button
+        onClick={() => setChooserOpen(true)}
+        aria-label="게시물 작성"
+        className="fixed right-4 z-[1990] w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 active:scale-90 transition-all"
+        style={{ bottom: "calc(88px + var(--safe-bottom, 0px))" }}
       >
-        <button
-          onClick={() => setChooserOpen(true)}
-          aria-label="게시물 작성"
-          className="pointer-events-auto -translate-y-12 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 active:scale-90 transition-all"
-        >
-          <Plus className="w-5 h-5" />
-        </button>
-      </div>
+        <Plus className="w-5 h-5" />
+      </button>
 
       {chooserOpen && (
         <div

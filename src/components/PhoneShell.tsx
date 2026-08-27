@@ -75,9 +75,10 @@ const PhoneShell = ({ children }: { children: ReactNode }) => {
 
   return (
     <div className="fixed inset-0 bg-muted flex items-center justify-center overscroll-none">
+      {/* transform 컨테이너: 내부의 fixed 요소(하단 탭바 등)가 뷰포트가 아닌 프레임에 고정되게 한다 */}
       <div
         className="relative bg-background overflow-hidden rounded-[2.5rem] shadow-2xl border border-border"
-        style={{ width: w, height: h }}
+        style={{ width: w, height: h, transform: "translateZ(0)" }}
       >
         <div
           className="absolute inset-0 overflow-y-auto scrollbar-hide"

@@ -17,7 +17,13 @@ const PageShell = ({ children, title, headerExtra }: PageShellProps) => (
         </div>
       </header>
     )}
-    <main className="flex-1 max-w-lg w-full mx-auto px-4 pb-4 pt-4">{children}</main>
+    {/* 하단 고정 탭바(fixed, 64px + 안전영역)에 가리지 않도록 본문 하단 여백 확보 */}
+    <main
+      className="flex-1 max-w-lg w-full mx-auto px-4 pt-4"
+      style={{ paddingBottom: "calc(84px + var(--safe-bottom, 0px))" }}
+    >
+      {children}
+    </main>
     <CreatePostFab />
     <BottomNav />
   </div>

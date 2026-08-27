@@ -163,7 +163,7 @@ const BottomNav = () => {
                 style={{ animationDelay: menuClosing ? `${i * 20}ms` : `${i * 40}ms`, transform: `translateY(${lift}px)` }}
               >
                 <span className="p-3.5 rounded-2xl bg-card border border-border/60 shadow-lg flex items-center justify-center text-primary">
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-6 h-6" />
                 </span>
                 <span className="text-[11px] font-semibold text-white drop-shadow">{label}</span>
               </button>
@@ -172,15 +172,15 @@ const BottomNav = () => {
         </div>
       )}
 
-      <nav className="sticky bottom-0 left-0 right-0 z-[2000] bg-card/95 backdrop-blur-lg border-t border-border/50 pb-safe">
+      <nav className="fixed bottom-0 left-0 right-0 z-[2000] bg-card/95 backdrop-blur-lg border-t border-border/50 pb-safe">
         <div className="relative flex items-center justify-between h-16 max-w-lg mx-auto px-10">
           {/* 메시지 */}
           <button onClick={() => navigate("/messages")} className={sideBtnCls(location.pathname === "/messages")}>
             <div className="relative">
-              <Mail className="w-[22px] h-[22px]" strokeWidth={location.pathname === "/messages" ? 2.5 : 2} />
+              <Mail className="w-[26px] h-[26px]" strokeWidth={location.pathname === "/messages" ? 2.4 : 2} />
               <Badge count={unreadMessages} />
             </div>
-            <span className="text-[10px] font-medium leading-none">메시지</span>
+            <span className="text-[11px] font-medium leading-none">메시지</span>
           </button>
 
           {/* 홈 (중앙, 탭=홈 / 홀드=바로가기 메뉴) */}
@@ -196,16 +196,16 @@ const BottomNav = () => {
             style={{ touchAction: "manipulation", WebkitUserSelect: "none", WebkitTouchCallout: "none" } as React.CSSProperties}
             aria-label="홈 (길게 누르면 바로가기 메뉴)"
           >
-            <Home className="w-7 h-7" strokeWidth={2.2} />
+            <Home className="w-8 h-8" strokeWidth={2.2} />
           </button>
 
           {/* 프로필 */}
           <button onClick={() => navigate("/profile")} className={sideBtnCls(location.pathname === "/profile")}>
             <div className="relative">
-              <User className="w-[22px] h-[22px]" strokeWidth={location.pathname === "/profile" ? 2.5 : 2} />
+              <User className="w-[26px] h-[26px]" strokeWidth={location.pathname === "/profile" ? 2.4 : 2} />
               <Badge count={unreadNotifications} />
             </div>
-            <span className="text-[10px] font-medium leading-none">프로필</span>
+            <span className="text-[11px] font-medium leading-none">프로필</span>
           </button>
         </div>
       </nav>
