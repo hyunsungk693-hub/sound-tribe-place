@@ -81,9 +81,10 @@
     --safe-top: 0px;
   }
   @media (display-mode: standalone) {
-    /* 하단 여백 없음: 탭바를 화면 바닥에 완전히 밀착 (사용자 결정) */
+    /* 아이폰 웹앱: 탭바는 화면 최하단에 고정하되,
+       홈 인디케이터와 겹치지 않을 최소 여백(-14px 보정)만 내부에 확보 */
     :root {
-      --safe-bottom: 0px;
+      --safe-bottom: max(calc(env(safe-area-inset-bottom, 0px) - 14px), 0px);
       --safe-top: env(safe-area-inset-top, 0px);
     }
   }
