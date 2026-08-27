@@ -494,12 +494,12 @@ const ProfilePage = () => {
                         Google 지도 길찾기
                       </a>
                       <a
-                        href={`https://map.kakao.com/link/to/${encodeURIComponent(detailTarget.room_title)},${detailTarget.room_lat},${detailTarget.room_lng}`}
+                        href={`https://map.naver.com/p/directions/-/${detailTarget.room_lng},${detailTarget.room_lat},${encodeURIComponent(detailTarget.room_title)}/-/transit`}
                         target="_blank"
                         rel="noreferrer"
                         className="flex-1 text-center px-3 py-2 text-xs font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
                       >
-                        카카오맵 길찾기
+                        네이버 지도 길찾기
                       </a>
                     </div>
                   </div>

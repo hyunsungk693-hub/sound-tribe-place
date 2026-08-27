@@ -679,13 +679,13 @@ const MapPage = () => {
                   Google 길찾기
                 </a>
                 <a
-                  href={`https://map.kakao.com/link/to/${encodeURIComponent(selected.name)},${selected.lat},${selected.lng}`}
+                  href={`https://map.naver.com/p/directions/-/${selected.lng},${selected.lat},${encodeURIComponent(selected.name)}/-/transit`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-border bg-background text-sm font-semibold text-foreground hover:bg-secondary active:scale-[0.98] transition-all"
                 >
                   <Navigation className="w-4 h-4" />
-                  카카오맵
+                  네이버 지도
                 </a>
               </div>
 

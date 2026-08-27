@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { RoomCardSkeleton } from "@/components/skeletons/PostSkeleton";
 import RoomReservationPanel from "@/components/RoomReservationPanel";
-import { kakaoDirectionsUrl, googleDirectionsUrl, hasDirections } from "@/lib/directions";
+import { naverDirectionsUrl, googleDirectionsUrl, hasDirections } from "@/lib/directions";
 import { addRecentView } from "@/lib/recentViews";
 
 const SAMPLE_AUTHORS = [
@@ -108,8 +108,8 @@ const Rooms = () => {
   const openDirections = (item: RoomItem) => {
     window.open(
       item.lat != null && item.lng != null
-        ? kakaoDirectionsUrl(item.name, item.lat, item.lng)
-        : kakaoDirectionsUrl(`${item.name} ${item.area}`.trim()),
+        ? naverDirectionsUrl(item.name, item.lat, item.lng)
+        : naverDirectionsUrl(`${item.name} ${item.area}`.trim()),
       "_blank",
       "noopener",
     );
@@ -318,7 +318,7 @@ const Rooms = () => {
                         onClick={() => openDirections(selectedRoom)}
                         className="flex-1 h-10 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/15 transition-colors active:scale-[0.98] flex items-center justify-center gap-1.5"
                       >
-                        <Navigation className="w-3.5 h-3.5" /> 카카오맵 길찾기
+                        <Navigation className="w-3.5 h-3.5" /> 네이버 지도 길찾기
                       </button>
                       {selectedRoom.lat != null && selectedRoom.lng != null && (
                         <a

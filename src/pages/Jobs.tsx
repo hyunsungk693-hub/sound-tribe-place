@@ -5,7 +5,7 @@ import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { track } from "@/lib/analytics";
-import { kakaoDirectionsUrl, hasDirections } from "@/lib/directions";
+import { naverDirectionsUrl, hasDirections } from "@/lib/directions";
 import { addRecentView } from "@/lib/recentViews";
 import { toast } from "sonner";
 import { JobCardSkeleton } from "@/components/skeletons/PostSkeleton";
@@ -353,8 +353,8 @@ const Jobs = () => {
                       e.stopPropagation();
                       window.open(
                         job.lat != null && job.lng != null
-                          ? kakaoDirectionsUrl(job.venue || job.title, job.lat, job.lng)
-                          : kakaoDirectionsUrl(job.venue),
+                          ? naverDirectionsUrl(job.venue || job.title, job.lat, job.lng)
+                          : naverDirectionsUrl(job.venue),
                         "_blank", "noopener",
                       );
                     }}
@@ -485,8 +485,8 @@ const Jobs = () => {
                         onClick={() =>
                           window.open(
                             selectedJob.lat != null && selectedJob.lng != null
-                              ? kakaoDirectionsUrl(selectedJob.venue || selectedJob.title, selectedJob.lat, selectedJob.lng)
-                              : kakaoDirectionsUrl(selectedJob.venue),
+                              ? naverDirectionsUrl(selectedJob.venue || selectedJob.title, selectedJob.lat, selectedJob.lng)
+                              : naverDirectionsUrl(selectedJob.venue),
                             "_blank", "noopener",
                           )
                         }
