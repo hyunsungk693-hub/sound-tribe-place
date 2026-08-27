@@ -9,12 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import PlaceSearchInput from "@/components/PlaceSearchInput";
 
-interface Field {
+export interface Field {
   key: string;
   label: string;
   placeholder: string;
   type?: "text" | "textarea" | "select" | "location" | "place";
   options?: string[];
+  required?: boolean;
 }
 
 interface CreatePostDialogProps {
@@ -80,6 +81,12 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
       toast.error("제목과 내용을 입력해주세요");
       return;
     }
+    // 필드별 필수 검증 (required 표시된 필드만 — 유형별 정책은 fields 정의가 결정)
+    const missing = fields.find((f) => f.required && !values[f.key]?.trim());
+    if (missing) {
+      toast.error(`${missing.label}을(를) 입력해주세요`);
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -98,6 +105,8 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
 
       if (imageUrl) postData.image_url = imageUrl;
       if (values.category) postData.category = values.category;
+      if (values.position) postData.position = values.position;
+      if (values.schedule) postData.schedule = values.schedule;
       if (values.venue) postData.venue = values.venue;
       if (values.pay) postData.pay = values.pay;
       if (values.price) postData.price = values.price;
@@ -144,7 +153,10 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
         <div className="space-y-3">
           {fields.map((field) => (
             <div key={field.key}>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">{field.label}</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                {field.label}
+                {field.required && <span className="text-destructive ml-0.5">*</span>}
+              </label>
               {field.type === "textarea" ? (
                 <Textarea
                   placeholder={field.placeholder}

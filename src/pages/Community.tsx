@@ -41,6 +41,10 @@ type Comment = {
   user_id: string;
 };
 
+// E3: "같이 할 사람 찾기" 성격의 글 감지 (규칙 기반 키워드 매칭)
+const isRecruitPost = (title: string, content: string) =>
+  /(구합|모집|찾습니다|찾아요|멤버|세션|합주할)/.test(`${title} ${content}`);
+
 const Community = () => {
   useDocumentTitle("커뮤니티");
   const { user } = useAuth();
@@ -139,10 +143,32 @@ const Community = () => {
 
   useEffect(() => {
     fetchPosts();
-    const handler = (e: any) => { if (e.detail?.type === "community") fetchPosts(); };
+    const handler = (e: any) => {
+      if (e.detail?.type !== "community") return;
+      fetchPosts();
+      // E3: 방금 작성한 글이 구인 성격이면 구인구직 작성 유도
+      if (!user) return;
+      supabase
+        .from("posts")
+        .select("title,content")
+        .eq("post_type", "community")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single()
+        .then(({ data }) => {
+          if (data && isRecruitPost(data.title || "", data.content || "")) {
+            toast("멤버를 찾고 계신가요?", {
+              description: "구인구직에 올리면 더 빨리 찾을 수 있어요",
+              duration: 8000,
+              action: { label: "구인글 쓰기", onClick: () => navigate("/jobs") },
+            });
+          }
+        });
+    };
     window.addEventListener("post-created", handler);
     return () => window.removeEventListener("post-created", handler);
-  }, [fetchPosts]);
+  }, [fetchPosts, user, navigate]);
 
   useEffect(() => {
     const ids = dbPosts.map((p) => p.id);
@@ -554,6 +580,20 @@ const Community = () => {
                   )}
                   <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{selectedPost.content}</p>
                 </>
+              )}
+
+              {/* E3: 구인 성격 글 → 구조화 구인글 전환 유도 (작성자 본인에게만) */}
+              {selectedPost.user_id === user?.id && isRecruitPost(selectedPost.title, selectedPost.content) && (
+                <button
+                  onClick={() => { setSelectedPost(null); navigate("/jobs"); }}
+                  className="mt-4 w-full flex items-center justify-between gap-2 p-3 rounded-xl bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors active:scale-[0.98] text-left"
+                >
+                  <span className="text-xs">
+                    <span className="font-semibold text-primary">이 글, 구인구직에 올리면 더 빨리 찾아요</span>
+                    <span className="block text-muted-foreground mt-0.5">포지션·일정이 정리된 공고에 지원이 모입니다</span>
+                  </span>
+                  <span className="text-primary text-sm shrink-0">→</span>
+                </button>
               )}
 
               <div className="flex items-center gap-4 mt-5 pt-4 border-t border-border/30 pb-4">

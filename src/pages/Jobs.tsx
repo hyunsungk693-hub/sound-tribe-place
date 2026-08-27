@@ -15,6 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const categories = ["전체", "공연", "녹음", "레슨", "행사", "기타"];
+// A6: 포지션은 제외 필터가 아니라 우선 노출 — 선택해도 다른 공고를 숨기지 않는다
+const POSITIONS = ["전체", "보컬", "기타", "베이스", "드럼", "건반", "관악", "현악", "그 외"];
 
 const APPLY_STATUSES: { value: string; label: string; cls: string }[] = [
   { value: "applied", label: "검토중", cls: "bg-primary/10 text-primary" },
@@ -24,16 +26,6 @@ const APPLY_STATUSES: { value: string; label: string; cls: string }[] = [
 const statusMeta = (s: string) => APPLY_STATUSES.find((x) => x.value === s) || APPLY_STATUSES[0];
 
 
-
-const jobFields = [
-  { key: "title", label: "제목", placeholder: "예: 밴드 기타리스트 모집" },
-  { key: "content", label: "상세 내용", placeholder: "구인 상세 내용을 작성해주세요", type: "textarea" as const },
-  { key: "category", label: "카테고리", placeholder: "", type: "select" as const, options: ["공연", "녹음", "레슨", "행사", "기타"] },
-  { key: "venue", label: "장소", placeholder: "예: 홍대 라이브클럽" },
-  { key: "pay", label: "급여/페이", placeholder: "예: 회당 15만원" },
-  { key: "author_name", label: "작성자명", placeholder: "닉네임" },
-  { key: "location", label: "지도 위치 (선택)", placeholder: "", type: "location" as const },
-];
 
 type JobItem = {
   id: string | null;
@@ -45,6 +37,8 @@ type JobItem = {
   date: string;
   createdAt: number;
   content: string;
+  position: string;
+  schedule: string;
   image_url: string | null;
   lat: number | null;
   lng: number | null;
@@ -57,6 +51,7 @@ const Jobs = () => {
   const [dbJobs, setDbJobs] = useState<any[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [selectedCat, setSelectedCat] = useState("전체");
+  const [selectedPosition, setSelectedPosition] = useState("전체");
   const [query, setQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"latest" | "oldest">("latest");
   const [selectedJob, setSelectedJob] = useState<JobItem | null>(null);
@@ -68,6 +63,8 @@ const Jobs = () => {
   const [editCategory, setEditCategory] = useState("");
   const [editVenue, setEditVenue] = useState("");
   const [editPay, setEditPay] = useState("");
+  const [editPosition, setEditPosition] = useState("");
+  const [editSchedule, setEditSchedule] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
   // Application state
@@ -266,6 +263,8 @@ const Jobs = () => {
       date: new Date(j.created_at).toLocaleDateString("ko-KR"),
       createdAt: new Date(j.created_at).getTime(),
       content: j.content || "",
+      position: j.position || "",
+      schedule: j.schedule || "",
       image_url: j.image_url || null,
       lat: j.lat ?? null,
       lng: j.lng ?? null,
@@ -276,7 +275,13 @@ const Jobs = () => {
   const filtered = allJobs
     .filter((j) => selectedCat === "전체" || j.tag === selectedCat)
     .filter((j) => !q || j.title.includes(q) || j.venue.includes(q) || j.content.includes(q))
-    .sort((a, b) => (sortOrder === "latest" ? b.createdAt - a.createdAt : a.createdAt - b.createdAt));
+    .sort((a, b) => (sortOrder === "latest" ? b.createdAt - a.createdAt : a.createdAt - b.createdAt))
+    // A6 우선 노출: 포지션 선택 시 매칭 공고를 상단으로 (숨기지 않음, 안정 정렬로 날짜순 유지)
+    .sort((a, b) =>
+      selectedPosition === "전체"
+        ? 0
+        : (b.position === selectedPosition ? 1 : 0) - (a.position === selectedPosition ? 1 : 0)
+    );
 
   const startEditing = () => {
     if (!selectedJob) return;
@@ -285,6 +290,8 @@ const Jobs = () => {
     setEditCategory(selectedJob.tag);
     setEditVenue(selectedJob.venue);
     setEditPay(selectedJob.pay);
+    setEditPosition(selectedJob.position);
+    setEditSchedule(selectedJob.schedule);
     setEditing(true);
   };
 
@@ -297,7 +304,9 @@ const Jobs = () => {
       category: editCategory,
       venue: editVenue,
       pay: editPay,
-    }).eq("id", selectedJob.id).eq("user_id", user.id);
+      position: editPosition || null,
+      schedule: editSchedule || null,
+    } as any).eq("id", selectedJob.id).eq("user_id", user.id);
     setSavingEdit(false);
     if (error) { toast.error("수정에 실패했습니다"); return; }
     toast.success("게시물이 수정되었습니다");
@@ -350,6 +359,27 @@ const Jobs = () => {
         ))}
       </div>
 
+      {/* A6: 포지션 우선 노출 — 선택해도 다른 공고는 숨기지 않고 아래에 계속 표시 */}
+      <div className="flex gap-2 mb-5 -mt-2 overflow-x-auto no-scrollbar pb-1 items-center">
+        <span className="shrink-0 text-[11px] font-semibold text-muted-foreground">포지션</span>
+        {POSITIONS.map((pos) => (
+          <button
+            key={pos}
+            onClick={() => setSelectedPosition(pos)}
+            className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-medium transition-all duration-200 active:scale-95 ${
+              pos === selectedPosition
+                ? "bg-primary/15 text-primary ring-1 ring-primary/40"
+                : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+            }`}
+          >
+            {pos}
+          </button>
+        ))}
+        {selectedPosition !== "전체" && (
+          <span className="shrink-0 text-[10px] text-muted-foreground">· {selectedPosition} 공고 우선 표시 중</span>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
         {loadingJobs ? [...Array(4)].map((_, i) => <JobCardSkeleton key={i} />) : null}
         {!loadingJobs && filtered.map((job, i) => (
@@ -371,6 +401,22 @@ const Jobs = () => {
               <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary shrink-0 ml-2">{job.tag}</span>
             </div>
             <p className="text-xs text-muted-foreground">{job.venue}</p>
+            {(job.position || job.schedule) && (
+              <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                {job.position && (
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                    selectedPosition !== "전체" && job.position === selectedPosition
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground"
+                  }`}>
+                    🎯 {job.position}
+                  </span>
+                )}
+                {job.schedule && (
+                  <span className="text-[10px] text-muted-foreground">🕐 {job.schedule}</span>
+                )}
+              </div>
+            )}
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/30">
               <span className="text-xs font-medium text-primary">{job.pay}</span>
               <span className="text-[10px] text-muted-foreground">{job.date}</span>
@@ -464,6 +510,19 @@ const Jobs = () => {
                     <input value={editVenue} onChange={(e) => setEditVenue(e.target.value)} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
                   <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">모집 포지션</label>
+                    <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm" value={editPosition} onChange={(e) => setEditPosition(e.target.value)}>
+                      <option value="">선택 안 함</option>
+                      {POSITIONS.filter((p) => p !== "전체").map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">합주 요일/시간</label>
+                    <input value={editSchedule} onChange={(e) => setEditSchedule(e.target.value)} placeholder="예: 주말 오후, 협의 가능" className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+                  </div>
+                  <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">급여/페이</label>
                     <input value={editPay} onChange={(e) => setEditPay(e.target.value)} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
@@ -491,7 +550,11 @@ const Jobs = () => {
                     </div>
                   )}
                   <h2 className="text-base font-bold mb-2">{selectedJob.title}</h2>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground mb-3">
+                    {selectedJob.position && (
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">🎯 {selectedJob.position}</span>
+                    )}
+                    {selectedJob.schedule && <span>🕐 {selectedJob.schedule}</span>}
                     {selectedJob.venue && <span>📍 {selectedJob.venue}</span>}
                     {selectedJob.pay && <span>💰 {selectedJob.pay}</span>}
                     {hasDirections(selectedJob.lat, selectedJob.lng, selectedJob.venue) && (

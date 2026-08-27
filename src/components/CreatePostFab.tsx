@@ -2,20 +2,22 @@ import { useState } from "react";
 import { Plus, X, Briefcase, Music2, Store, Users } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import CreatePostDialog from "./CreatePostDialog";
+import CreatePostDialog, { Field } from "./CreatePostDialog";
 
 type PostType = "job" | "room" | "shop" | "community";
 
-const jobFields = [
-  { key: "title", label: "제목", placeholder: "예: 밴드 기타리스트 모집" },
-  { key: "content", label: "상세 내용", placeholder: "구인 상세 내용을 작성해주세요", type: "textarea" as const },
-  { key: "category", label: "카테고리", placeholder: "", type: "select" as const, options: ["공연", "녹음", "레슨", "행사", "기타"] },
+const jobFields: Field[] = [
+  { key: "title", label: "제목", placeholder: "예: 밴드 기타리스트 모집", required: true },
+  { key: "content", label: "상세 내용", placeholder: "구인 상세 내용을 작성해주세요", type: "textarea" as const, required: true },
+  { key: "category", label: "카테고리", placeholder: "", type: "select" as const, options: ["공연", "녹음", "레슨", "행사", "기타"], required: true },
+  { key: "position", label: "모집 포지션", placeholder: "", type: "select" as const, options: ["보컬", "기타", "베이스", "드럼", "건반", "관악", "현악", "그 외"], required: true },
+  { key: "schedule", label: "합주 요일/시간", placeholder: "예: 주말 오후, 협의 가능" },
   { key: "venue", label: "장소", placeholder: "장소를 검색해 선택하세요 (예: 홍대 라이브클럽)", type: "place" as const },
   { key: "pay", label: "급여/페이", placeholder: "예: 회당 15만원" },
   { key: "author_name", label: "작성자명", placeholder: "닉네임" },
 ];
 
-const roomFields = [
+const roomFields: Field[] = [
   { key: "title", label: "연습실 이름", placeholder: "예: 사운드팩토리" },
   { key: "content", label: "상세 설명", placeholder: "연습실 소개를 작성해주세요", type: "textarea" as const },
   { key: "area", label: "위치", placeholder: "장소를 검색해 선택하세요 (예: 홍대입구역)", type: "place" as const },
@@ -25,7 +27,7 @@ const roomFields = [
   { key: "author_name", label: "작성자명", placeholder: "닉네임" },
 ];
 
-const shopFields = [
+const shopFields: Field[] = [
   { key: "title", label: "악기사 이름", placeholder: "예: 뮤직랜드 홍대점" },
   { key: "content", label: "소개", placeholder: "취급 품목과 매장 소개를 작성해주세요", type: "textarea" as const },
   { key: "area", label: "위치/주소", placeholder: "장소를 검색해 선택하세요 (예: 서울 마포구 와우산로)", type: "place" as const },
@@ -34,14 +36,14 @@ const shopFields = [
   { key: "author_name", label: "작성자명", placeholder: "닉네임" },
 ];
 
-const communityFields = [
+const communityFields: Field[] = [
   { key: "title", label: "제목", placeholder: "글 제목을 입력해주세요" },
   { key: "content", label: "내용", placeholder: "내용을 작성해주세요", type: "textarea" as const },
   { key: "category", label: "카테고리", placeholder: "", type: "select" as const, options: ["자유", "질문", "거래"] },
   { key: "author_name", label: "닉네임", placeholder: "닉네임" },
 ];
 
-const TYPE_CONFIG: Record<PostType, { label: string; desc: string; icon: typeof Briefcase; fields: typeof jobFields; color: string }> = {
+const TYPE_CONFIG: Record<PostType, { label: string; desc: string; icon: typeof Briefcase; fields: Field[]; color: string }> = {
   job: { label: "구인구직", desc: "공연·녹음·레슨 모집", icon: Briefcase, fields: jobFields, color: "bg-blue-500/10 text-blue-600" },
   room: { label: "연습실", desc: "합주·개인 연습실 등록", icon: Music2, fields: roomFields, color: "bg-green-500/10 text-green-600" },
   shop: { label: "악기사", desc: "악기·장비 매장 등록", icon: Store, fields: shopFields, color: "bg-orange-500/10 text-orange-600" },
