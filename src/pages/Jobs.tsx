@@ -9,6 +9,7 @@ import { naverDirectionsUrl, hasDirections } from "@/lib/directions";
 import { addRecentView } from "@/lib/recentViews";
 import { toast } from "sonner";
 import { JobCardSkeleton } from "@/components/skeletons/PostSkeleton";
+import ProfileCard, { ProfileCardData } from "@/components/ProfileCard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -72,6 +73,8 @@ const Jobs = () => {
   const [appliedStatusByJob, setAppliedStatusByJob] = useState<Record<string, string>>({});
   const [applyTarget, setApplyTarget] = useState<JobItem | null>(null);
   const [applyMessage, setApplyMessage] = useState("");
+  const [authorProfile, setAuthorProfile] = useState<ProfileCardData | null>(null);
+  const [videoGateOpen, setVideoGateOpen] = useState(false);
   const [applying, setApplying] = useState(false);
 
   // Owner: applicants for selected job
@@ -124,7 +127,7 @@ const Jobs = () => {
     if (userIds.length > 0) {
       const { data: profs } = await supabase
         .from("profiles")
-        .select("user_id,display_name,avatar_url")
+        .select("*")
         .in("user_id", userIds);
       (profs || []).forEach((p: any) => { profilesById[p.user_id] = p; });
     }
@@ -164,6 +167,18 @@ const Jobs = () => {
     if (selectedJob?.id) addRecentView({ id: selectedJob.id, title: selectedJob.title, type: "job" });
   }, [selectedJob?.id]);
 
+  // 상세의 작성자 프로필 카드(D1) 데이터 로드
+  useEffect(() => {
+    setAuthorProfile(null);
+    if (!selectedJob?.user_id) return;
+    supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", selectedJob.user_id)
+      .single()
+      .then(({ data }) => { if (data) setAuthorProfile(data as ProfileCardData); });
+  }, [selectedJob?.user_id]);
+
   useEffect(() => {
     if (selectedJob?.id && selectedJob.user_id === user?.id) {
       fetchJobApplicants(selectedJob.id);
@@ -194,10 +209,13 @@ const Jobs = () => {
     return () => io.disconnect();
   }, [applicantsVisible, filteredApplicants.length, selectedJob?.id]);
 
-  const openApply = (job: JobItem) => {
+  const openApply = async (job: JobItem) => {
     if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
     if (!job.id || !job.user_id) { toast.error("샘플 공고는 지원할 수 없습니다"); return; }
     if (appliedJobIds.has(job.id)) { toast.info("이미 지원한 공고입니다"); return; }
+    // A1: 연주영상 미등록이면 지원 불가 → 프로필 등록 유도
+    const { data: me } = await supabase.from("profiles").select("*").eq("user_id", user.id).single();
+    if (!(me as any)?.video_url) { setVideoGateOpen(true); return; }
     setApplyTarget(job);
     setApplyMessage(`"${job.title}" 공고에 지원합니다. 잘 부탁드립니다!`);
   };
@@ -465,6 +483,11 @@ const Jobs = () => {
                       <img src={selectedJob.image_url} alt={selectedJob.title} className="w-full max-h-56 object-cover" />
                     </div>
                   )}
+                  {authorProfile && (
+                    <div className="mb-3 p-3 rounded-xl bg-secondary/50">
+                      <ProfileCard profile={authorProfile} variant="compact" onBeforeNavigate={() => setSelectedJob(null)} />
+                    </div>
+                  )}
                   <h2 className="text-base font-bold mb-2">{selectedJob.title}</h2>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
                     {selectedJob.venue && <span>📍 {selectedJob.venue}</span>}
@@ -582,15 +605,13 @@ const Jobs = () => {
                             return (
                               <div key={a.id} className="p-3 rounded-xl bg-secondary/50 space-y-2">
                                 <div className="flex items-center gap-2">
-                                  {a.applicant?.avatar_url ? (
-                                    <img src={a.applicant.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
-                                  ) : (
-                                    <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
-                                      {(a.applicant?.display_name || "?").charAt(0).toUpperCase()}
-                                    </div>
-                                  )}
-                                  <span className="text-sm font-medium flex-1 truncate">{a.applicant?.display_name || "익명"}</span>
-                                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${meta.cls}`}>{meta.label}</span>
+                                  <ProfileCard
+                                    profile={(a.applicant as ProfileCardData) || null}
+                                    variant="compact"
+                                    onBeforeNavigate={() => setSelectedJob(null)}
+                                    className="flex-1"
+                                  />
+                                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 ${meta.cls}`}>{meta.label}</span>
                                 </div>
                                 {a.message && (
                                   <p className="text-xs text-muted-foreground whitespace-pre-wrap">{a.message}</p>
@@ -674,6 +695,34 @@ const Jobs = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* A1: 연주영상 등록 유도 게이트 */}
+      {videoGateOpen && (
+        <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center" onClick={() => setVideoGateOpen(false)}>
+          <div
+            className="w-full max-w-sm bg-background rounded-t-2xl lg:rounded-2xl p-6 animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-bold mb-2">연주영상을 등록해야 지원할 수 있어요</h3>
+            <p className="text-sm text-muted-foreground mb-5">
+              공고 작성자는 지원자의 연주영상을 보고 판단합니다. 프로필에 YouTube 또는 Instagram 영상 링크 1개를 등록해주세요.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setVideoGateOpen(false)}
+                className="flex-1 h-11 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:bg-surface-hover transition-colors"
+              >
+                나중에
+              </button>
+              <button
+                onClick={() => { setVideoGateOpen(false); navigate("/profile"); }}
+                className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all"
+              >
+                프로필에서 등록하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageShell>
   );
 };

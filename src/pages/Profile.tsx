@@ -19,6 +19,10 @@ interface Profile {
   genres: string[] | null;
   bio: string | null;
   avatar_url: string | null;
+  video_url?: string | null;
+  purpose?: string | null;
+  available_times?: string[] | null;
+  handle?: string | null;
 }
 
 const menuItems = [
@@ -146,7 +150,7 @@ const ProfilePage = () => {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("display_name, location, instruments, genres, bio, avatar_url")
+      .select("*")
       .eq("user_id", user.id)
       .single()
       .then(({ data }) => {

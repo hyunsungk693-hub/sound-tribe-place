@@ -3,6 +3,7 @@ import { ArrowLeft, Send, Paperclip, X, FileText, Film, Image as ImageIcon, Smil
 import { ConversationSkeleton } from "@/components/skeletons/PostSkeleton";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
+import ProfileCard, { ProfileCardData } from "@/components/ProfileCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -88,6 +89,7 @@ const Messages = () => {
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
+  const [chatPartnerProfile, setChatPartnerProfile] = useState<ProfileCardData | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMsg, setNewMsg] = useState("");
   const [sending, setSending] = useState(false);
@@ -268,6 +270,18 @@ const Messages = () => {
   useEffect(() => {
     fetchMessages();
   }, [fetchMessages]);
+
+  // 채팅 상단 프로필 카드(D1) 데이터 로드
+  useEffect(() => {
+    setChatPartnerProfile(null);
+    if (!selectedConv?.otherUserId) return;
+    supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", selectedConv.otherUserId)
+      .single()
+      .then(({ data }) => { if (data) setChatPartnerProfile(data as ProfileCardData); });
+  }, [selectedConv?.otherUserId]);
 
   useEffect(() => {
     if (!selectedConv) return;
@@ -480,14 +494,20 @@ const Messages = () => {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-xs font-bold overflow-hidden shrink-0">
-            {selectedConv.otherUserAvatar ? (
-              <img src={selectedConv.otherUserAvatar} className="w-full h-full object-cover" />
-            ) : (
-              selectedConv.otherUserName[0]
-            )}
-          </div>
-          <span className="text-sm font-semibold truncate">{selectedConv.otherUserName}</span>
+          {chatPartnerProfile ? (
+            <ProfileCard profile={chatPartnerProfile} variant="compact" className="flex-1" />
+          ) : (
+            <>
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-xs font-bold overflow-hidden shrink-0">
+                {selectedConv.otherUserAvatar ? (
+                  <img src={selectedConv.otherUserAvatar} className="w-full h-full object-cover" />
+                ) : (
+                  selectedConv.otherUserName[0]
+                )}
+              </div>
+              <span className="text-sm font-semibold truncate">{selectedConv.otherUserName}</span>
+            </>
+          )}
         </div>
 
         {/* Messages */}

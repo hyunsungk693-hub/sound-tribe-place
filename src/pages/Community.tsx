@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { addRecentView } from "@/lib/recentViews";
 import { toast } from "sonner";
 import { PostCardSkeleton } from "@/components/skeletons/PostSkeleton";
+import ProfileCard, { ProfileCardData } from "@/components/ProfileCard";
 
 const tabs = ["전체", "자유", "질문", "거래"];
 
@@ -48,12 +49,25 @@ const Community = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [selectedPost, setSelectedPost] = useState<PostItem | null>(null);
+  const [authorProfile, setAuthorProfile] = useState<ProfileCardData | null>(null);
   const [sortBy, setSortBy] = useState<"latest" | "likes" | "comments">("latest");
 
   // 상세 열람 시 최근 본 게시물 기록
   useEffect(() => {
     if (selectedPost?.id) addRecentView({ id: selectedPost.id, title: selectedPost.title, type: "community" });
   }, [selectedPost?.id]);
+
+  // 상세의 작성자 프로필 카드(D1·E2) 데이터 로드
+  useEffect(() => {
+    setAuthorProfile(null);
+    if (!selectedPost?.user_id) return;
+    supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", selectedPost.user_id)
+      .single()
+      .then(({ data }) => { if (data) setAuthorProfile(data as ProfileCardData); });
+  }, [selectedPost?.user_id]);
 
   // Like/comment counts from DB
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
@@ -453,11 +467,20 @@ const Community = () => {
               </div>
 
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-xs font-bold cursor-pointer" onClick={() => { if (selectedPost.user_id) { setSelectedPost(null); navigate(`/profile/${selectedPost.user_id}`); } }}>{selectedPost.author[0]}</div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium cursor-pointer hover:text-primary transition-colors" onClick={() => { if (selectedPost.user_id) { setSelectedPost(null); navigate(`/profile/${selectedPost.user_id}`); } }}>{selectedPost.author}</p>
-                  <p className="text-[10px] text-muted-foreground">{selectedPost.time}</p>
-                </div>
+                {authorProfile ? (
+                  <ProfileCard
+                    profile={authorProfile}
+                    variant="compact"
+                    onBeforeNavigate={() => setSelectedPost(null)}
+                    className="flex-1"
+                  />
+                ) : (
+                  <div className="flex items-center gap-2.5 flex-1">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-xs font-bold">{selectedPost.author[0]}</div>
+                    <p className="text-sm font-medium">{selectedPost.author}</p>
+                  </div>
+                )}
+                <p className="text-[10px] text-muted-foreground shrink-0">{selectedPost.time}</p>
                 {selectedPost.user_id && selectedPost.user_id !== user?.id && (
                   <button
                     onClick={() => {
