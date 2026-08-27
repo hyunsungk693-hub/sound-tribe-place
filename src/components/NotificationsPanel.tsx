@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bell, Heart, MessageSquare, BellOff, BellRing } from "lucide-react";
 import { toast } from "sonner";
 import { enablePushNotifications, disablePushNotifications, isPushSupported, getPushPermission } from "@/lib/push";
@@ -9,6 +10,7 @@ interface Notification {
   id: string;
   actor_name: string;
   type: string;
+  post_id: string | null;
   post_title: string | null;
   is_read: boolean;
   created_at: string;
@@ -21,7 +23,20 @@ interface Props {
 
 const NotificationsPanel = ({ open, onClose }: Props) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  // 알림 클릭: 읽음 처리 후 해당 게시물로 이동
+  const openNotification = async (n: Notification) => {
+    if (!n.is_read) {
+      supabase.from("notifications").update({ is_read: true } as any).eq("id", n.id).then(() => {});
+      setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)));
+    }
+    if (n.post_id) {
+      onClose();
+      navigate(`/post/${n.post_id}`);
+    }
+  };
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
@@ -142,9 +157,10 @@ const NotificationsPanel = ({ open, onClose }: Props) => {
             notifications.map((n) => (
               <div
                 key={n.id}
-                className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
+                onClick={() => openNotification(n)}
+                className={`flex items-start gap-3 p-3 rounded-xl transition-colors active:scale-[0.98] ${
                   n.is_read ? "opacity-60" : "bg-primary/5"
-                }`}
+                } ${n.post_id ? "cursor-pointer hover:bg-surface-hover" : ""}`}
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                   n.type === "like" ? "bg-red-100 text-red-500" : "bg-blue-100 text-blue-500"

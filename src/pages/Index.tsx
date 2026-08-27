@@ -1,9 +1,10 @@
-import { Briefcase, Music2, Store, MessageCircle } from "lucide-react";
+import { Briefcase, Music2, Store, MessageCircle, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { HomeSkeleton } from "@/components/skeletons/PostSkeleton";
+import NotificationsPanel, { useUnreadCount } from "@/components/NotificationsPanel";
 import banner1 from "@/assets/banner-1.png";
 import banner2 from "@/assets/banner-2.jpg";
 import banner3 from "@/assets/banner-3.jpg";
@@ -34,6 +35,8 @@ const Index = () => {
   const [currentBanner, setCurrentBanner] = useState(0);
   const [dbRecentJobs, setDbRecentJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notiOpen, setNotiOpen] = useState(false);
+  const { count: unreadCount } = useUnreadCount();
 
   const fetchData = async () => {
     setLoading(true);
@@ -72,8 +75,20 @@ const Index = () => {
         className="sticky top-0 z-40 -mx-4 px-4 pb-3 bg-background/95 backdrop-blur-lg border-b border-border/30 mb-5"
         style={{ paddingTop: "calc(1.25rem + var(--safe-top, 0px))" }}
       >
-        <header className="pb-3">
+        <header className="pb-3 flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight text-primary">instrut</h1>
+          <button
+            onClick={() => setNotiOpen(true)}
+            aria-label="알림"
+            className="relative w-10 h-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors active:scale-95"
+          >
+            <Bell className="w-[22px] h-[22px]" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-[9px] font-bold">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </button>
         </header>
         <nav style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) both" }}>
           <div className="grid grid-cols-4 gap-2">
@@ -135,6 +150,8 @@ const Index = () => {
         </div>
       </section>
       </>}
+
+      <NotificationsPanel open={notiOpen} onClose={() => setNotiOpen(false)} />
     </PageShell>
   );
 };

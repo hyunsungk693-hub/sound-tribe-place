@@ -173,7 +173,7 @@ const BottomNav = () => {
       )}
 
       <nav className="fixed bottom-0 left-0 right-0 z-[2000] bg-card/95 backdrop-blur-lg border-t border-border/50 pb-safe">
-        <div className="relative flex items-center justify-center gap-40 h-16 max-w-lg mx-auto">
+        <div className="relative flex items-center justify-center gap-44 h-16 max-w-lg mx-auto">
           {/* 메시지 */}
           <button onClick={() => navigate("/messages")} className={sideBtnCls(location.pathname === "/messages")}>
             <div className="relative">
