@@ -133,7 +133,7 @@ const BottomNav = () => {
   };
 
   const sideBtnCls = (active: boolean) =>
-    `relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-colors duration-150 active:scale-95 ${
+    `relative flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors duration-150 active:scale-95 ${
       active ? "text-primary" : "text-muted-foreground hover:text-foreground"
     }`;
 
@@ -152,7 +152,7 @@ const BottomNav = () => {
           <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" style={{ animation: menuClosing ? "fade-out 0.12s ease-out both" : "fade-in 0.15s ease both" }} />
           <div
             className="absolute left-1/2 -translate-x-1/2 flex items-end gap-3.5"
-            style={{ bottom: "calc(86px + env(safe-area-inset-bottom, 0px))" }}
+            style={{ bottom: "calc(100px + var(--safe-bottom, 0px))" }}
           >
             {holdMenuItems.map(({ path, icon: Icon, label, lift }, i) => (
               <button
@@ -173,14 +173,14 @@ const BottomNav = () => {
       )}
 
       <nav className="sticky bottom-0 left-0 right-0 z-[2000] bg-card/95 backdrop-blur-lg border-t border-border/50 pb-safe">
-        <div className="relative flex items-center justify-between h-14 max-w-lg mx-auto px-10">
+        <div className="relative flex items-center justify-between h-16 max-w-lg mx-auto px-10">
           {/* 메시지 */}
           <button onClick={() => navigate("/messages")} className={sideBtnCls(location.pathname === "/messages")}>
             <div className="relative">
-              <Mail className="w-5 h-5" strokeWidth={location.pathname === "/messages" ? 2.5 : 2} />
+              <Mail className="w-[22px] h-[22px]" strokeWidth={location.pathname === "/messages" ? 2.5 : 2} />
               <Badge count={unreadMessages} />
             </div>
-            <span className="text-[9px] font-medium leading-none">메시지</span>
+            <span className="text-[10px] font-medium leading-none">메시지</span>
           </button>
 
           {/* 홈 (중앙, 탭=홈 / 홀드=바로가기 메뉴) */}
@@ -190,22 +190,22 @@ const BottomNav = () => {
             onPointerLeave={cancelHold}
             onPointerCancel={cancelHold}
             onContextMenu={(e) => e.preventDefault()}
-            className={`absolute left-1/2 -translate-x-1/2 -top-4 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform duration-150 active:scale-95 select-none ${
+            className={`absolute left-1/2 -translate-x-1/2 -top-5 w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-transform duration-150 active:scale-95 select-none ${
               location.pathname === "/" ? "bg-primary text-primary-foreground" : "bg-primary text-primary-foreground"
             } ${menuOpen ? "scale-95" : ""}`}
             style={{ touchAction: "manipulation", WebkitUserSelect: "none", WebkitTouchCallout: "none" } as React.CSSProperties}
             aria-label="홈 (길게 누르면 바로가기 메뉴)"
           >
-            <Home className="w-6 h-6" strokeWidth={2.2} />
+            <Home className="w-7 h-7" strokeWidth={2.2} />
           </button>
 
           {/* 프로필 */}
           <button onClick={() => navigate("/profile")} className={sideBtnCls(location.pathname === "/profile")}>
             <div className="relative">
-              <User className="w-5 h-5" strokeWidth={location.pathname === "/profile" ? 2.5 : 2} />
+              <User className="w-[22px] h-[22px]" strokeWidth={location.pathname === "/profile" ? 2.5 : 2} />
               <Badge count={unreadNotifications} />
             </div>
-            <span className="text-[9px] font-medium leading-none">프로필</span>
+            <span className="text-[10px] font-medium leading-none">프로필</span>
           </button>
         </div>
       </nav>

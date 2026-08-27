@@ -67,7 +67,7 @@ const CreatePostFab = () => {
     <>
       <div
         className="sticky z-[1990] h-0 max-w-lg w-full mx-auto flex justify-end pr-4 pointer-events-none"
-        style={{ bottom: "calc(72px + env(safe-area-inset-bottom, 0px))" }}
+        style={{ bottom: "calc(80px + var(--safe-bottom, 0px))" }}
       >
         <button
           onClick={() => setChooserOpen(true)}

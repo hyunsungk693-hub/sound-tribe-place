@@ -76,6 +76,15 @@
 }
 
 @layer base {
+  :root {
+    --safe-bottom: 0px;
+  }
+  @media (display-mode: standalone) {
+    :root {
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+  }
+
   * {
     @apply border-border;
   }
@@ -117,12 +126,11 @@
     text-wrap: balance;
   }
 
-  /* iOS 홈 인디케이터/노치 안전영역 — viewport-fit=cover 와 함께 동작 */
+  /* iOS 홈 인디케이터 안전영역.
+     브라우저 모드에서는 env() 값이 스크롤 중 변동해 바가 들썩이므로,
+     인셋이 고정값인 설치형(PWA standalone) 모드에서만 적용한다. */
   .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-  .pt-safe {
-    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: var(--safe-bottom, 0px);
   }
 
   /* iOS 사파리 주소창 변동에 안전한 화면 높이 (dvh 미지원 브라우저는 vh 폴백) */
