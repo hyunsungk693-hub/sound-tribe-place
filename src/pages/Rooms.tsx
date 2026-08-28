@@ -1,4 +1,4 @@
-import { Search, MapPin, Clock, Star, Music, ArrowLeft, Pencil, Trash2, MessageCircle, Navigation } from "lucide-react";
+import { Search, MapPin, Clock, Star, Music, ArrowLeft, Pencil, Trash2, MessageCircle, Navigation, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import PageShell from "@/components/PageShell";
@@ -148,36 +148,36 @@ const Rooms = () => {
       {mode === "room" && (
         <button
           onClick={() => navigate("/studios")}
-          className="w-full mb-4 p-3.5 rounded-xl bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-between hover:from-primary/20 transition-colors active:scale-[0.99]"
+          className="w-full mb-5 p-4 rounded-lg bg-primary/[0.06] border border-primary/25 flex items-center justify-between hover:border-primary transition-colors active:scale-[0.99]"
         >
-          <div className="flex items-center gap-2.5 text-left">
-            <span className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center text-primary text-lg">⚡</span>
+          <div className="flex items-center gap-3 text-left">
+            <span className="w-9 h-9 rounded-lg bg-primary/12 flex items-center justify-center text-primary text-lg">⚡</span>
             <div>
-              <p className="text-sm font-semibold">제휴 연습실 즉시예약</p>
-              <p className="text-[11px] text-muted-foreground">선결제로 바로 확정 · 도어락 PIN 자동 발급</p>
+              <p className="text-sm font-bold tracking-tight">제휴 연습실 즉시예약</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">선결제로 바로 확정 · 도어락 PIN 자동 발급</p>
             </div>
           </div>
-          <span className="text-primary text-lg">›</span>
+          <ChevronRight className="w-5 h-5 text-primary" />
         </button>
       )}
-      <div className="relative mb-5">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <div className="relative mb-4">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={mode === "room" ? "지역, 연습실 이름 검색..." : "지역, 악기사 이름 검색..."}
-          className="w-full h-11 pl-10 pr-4 rounded-xl bg-secondary border-none text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow"
+          className="w-full h-11 pl-10 pr-4 rounded-lg bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
         />
       </div>
 
-      <div className="flex gap-2 mb-4 items-center">
+      <div className="flex gap-2 mb-5 items-center">
         {([["latest", "최신순"], ["name", "이름순"]] as ["latest" | "name", string][]).map(([m, label]) => (
           <button
             key={m}
             onClick={() => setSortMode(m)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all active:scale-95 ${
-              sortMode === m ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+            className={`px-3.5 py-1.5 rounded-lg text-[13px] font-semibold transition-colors active:scale-95 ${
+              sortMode === m ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:border-primary"
             }`}
           >
             {label}
@@ -185,13 +185,19 @@ const Rooms = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
+      <div className="flex items-baseline justify-between pb-3 border-b-2 border-foreground mb-4">
+        <h2 className="text-lg lg:text-[19px] font-extrabold tracking-tight">
+          {mode === "room" ? "연습실" : "악기사"} <span className="font-mono text-sm text-muted-foreground tabular-nums">{allItems.length}</span>
+        </h2>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 items-start">
         {loadingRooms ? [...Array(4)].map((_, i) => <RoomCardSkeleton key={i} />) : null}
         {!loadingRooms && allItems.map((room, i) => (
           <div
             key={room.id || `sample-${i}`}
             onClick={() => openDetail(room)}
-            className="glass-card overflow-hidden hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]"
+            className="glass-card overflow-hidden hover:border-primary transition-colors duration-200 cursor-pointer active:scale-[0.98]"
             style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${i * 0.06}s both` }}
           >
             {room.image_url && (
@@ -199,11 +205,11 @@ const Rooms = () => {
             )}
             <div className="p-4">
               <div className="flex items-start justify-between mb-2">
-                <h3 className="text-sm font-semibold">{room.name}</h3>
+                <h3 className="text-[15px] font-bold tracking-tight">{room.name}</h3>
                 {room.rating > 0 && (
                   <div className="flex items-center gap-1 shrink-0 ml-2">
                     <Star className="w-3.5 h-3.5 text-primary fill-primary" />
-                    <span className="text-xs font-medium">{room.rating}</span>
+                    <span className="text-xs font-semibold font-mono tabular-nums">{room.rating}</span>
                   </div>
                 )}
               </div>
@@ -214,14 +220,14 @@ const Rooms = () => {
               {room.instruments.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-3">
                   {room.instruments.map((inst: string) => (
-                    <span key={inst} className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground">
+                    <span key={inst} className="flex items-center gap-1 font-mono text-[10px] font-semibold px-2 py-0.5 rounded bg-secondary text-secondary-foreground">
                       <Music className="w-2.5 h-2.5" />{inst}
                     </span>
                   ))}
                 </div>
               )}
-              <div className="pt-3 border-t border-border/30 flex items-center justify-between">
-                <span className="text-xs font-medium text-primary">{room.price}</span>
+              <div className="pt-3 border-t border-border flex items-center justify-between">
+                <span className="text-[13px] font-bold text-primary font-mono tabular-nums">{room.price}</span>
                 {hasDirections(room.lat, room.lng, room.area || room.name) && (
                   <button
                     onClick={(e) => { e.stopPropagation(); openDirections(room); }}

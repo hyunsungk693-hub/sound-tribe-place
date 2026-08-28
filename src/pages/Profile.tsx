@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronRight, Music, Award, Edit3, Shield, HelpCircle, LogOut, Trash2, Calendar, MapPin, Users, Clock, History, IdCard, Star, CalendarHeart } from "lucide-react";
+import { ChevronRight, Edit3, Shield, HelpCircle, LogOut, Trash2, Calendar, MapPin, Users, Clock, History, IdCard, Star, CalendarHeart } from "lucide-react";
 import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -39,6 +39,24 @@ const APPLY_STATUS_META: Record<string, { label: string; cls: string }> = {
   accepted: { label: "합격", cls: "bg-green-500/10 text-green-600" },
   rejected: { label: "불합격", cls: "bg-destructive/10 text-destructive" },
 };
+
+// VU 미터 — 세그먼트 게이지 (0~1). 홈(Index)과 동일 패턴.
+const VuMeter = ({ level, segs = 12 }: { level: number; segs?: number }) => {
+  const on = Math.max(0, Math.min(segs, Math.round(level * segs)));
+  return (
+    <div className="flex items-center gap-[3px]" aria-hidden>
+      {Array.from({ length: segs }).map((_, i) => (
+        <span
+          key={i}
+          className={`w-[3px] h-3.5 rounded-[1px] ${
+            i < on ? (i >= segs - 2 ? "bg-amber" : "bg-primary") : "bg-border"
+          }`}
+        />
+      ))}
+    </div>
+  );
+};
+
 
 const ProfilePage = () => {
   useDocumentTitle("프로필");
@@ -209,100 +227,134 @@ const ProfilePage = () => {
 
   return (
     <PageShell title="프로필">
-      {/* Profile Card */}
-      <div className="glass-card p-5 mb-4" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) both" }}>
-        <div className="flex items-center gap-4 mb-4">
-          {profile?.avatar_url ? (
-            <img src={profile.avatar_url} alt="avatar" className="w-16 h-16 rounded-2xl object-cover" />
-          ) : (
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-xl font-bold text-primary">
-              {initials}
+      <div className="lg:grid lg:grid-cols-[340px_1fr] lg:gap-6 lg:items-start">
+      {/* ── LEFT: 정체성 · 신뢰 · 악기 ── */}
+      <div className="space-y-4 lg:sticky lg:top-24">
+        {/* 정체성 */}
+        <div className="glass-card p-5" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) both" }}>
+          <div className="flex items-center gap-4 mb-4">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="avatar" className="w-16 h-16 rounded-lg object-cover" />
+            ) : (
+              <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-2xl font-extrabold text-primary">
+                {initials}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-extrabold tracking-tight truncate">{displayName}</h2>
+              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 truncate">
+                <MapPin className="w-3 h-3 shrink-0" />{profile?.location || "위치를 설정해주세요"}
+              </p>
             </div>
-          )}
-          <div className="flex-1">
-            <h2 className="text-lg font-bold">{displayName}</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {profile?.location || "위치를 설정해주세요"}
-            </p>
           </div>
-          <button
-            onClick={() => {
-              const h = (profile as any)?.handle;
-              if (h) navigate(`/u/${h}/card`);
-              else { toast.error("먼저 프로필 편집에서 핸들을 설정해주세요"); setEditOpen(true); }
-            }}
-            className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center hover:bg-surface-hover transition-colors active:scale-95"
-            aria-label="내 소개 카드"
-          >
-            <IdCard className="w-4 h-4 text-muted-foreground" />
-          </button>
-          <button
-            onClick={() => setEditOpen(true)}
-            className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center hover:bg-surface-hover transition-colors active:scale-95"
-          >
-            <Edit3 className="w-4 h-4 text-muted-foreground" />
-          </button>
+
+          {profile?.bio && (
+            <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{profile.bio}</p>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                const h = (profile as any)?.handle;
+                if (h) navigate(`/u/${h}/card`);
+                else { toast.error("먼저 프로필 편집에서 핸들을 설정해주세요"); setEditOpen(true); }
+              }}
+              className="flex-1 h-9 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center gap-1.5 text-xs font-semibold hover:bg-surface-hover transition-colors active:scale-[0.98]"
+            >
+              <IdCard className="w-4 h-4" /> 소개 카드
+            </button>
+            <button
+              onClick={() => setEditOpen(true)}
+              className="flex-1 h-9 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center gap-1.5 text-xs font-semibold hover:bg-surface-hover transition-colors active:scale-[0.98]"
+            >
+              <Edit3 className="w-4 h-4" /> 프로필 편집
+            </button>
+          </div>
         </div>
 
-        {profile?.bio && (
-          <p className="text-sm text-muted-foreground mb-3">{profile.bio}</p>
-        )}
-
+        {/* 신뢰 지표 — VU 게이지 */}
         {(() => {
           if (!myStats) return null;
-          const items: { label: string; value: string }[] = [];
-          if (myStats.response_rate != null) items.push({ label: "응답률", value: `${Math.round(myStats.response_rate * 100)}%` });
-          if (myStats.sessions_count > 0) items.push({ label: "합주", value: `${myStats.sessions_count}회` });
-          if (myStats.partners_count > 0) items.push({ label: "함께한 음악인", value: `${myStats.partners_count}명` });
-          if (myStats.rehire_rate != null) items.push({ label: "재합주율", value: `${Math.round(myStats.rehire_rate * 100)}%` });
-          if (items.length === 0) return null;
+          const hasRate = myStats.response_rate != null || myStats.rehire_rate != null;
+          const hasCount = myStats.sessions_count > 0 || myStats.partners_count > 0;
+          if (!hasRate && !hasCount) return null;
           return (
-            <div className="pt-3 border-t border-border/40 grid grid-cols-2 gap-2">
-              {items.map((t) => (
-                <div key={t.label} className="text-center py-1.5 rounded-lg bg-secondary/50">
-                  <p className="text-sm font-bold text-primary">{t.value}</p>
-                  <p className="text-[10px] text-muted-foreground">{t.label}</p>
+            <div className="glass-card p-5" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.06s both" }}>
+              <p className="mono-label mb-4">신뢰 지표</p>
+              {hasRate && (
+                <div className="space-y-3.5">
+                  {myStats.response_rate != null && (
+                    <div>
+                      <div className="flex justify-between items-baseline mb-1.5">
+                        <span className="mono-label">응답률</span>
+                        <span className="font-mono font-bold text-sm tabular-nums">{Math.round(myStats.response_rate * 100)}%</span>
+                      </div>
+                      <VuMeter level={myStats.response_rate} />
+                    </div>
+                  )}
+                  {myStats.rehire_rate != null && (
+                    <div>
+                      <div className="flex justify-between items-baseline mb-1.5">
+                        <span className="mono-label">재합주율</span>
+                        <span className="font-mono font-bold text-sm tabular-nums">{Math.round(myStats.rehire_rate * 100)}%</span>
+                      </div>
+                      <VuMeter level={myStats.rehire_rate} />
+                    </div>
+                  )}
                 </div>
-              ))}
+              )}
+              {hasCount && (
+                <div className={`grid grid-cols-2 gap-3 ${hasRate ? "mt-4 pt-4 border-t border-border" : ""}`}>
+                  {myStats.sessions_count > 0 && (
+                    <div>
+                      <p className="font-mono text-2xl font-extrabold tabular-nums leading-none">{myStats.sessions_count}<span className="text-xs text-muted-foreground font-sans ml-0.5">회</span></p>
+                      <p className="mono-label mt-1.5">합주</p>
+                    </div>
+                  )}
+                  {myStats.partners_count > 0 && (
+                    <div>
+                      <p className="font-mono text-2xl font-extrabold tabular-nums leading-none">{myStats.partners_count}<span className="text-xs text-muted-foreground font-sans ml-0.5">명</span></p>
+                      <p className="mono-label mt-1.5">함께한 음악인</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           );
         })()}
-      </div>
 
-      {/* Instruments & Genres */}
-      <div className="glass-card p-4 mb-4" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.08s both" }}>
-        <div className="mb-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Music className="w-3.5 h-3.5 text-primary" />
-            <span className="text-xs font-semibold">악기</span>
+        {/* 악기 · 장르 */}
+        <div className="glass-card p-5" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s both" }}>
+          <div className="mb-4">
+            <p className="mono-label mb-2.5">악기 · Instruments</p>
+            <div className="flex flex-wrap gap-1.5">
+              {instruments.map((inst) => (
+                <span key={inst} className="text-[12px] font-semibold px-2.5 py-1 rounded-md bg-primary/10 text-primary">
+                  {inst}
+                </span>
+              ))}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {instruments.map((inst) => (
-              <span key={inst} className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
-                {inst}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Award className="w-3.5 h-3.5 text-primary" />
-            <span className="text-xs font-semibold">장르</span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {genres.map((genre) => (
-              <span key={genre} className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">
-                {genre}
-              </span>
-            ))}
+          <div>
+            <p className="mono-label mb-2.5">장르 · Genres</p>
+            <div className="flex flex-wrap gap-1.5">
+              {genres.map((genre) => (
+                <span key={genre} className="text-[12px] font-semibold px-2.5 py-1 rounded-md bg-secondary text-secondary-foreground">
+                  {genre}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      </div>{/* /left column */}
+
+      {/* ── RIGHT: 나의 INSTRUT · 활동 · 설정 ── */}
+      <div className="space-y-4 mt-4 lg:mt-0">
 
       {/* 나의 INSTRUT: 지원현황 · 예약현황 */}
-      <div className="glass-card mb-4 overflow-hidden" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s both" }}>
-        <div className="px-4 pt-4 pb-2">
-          <h3 className="text-sm font-bold">
+      <div className="glass-card overflow-hidden" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s both" }}>
+        <div className="px-5 pt-5 pb-3">
+          <h3 className="text-lg font-extrabold tracking-tight">
             나의 <span className="text-primary">INSTRUT</span>
           </h3>
         </div>
@@ -451,7 +503,7 @@ const ProfilePage = () => {
       </div>
 
       {/* My Activity */}
-      <div className="glass-card mb-4 overflow-hidden" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.11s both" }}>
+      <div className="glass-card overflow-hidden" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.11s both" }}>
         <div className="flex border-b border-border/40">
           {activityTabs.map((tab) => (
             <button
@@ -540,8 +592,8 @@ const ProfilePage = () => {
         {menuItems.map(({ icon: Icon, label }, i, arr) => (
           <button
             key={label}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 hover:bg-surface-hover transition-colors active:scale-[0.99] text-left ${
-              i < arr.length - 1 ? "border-b border-border/40" : ""
+            className={`w-full flex items-center gap-3 px-5 py-4 hover:bg-surface-hover transition-colors active:scale-[0.99] text-left ${
+              i < arr.length - 1 ? "border-b border-border" : ""
             }`}
           >
             <Icon className="w-4 h-4 text-muted-foreground" />
@@ -555,7 +607,7 @@ const ProfilePage = () => {
       {isAdmin && (
         <button
           onClick={() => navigate("/admin")}
-          className="w-full mt-4 py-3 text-sm font-medium text-primary hover:bg-primary/5 rounded-xl transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
+          className="w-full py-3 text-sm font-semibold text-primary border border-border hover:border-primary rounded-lg transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
         >
           <Shield className="w-4 h-4" />
           관리자 페이지
@@ -565,13 +617,15 @@ const ProfilePage = () => {
       {/* Logout */}
       <button
         onClick={handleLogout}
-        className="w-full mt-2 py-3 text-sm font-medium text-destructive hover:bg-destructive/5 rounded-xl transition-colors active:scale-[0.98]"
+        className="w-full py-3 text-sm font-semibold text-destructive hover:bg-destructive/5 border border-border hover:border-destructive/40 rounded-lg transition-colors active:scale-[0.98]"
       >
         <span className="flex items-center justify-center gap-2">
           <LogOut className="w-4 h-4" />
           로그아웃
         </span>
       </button>
+      </div>{/* /right column */}
+      </div>{/* /grid */}
 
       {editOpen && profile && user && (
         <ProfileEditModal

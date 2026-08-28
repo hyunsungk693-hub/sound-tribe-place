@@ -330,20 +330,20 @@ const Jobs = () => {
   return (
     <PageShell title="구인구직">
       <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="포지션, 악기, 지역 검색..."
-          className="w-full h-11 pl-10 pr-4 rounded-xl bg-secondary border-none text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow"
+          className="w-full h-11 pl-10 pr-4 rounded-lg bg-card border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
         />
       </div>
 
-      <div className="flex gap-2 mb-5 overflow-x-auto no-scrollbar pb-1 items-center">
+      <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-1 items-center">
         <button
           onClick={() => setSortOrder((o) => (o === "latest" ? "oldest" : "latest"))}
-          className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground hover:bg-surface-hover transition-all active:scale-95"
+          className="shrink-0 flex items-center gap-1 rounded-lg px-3 py-1.5 text-[13px] font-semibold border border-border text-muted-foreground hover:border-primary transition-colors active:scale-95"
         >
           <ArrowUpDown className="w-3 h-3" />
           {sortOrder === "latest" ? "최신순" : "오래된순"}
@@ -352,8 +352,8 @@ const Jobs = () => {
           <button
             key={cat}
             onClick={() => setSelectedCat(cat)}
-            className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 active:scale-95 ${
-              cat === selectedCat ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+            className={`shrink-0 rounded-lg px-3.5 py-1.5 text-[13px] font-semibold transition-colors active:scale-95 ${
+              cat === selectedCat ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:border-primary"
             }`}
           >
             {cat}
@@ -362,16 +362,16 @@ const Jobs = () => {
       </div>
 
       {/* A6: 포지션 우선 노출 — 선택해도 다른 공고는 숨기지 않고 아래에 계속 표시 */}
-      <div className="flex gap-2 mb-5 -mt-2 overflow-x-auto no-scrollbar pb-1 items-center">
-        <span className="shrink-0 text-[11px] font-semibold text-muted-foreground">포지션</span>
+      <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-1 items-center">
+        <span className="shrink-0 font-mono text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">포지션</span>
         {POSITIONS.map((pos) => (
           <button
             key={pos}
             onClick={() => setSelectedPosition(pos)}
-            className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-medium transition-all duration-200 active:scale-95 ${
+            className={`shrink-0 rounded-lg px-3 py-1 text-[12px] font-semibold transition-colors active:scale-95 ${
               pos === selectedPosition
-                ? "bg-primary/15 text-primary ring-1 ring-primary/40"
-                : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+                ? "border border-primary text-primary"
+                : "border border-border text-muted-foreground hover:border-primary"
             }`}
           >
             {pos}
@@ -382,7 +382,12 @@ const Jobs = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
+      <div className="flex items-baseline justify-between pb-3 border-b-2 border-foreground mb-4">
+        <h2 className="text-lg lg:text-[19px] font-extrabold tracking-tight">전체 공고</h2>
+        <span className="font-mono text-[13px] font-semibold text-muted-foreground tabular-nums">{filtered.length}건</span>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 items-start">
         {loadingJobs ? [...Array(4)].map((_, i) => <JobCardSkeleton key={i} />) : null}
         {!loadingJobs && filtered.map((job, i) => (
           <div
@@ -391,22 +396,22 @@ const Jobs = () => {
               if (!user) { toast.error("자세히 보려면 로그인이 필요합니다"); navigate("/auth"); return; }
               setSelectedJob(job); setEditing(false);
             }}
-            className="glass-card overflow-hidden hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]"
+            className="glass-card overflow-hidden hover:border-primary transition-colors duration-200 cursor-pointer active:scale-[0.98]"
             style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${i * 0.06}s both` }}
           >
             {job.image_url && (
               <img src={job.image_url} alt={job.title} className="w-full h-36 object-cover" loading="lazy" />
             )}
             <div className="p-4">
-            <div className="flex items-start justify-between mb-2">
-              <h3 className="text-sm font-semibold">{job.title}</h3>
-              <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary shrink-0 ml-2">{job.tag}</span>
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <h3 className="text-[15px] font-bold tracking-tight leading-snug">{job.title}</h3>
+              <span className="font-mono text-[10.5px] font-bold tracking-wide px-2 py-1 rounded bg-secondary text-secondary-foreground shrink-0">{job.tag}</span>
             </div>
-            <p className="text-xs text-muted-foreground">{job.venue}</p>
+            <p className="text-[12.5px] text-muted-foreground">{job.venue}</p>
             {(job.position || job.schedule) && (
               <div className="flex flex-wrap items-center gap-1.5 mt-2">
                 {job.position && (
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
                     selectedPosition !== "전체" && job.position === selectedPosition
                       ? "bg-primary text-primary-foreground"
                       : "bg-secondary text-secondary-foreground"
@@ -419,9 +424,9 @@ const Jobs = () => {
                 )}
               </div>
             )}
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/30">
-              <span className="text-xs font-medium text-primary">{job.pay}</span>
-              <span className="text-[10px] text-muted-foreground">{job.date}</span>
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+              <span className="text-[13px] font-bold font-mono text-primary">{job.pay}</span>
+              <span className="text-[10px] text-muted-foreground font-mono tabular-nums">{job.date}</span>
             </div>
             {job.id ? (
               job.user_id === user?.id ? (
@@ -459,7 +464,7 @@ const Jobs = () => {
             </div>
           </div>
         ))}
-        {!loadingJobs && filtered.length === 0 && <div className="text-center py-10 text-muted-foreground text-sm">구인글이 없습니다</div>}
+        {!loadingJobs && filtered.length === 0 && <div className="col-span-full text-center py-12 text-muted-foreground text-sm">구인글이 없습니다</div>}
       </div>
 
       
@@ -468,7 +473,7 @@ const Jobs = () => {
       {selectedJob && (
         <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center" onClick={() => { setSelectedJob(null); setEditing(false); }}>
           <div
-            className="w-full max-w-lg bg-background rounded-t-2xl lg:rounded-2xl max-h-sheet flex flex-col animate-in slide-in-from-bottom duration-300 overflow-y-auto"
+            className="w-full max-w-lg bg-background rounded-t-2xl lg:rounded-xl max-h-sheet flex flex-col animate-in slide-in-from-bottom duration-300 overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-5">
@@ -487,7 +492,7 @@ const Jobs = () => {
                       </button>
                     </>
                   )}
-                  <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+                  <span className="font-mono text-[10.5px] font-bold tracking-wide px-2 py-1 rounded bg-secondary text-secondary-foreground">
                     {editing ? editCategory : selectedJob.tag}
                   </span>
                 </div>
@@ -542,19 +547,19 @@ const Jobs = () => {
               ) : (
                 <>
                   {selectedJob.image_url && (
-                    <div className="rounded-xl overflow-hidden mb-4 -mt-1">
+                    <div className="rounded-lg overflow-hidden mb-4 -mt-1">
                       <img src={selectedJob.image_url} alt={selectedJob.title} className="w-full max-h-56 object-cover" />
                     </div>
                   )}
                   {authorProfile && (
-                    <div className="mb-3 p-3 rounded-xl bg-secondary/50">
+                    <div className="mb-3 p-3 rounded-lg border border-border bg-card">
                       <ProfileCard profile={authorProfile} variant="compact" onBeforeNavigate={() => setSelectedJob(null)} />
                     </div>
                   )}
-                  <h2 className="text-base font-bold mb-2">{selectedJob.title}</h2>
+                  <h2 className="text-lg font-extrabold tracking-tight mb-2">{selectedJob.title}</h2>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground mb-3">
                     {selectedJob.position && (
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">🎯 {selectedJob.position}</span>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary">🎯 {selectedJob.position}</span>
                     )}
                     {selectedJob.schedule && <span>🕐 {selectedJob.schedule}</span>}
                     {selectedJob.venue && <span>📍 {selectedJob.venue}</span>}
@@ -589,7 +594,7 @@ const Jobs = () => {
                           if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
                           navigate(`/messages?to=${selectedJob.user_id}`);
                         }}
-                        className="flex-1 h-11 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:bg-secondary/80 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                        className="flex-1 h-11 rounded-lg border border-border text-secondary-foreground text-sm font-semibold hover:border-primary active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                       >
                         <MessageCircle className="w-4 h-4" /> 메시지
                       </button>
@@ -600,7 +605,7 @@ const Jobs = () => {
                           <button
                             onClick={() => { if (!applied) openApply(selectedJob); }}
                             disabled={applied}
-                            className={`flex-1 h-11 rounded-xl text-sm font-medium active:scale-[0.98] transition-all ${
+                            className={`flex-1 h-11 rounded-lg text-sm font-semibold active:scale-[0.98] transition-all ${
                               applied
                                 ? "bg-secondary text-muted-foreground cursor-default"
                                 : "bg-primary text-primary-foreground hover:bg-primary/90"
@@ -619,11 +624,12 @@ const Jobs = () => {
                   )}
 
                   {selectedJob.id && selectedJob.user_id === user?.id && (
-                    <div className="mt-5 pt-4 border-t border-border/40">
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <h3 className="text-sm font-semibold">
-                          받은 지원 ({filteredApplicants.length}{applicantStatusFilter !== "all" ? ` / ${jobApplicants.length}` : ""})
-                        </h3>
+                    <div className="mt-5 pt-4 border-t border-border">
+                      <div className="flex items-baseline justify-between gap-2 pb-2.5 border-b-2 border-foreground mb-3">
+                        <h3 className="text-base font-extrabold tracking-tight">받은 지원</h3>
+                        <span className="font-mono text-[12px] font-semibold text-muted-foreground tabular-nums">
+                          {filteredApplicants.length}{applicantStatusFilter !== "all" ? ` / ${jobApplicants.length}` : ""}
+                        </span>
                       </div>
                       {jobApplicants.length > 0 && (
                         <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -638,10 +644,10 @@ const Jobs = () => {
                                   key={s.value}
                                   type="button"
                                   onClick={() => setApplicantStatusFilter(s.value)}
-                                  className={`h-7 px-2.5 rounded-full text-[11px] font-medium transition-colors ${
+                                  className={`h-7 px-2.5 rounded-lg text-[11px] font-semibold transition-colors ${
                                     active
                                       ? "bg-primary text-primary-foreground"
-                                      : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+                                      : "border border-border text-muted-foreground hover:border-primary"
                                   }`}
                                 >
                                   {s.label} {count}
@@ -670,7 +676,7 @@ const Jobs = () => {
                           {filteredApplicants.slice(0, applicantsVisible).map((a) => {
                             const meta = statusMeta(a.status);
                             return (
-                              <div key={a.id} className="p-3 rounded-xl bg-secondary/50 space-y-2">
+                              <div key={a.id} className="p-3 rounded-lg border border-border bg-card space-y-2">
                                 <div className="flex items-center gap-2">
                                   <ProfileCard
                                     profile={(a.applicant as ProfileCardData) || null}
@@ -785,20 +791,20 @@ const Jobs = () => {
             className="w-full max-w-sm bg-background rounded-t-2xl lg:rounded-2xl p-6 animate-in slide-in-from-bottom duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base font-bold mb-2">연주영상을 등록해야 지원할 수 있어요</h3>
+            <h3 className="text-lg font-extrabold tracking-tight mb-2">연주영상을 등록해야 지원할 수 있어요</h3>
             <p className="text-sm text-muted-foreground mb-5">
               공고 작성자는 지원자의 연주영상을 보고 판단합니다. 프로필에 YouTube 또는 Instagram 영상 링크 1개를 등록해주세요.
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setVideoGateOpen(false)}
-                className="flex-1 h-11 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:bg-surface-hover transition-colors"
+                className="flex-1 h-11 rounded-lg border border-border text-secondary-foreground text-sm font-semibold hover:border-primary transition-colors"
               >
                 나중에
               </button>
               <button
                 onClick={() => { setVideoGateOpen(false); navigate("/profile"); }}
-                className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all"
+                className="flex-1 h-11 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all"
               >
                 프로필에서 등록하기
               </button>

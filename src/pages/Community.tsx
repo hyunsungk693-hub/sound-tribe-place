@@ -372,8 +372,8 @@ const Community = () => {
           <button
             key={tab}
             onClick={() => setSelectedTab(tab)}
-            className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 active:scale-95 ${
-              tab === selectedTab ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+            className={`shrink-0 px-3.5 py-1.5 rounded-lg text-[13px] font-semibold tracking-tight transition-colors active:scale-95 ${
+              tab === selectedTab ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:border-primary hover:text-foreground"
             }`}
           >
             {tab}
@@ -381,67 +381,73 @@ const Community = () => {
         ))}
       </div>
 
-      {/* Sort */}
-      <div className="flex items-center gap-1.5 mb-4">
-        <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground" />
-        {([["latest", "최신순"], ["likes", "인기순"], ["comments", "댓글순"]] as const).map(([value, label]) => (
-          <button
-            key={value}
-            onClick={() => setSortBy(value)}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all active:scale-95 ${
-              sortBy === value ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
       {topPost && (
         <div
-          className="glass-card p-3.5 mb-5 flex items-center gap-3 cursor-pointer hover:bg-surface-hover active:scale-[0.98] transition-all"
+          className="glass-card p-4 mb-5 flex items-center gap-3 cursor-pointer hover:border-primary active:scale-[0.99] transition-colors"
           style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) both" }}
           onClick={() => openPost(topPost)}
         >
           <TrendingUp className="w-4 h-4 text-primary shrink-0" />
-          <div className="overflow-hidden">
-            <p className="text-[10px] text-primary font-medium mb-0.5">인기글</p>
-            <p className="text-xs truncate">{topPost.title} — ♥ {topPost.likeCount} · 댓글 {topPost.commentCount}개</p>
+          <div className="overflow-hidden flex-1">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-primary mb-0.5">Most Liked</p>
+            <p className="text-[13px] truncate tracking-tight"><span className="font-semibold">{topPost.title}</span> <span className="font-mono tabular-nums text-muted-foreground">♥{topPost.likeCount} · 댓글 {topPost.commentCount}</span></p>
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
+      {/* 섹션 헤더 — 볼드 하단 라인 + 정렬 */}
+      <div className="flex items-baseline justify-between pb-3 border-b-2 border-foreground mb-4">
+        <h2 className="text-lg lg:text-[19px] font-extrabold tracking-tight">
+          {selectedTab === "전체" ? "전체 글" : selectedTab}
+          <span className="ml-2 font-mono text-xs font-semibold text-muted-foreground tabular-nums align-middle">{sorted.length}</span>
+        </h2>
+        <div className="flex items-center gap-1">
+          <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground mr-0.5" />
+          {([["latest", "최신"], ["likes", "인기"], ["comments", "댓글"]] as const).map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => setSortBy(value)}
+              className={`px-2 py-1 rounded text-[11px] font-mono font-bold uppercase tracking-wide transition-colors active:scale-95 ${
+                sortBy === value ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 items-start">
         {loadingPosts ? (
-          [...Array(4)].map((_, i) => <PostCardSkeleton key={i} />)
+          [...Array(6)].map((_, i) => <PostCardSkeleton key={i} />)
         ) : sorted.length === 0 ? (
-          <div className="text-center py-10 text-muted-foreground text-sm">
+          <div className="col-span-full text-center py-12 text-muted-foreground text-sm">
             {searchQuery ? `"${searchQuery}"에 대한 검색 결과가 없습니다` : "게시물이 없습니다"}
           </div>
         ) : null}
         {!loadingPosts && sorted.map((post, i) => (
-          <div key={post.id || `sample-${i}`} onClick={() => openPost(post)} className="glass-card p-4 hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]" style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${0.1 + i * 0.06}s both` }}>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-[10px] font-bold">{post.author[0]}</div>
-              <span className="text-xs font-medium cursor-pointer hover:text-primary transition-colors" onClick={(e) => { e.stopPropagation(); if (post.user_id) navigate(`/profile/${post.user_id}`); }}>{post.author}</span>
-              <span className="text-[10px] text-muted-foreground">{post.time}</span>
-              <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">{post.tab}</span>
+          <div key={post.id || `sample-${i}`} onClick={() => openPost(post)} className="glass-card p-4 hover:border-primary transition-colors duration-200 cursor-pointer active:scale-[0.99]" style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${0.06 + Math.min(i, 8) * 0.05}s both` }}>
+            <div className="flex items-center gap-2 mb-2.5">
+              <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold text-secondary-foreground">{post.author[0]}</div>
+              <span className="text-[13px] font-semibold cursor-pointer hover:text-primary transition-colors truncate" onClick={(e) => { e.stopPropagation(); if (post.user_id) navigate(`/profile/${post.user_id}`); }}>{post.author}</span>
+              <span className="text-[10px] text-muted-foreground font-mono shrink-0">{post.time}</span>
+              <span className="ml-auto font-mono text-[10px] font-bold tracking-wide px-2 py-0.5 rounded bg-secondary text-secondary-foreground shrink-0">{post.tab}</span>
             </div>
-            <h3 className="text-sm font-semibold mb-1">{post.title}</h3>
+            <h3 className="text-[15px] font-bold tracking-tight leading-snug mb-1.5">{post.title}</h3>
             {post.image_url && (
               <div className="mb-2 rounded-lg overflow-hidden">
                 <img src={post.image_url} alt="" className="w-full max-h-48 object-cover" />
               </div>
             )}
-            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{post.content}</p>
-            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border/30">
+            <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-2">{post.content}</p>
+            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border">
               <button
                 onClick={(e) => handleLike(post, e)}
-                className={`flex items-center gap-1 text-xs transition-colors active:scale-95 ${post.liked ? "text-red-500" : "text-muted-foreground hover:text-primary"}`}
+                className={`flex items-center gap-1 text-xs font-mono tabular-nums transition-colors active:scale-95 ${post.liked ? "text-red-500" : "text-muted-foreground hover:text-primary"}`}
               >
                 <Heart className={`w-3.5 h-3.5 ${post.liked ? "fill-red-500" : ""}`} /> {post.likeCount}
               </button>
-              <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors active:scale-95">
+              <button className="flex items-center gap-1 text-xs font-mono tabular-nums text-muted-foreground hover:text-primary transition-colors active:scale-95">
                 <MessageSquare className="w-3.5 h-3.5" /> {post.commentCount}
               </button>
               <button className="ml-auto text-muted-foreground hover:text-primary transition-colors active:scale-95">
@@ -458,7 +464,7 @@ const Community = () => {
       {selectedPost && (
         <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center" onClick={() => setSelectedPost(null)}>
           <div
-            className="w-full max-w-lg bg-background rounded-t-2xl lg:rounded-2xl max-h-sheet flex flex-col animate-in slide-in-from-bottom duration-300"
+            className="w-full max-w-lg bg-background rounded-t-2xl lg:rounded-lg lg:border lg:border-border max-h-sheet flex flex-col animate-in slide-in-from-bottom duration-300"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -490,7 +496,7 @@ const Community = () => {
                       </button>
                     </>
                   )}
-                  <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">{editing ? editCategory : selectedPost.tab}</span>
+                  <span className="font-mono text-[10px] font-bold tracking-wide px-2.5 py-1 rounded bg-secondary text-secondary-foreground">{editing ? editCategory : selectedPost.tab}</span>
                 </div>
               </div>
 
@@ -504,8 +510,8 @@ const Community = () => {
                   />
                 ) : (
                   <div className="flex items-center gap-2.5 flex-1">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-xs font-bold">{selectedPost.author[0]}</div>
-                    <p className="text-sm font-medium">{selectedPost.author}</p>
+                    <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-xs font-bold text-secondary-foreground">{selectedPost.author[0]}</div>
+                    <p className="text-sm font-semibold">{selectedPost.author}</p>
                   </div>
                 )}
                 <p className="text-[10px] text-muted-foreground shrink-0">{selectedPost.time}</p>
@@ -515,7 +521,7 @@ const Community = () => {
                       setSelectedPost(null);
                       navigate(`/messages?to=${selectedPost.user_id}`);
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all"
                   >
                     <Mail className="w-3.5 h-3.5" />
                     메시지
@@ -586,7 +592,7 @@ const Community = () => {
               {selectedPost.user_id === user?.id && isRecruitPost(selectedPost.title, selectedPost.content) && (
                 <button
                   onClick={() => { setSelectedPost(null); navigate("/jobs"); }}
-                  className="mt-4 w-full flex items-center justify-between gap-2 p-3 rounded-xl bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors active:scale-[0.98] text-left"
+                  className="mt-4 w-full flex items-center justify-between gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors active:scale-[0.98] text-left"
                 >
                   <span className="text-xs">
                     <span className="font-semibold text-primary">이 글, 구인구직에 올리면 더 빨리 찾아요</span>
@@ -596,7 +602,7 @@ const Community = () => {
                 </button>
               )}
 
-              <div className="flex items-center gap-4 mt-5 pt-4 border-t border-border/30 pb-4">
+              <div className="flex items-center gap-4 mt-5 pt-4 border-t border-border pb-4">
                 <button
                   onClick={() => handleLike(selectedPost)}
                   className={`flex items-center gap-1.5 text-sm transition-colors ${selectedPost.liked ? "text-red-500" : "text-muted-foreground hover:text-primary"}`}
@@ -610,14 +616,14 @@ const Community = () => {
             </div>
 
             {/* Comments */}
-            <div className="flex-1 overflow-y-auto px-5 border-t border-border/30">
+            <div className="flex-1 overflow-y-auto px-5 border-t border-border">
               <p className="text-xs font-semibold text-muted-foreground mt-4 mb-3">댓글</p>
               {selectedPost.id ? (
                 comments.length > 0 ? (
                   <div className="space-y-3 pb-2">
                     {comments.map((c) => (
                       <div key={c.id} className="flex gap-2">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5">
+                        <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-[9px] font-bold text-secondary-foreground shrink-0 mt-0.5">
                           {c.author_name[0]}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -658,7 +664,7 @@ const Community = () => {
 
             {/* Comment Input */}
             {selectedPost.id && (
-              <div className="p-4 border-t border-border/30 flex gap-2">
+              <div className="p-4 border-t border-border flex gap-2">
                 <input
                   type="text"
                   value={newComment}

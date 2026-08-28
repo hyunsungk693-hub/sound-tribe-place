@@ -171,47 +171,47 @@ const PostDetail = () => {
 
   return (
     <PageShell>
-      <div className="pt-4 pb-24">
+      <div className="pt-4 pb-24 lg:max-w-[720px] lg:mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <button onClick={() => navigate(-1)} className="p-1.5 rounded-full hover:bg-secondary transition-colors">
+        <div className="flex items-center justify-between mb-6">
+          <button onClick={() => navigate(-1)} className="p-1.5 -ml-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
             {post.user_id === user?.id && !editing && (
               <>
-                <button onClick={() => { setEditTitle(post.title); setEditContent(post.content); setEditing(true); }} className="p-1.5 rounded-full hover:bg-secondary text-muted-foreground hover:text-primary transition-colors">
+                <button onClick={() => { setEditTitle(post.title); setEditContent(post.content); setEditing(true); }} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-primary transition-colors">
                   <Pencil className="w-4 h-4" />
                 </button>
-                <button onClick={handleDelete} className="p-1.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                <button onClick={handleDelete} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </>
             )}
-            <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">
+            <span className="font-mono text-[10.5px] font-bold tracking-wide px-2 py-1 rounded bg-secondary text-secondary-foreground">
               {post.category || postTypeLabel(post.post_type)}
             </span>
           </div>
         </div>
 
         {/* Author */}
-        <div className="flex items-center gap-2 mb-5">
+        <div className="flex items-center gap-2.5 mb-6">
           <div
-            className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-xs font-bold cursor-pointer"
+            className="w-10 h-10 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center text-sm font-extrabold cursor-pointer"
             onClick={() => navigate(`/profile/${post.user_id}`)}
           >
             {(post.author_name || "익")[0]}
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-medium cursor-pointer hover:text-primary transition-colors" onClick={() => navigate(`/profile/${post.user_id}`)}>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold tracking-tight cursor-pointer hover:text-primary transition-colors" onClick={() => navigate(`/profile/${post.user_id}`)}>
               {post.author_name || "익명"}
             </p>
-            <p className="text-[10px] text-muted-foreground">{new Date(post.created_at).toLocaleDateString("ko-KR")}</p>
+            <p className="text-[11px] text-muted-foreground font-mono tabular-nums mt-0.5">{new Date(post.created_at).toLocaleDateString("ko-KR")}</p>
           </div>
           {post.user_id !== user?.id && (
             <button
               onClick={() => navigate(`/messages?to=${post.user_id}`)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all"
+              className="flex items-center gap-1.5 px-3.5 h-9 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all"
             >
               <Mail className="w-3.5 h-3.5" /> 메시지
             </button>
@@ -230,46 +230,53 @@ const PostDetail = () => {
           </div>
         ) : (
           <>
-            <h1 className="text-lg font-bold mb-3">{post.title}</h1>
+            <h1 className="text-2xl lg:text-[28px] font-extrabold tracking-tight leading-tight mb-4">{post.title}</h1>
             {post.image_url && (
-              <div className="mb-3 rounded-lg overflow-hidden">
+              <div className="mb-4 rounded-lg overflow-hidden border border-border">
                 <img src={post.image_url} alt="" className="w-full max-h-72 object-cover" />
               </div>
             )}
             {/* Extra fields for jobs/rooms */}
-            {post.venue && <p className="text-xs text-muted-foreground mb-1">📍 {post.venue}</p>}
-            {post.pay && <p className="text-xs text-muted-foreground mb-1">💰 {post.pay}</p>}
-            {post.area && <p className="text-xs text-muted-foreground mb-1">📍 {post.area}</p>}
-            {post.price && <p className="text-xs text-muted-foreground mb-1">💰 {post.price}</p>}
-            {post.hours && <p className="text-xs text-muted-foreground mb-1">🕐 {post.hours}</p>}
-            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap mt-2">{post.content}</p>
+            {(post.venue || post.pay || post.area || post.price || post.hours) && (
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5 mb-4 text-[12.5px] text-muted-foreground font-medium">
+                {post.venue && <span className="flex items-center gap-1">📍 {post.venue}</span>}
+                {post.pay && <span className="flex items-center gap-1 font-mono tabular-nums">💰 {post.pay}</span>}
+                {post.area && <span className="flex items-center gap-1">📍 {post.area}</span>}
+                {post.price && <span className="flex items-center gap-1 font-mono tabular-nums">💰 {post.price}</span>}
+                {post.hours && <span className="flex items-center gap-1 font-mono tabular-nums">🕐 {post.hours}</span>}
+              </div>
+            )}
+            <p className="text-[15px] text-foreground/80 leading-relaxed whitespace-pre-wrap mt-2">{post.content}</p>
           </>
         )}
 
         {/* Like / Comment Count */}
-        <div className="flex items-center gap-4 mt-5 pt-4 border-t border-border/30">
-          <button onClick={handleLike} className={`flex items-center gap-1.5 text-sm transition-colors active:scale-95 ${liked ? "text-red-500" : "text-muted-foreground hover:text-primary"}`}>
+        <div className="flex items-center gap-5 mt-6 pt-5 border-t border-border">
+          <button onClick={handleLike} className={`flex items-center gap-1.5 text-sm font-mono tabular-nums transition-colors active:scale-95 ${liked ? "text-red-500" : "text-muted-foreground hover:text-primary"}`}>
             <Heart className={`w-4 h-4 ${liked ? "fill-red-500" : ""}`} /> {likeCount}
           </button>
-          <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <span className="flex items-center gap-1.5 text-sm font-mono tabular-nums text-muted-foreground">
             <MessageSquare className="w-4 h-4" /> {commentCount}
           </span>
         </div>
 
         {/* Comments */}
-        <div className="mt-5 border-t border-border/30 pt-4">
-          <p className="text-xs font-semibold text-muted-foreground mb-3">댓글</p>
+        <div className="mt-8">
+          <div className="flex items-baseline justify-between pb-3 border-b-2 border-foreground mb-2">
+            <h2 className="text-lg lg:text-[19px] font-extrabold tracking-tight">댓글</h2>
+            <span className="font-mono text-[12px] font-bold text-muted-foreground tabular-nums">{commentCount}</span>
+          </div>
           {comments.length > 0 ? (
-            <div className="space-y-3 mb-4">
+            <div>
               {comments.map((c) => (
-                <div key={c.id} className="flex gap-2">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5">
+                <div key={c.id} className="flex gap-3 py-4 border-b border-border last:border-b-0">
+                  <div className="w-8 h-8 rounded-lg bg-secondary text-secondary-foreground flex items-center justify-center text-xs font-extrabold shrink-0">
                     {c.author_name[0]}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium">{c.author_name}</span>
-                      <span className="text-[10px] text-muted-foreground">{new Date(c.created_at).toLocaleDateString("ko-KR")}</span>
+                      <span className="text-[13px] font-semibold tracking-tight">{c.author_name}</span>
+                      <span className="text-[10.5px] text-muted-foreground font-mono tabular-nums">{new Date(c.created_at).toLocaleDateString("ko-KR")}</span>
                       {user && c.user_id === user.id && (
                         <button
                           onClick={async () => {
@@ -278,33 +285,33 @@ const PostDetail = () => {
                             toast.success("댓글이 삭제되었습니다");
                             await fetchMeta();
                           }}
-                          className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+                          className="text-[10.5px] text-muted-foreground hover:text-destructive transition-colors ml-auto"
                         >
                           삭제
                         </button>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{c.content}</p>
+                    <p className="text-[13.5px] text-foreground/80 mt-1 leading-relaxed">{c.content}</p>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground text-center py-4">아직 댓글이 없습니다.</p>
+            <p className="text-[13px] text-muted-foreground text-center py-8">아직 댓글이 없습니다.</p>
           )}
         </div>
       </div>
 
       {/* Fixed comment input */}
-      <div className="fixed bottom-16 left-0 right-0 z-50 p-3 bg-background/95 backdrop-blur-sm border-t border-border/30">
-        <div className="max-w-lg mx-auto flex gap-2">
+      <div className="fixed bottom-16 lg:bottom-0 left-0 right-0 z-50 p-3 bg-background/95 backdrop-blur-sm border-t border-border">
+        <div className="max-w-[720px] mx-auto flex gap-2 px-1 lg:px-0">
           <input
             type="text"
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSubmitComment()}
             placeholder="댓글을 입력하세요..."
-            className="flex-1 h-10 px-3 rounded-lg border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="flex-1 h-10 px-3.5 rounded-lg border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           <button
             onClick={handleSubmitComment}

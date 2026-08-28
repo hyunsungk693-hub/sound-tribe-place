@@ -133,59 +133,62 @@ const Partner = () => {
 
   return (
     <PageShell title="사장님 콘솔">
-      <div className="lg:max-w-4xl lg:mx-auto space-y-5">
-        {/* 스튜디오 선택/등록 */}
-        <div className="glass-card p-4">
-          <h2 className="font-semibold text-sm mb-3 flex items-center gap-2"><Building2 className="w-4 h-4" /> 내 스튜디오</h2>
+      <div className="lg:max-w-[1000px] lg:mx-auto space-y-5">
+        {/* 스튜디오 선택/등록 — full width */}
+        <div className="glass-card p-4 lg:p-5">
+          <h2 className="font-bold text-base tracking-tight mb-3 flex items-center gap-2"><Building2 className="w-4 h-4 text-primary" /> 내 스튜디오</h2>
           {studios.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
               {studios.map((s) => (
-                <button key={s.id} onClick={() => setActive(s)} className={`px-3 py-1.5 rounded-lg text-xs font-medium ${active?.id === s.id ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
-                  {s.name} <span className="opacity-70">({s.tier})</span>
+                <button key={s.id} onClick={() => setActive(s)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${active?.id === s.id ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:border-primary"}`}>
+                  {s.name} <span className="font-mono opacity-70">({s.tier})</span>
                 </button>
               ))}
             </div>
           )}
-          <div className="grid grid-cols-2 gap-2">
-            <input value={sForm.name} onChange={(e) => setSForm({ ...sForm, name: e.target.value })} placeholder="스튜디오 이름 *" className="h-10 rounded-md border border-input bg-background px-3 text-sm col-span-2" />
-            <input value={sForm.address} onChange={(e) => setSForm({ ...sForm, address: e.target.value })} placeholder="주소" className="h-10 rounded-md border border-input bg-background px-3 text-sm" />
-            <input value={sForm.phone} onChange={(e) => setSForm({ ...sForm, phone: e.target.value })} placeholder="전화" className="h-10 rounded-md border border-input bg-background px-3 text-sm" />
-            <select value={sForm.tier} onChange={(e) => setSForm({ ...sForm, tier: e.target.value })} className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            <input value={sForm.name} onChange={(e) => setSForm({ ...sForm, name: e.target.value })} placeholder="스튜디오 이름 *" className="h-10 rounded-lg border border-input bg-background px-3 text-sm sm:col-span-2 lg:col-span-4" />
+            <input value={sForm.address} onChange={(e) => setSForm({ ...sForm, address: e.target.value })} placeholder="주소" className="h-10 rounded-lg border border-input bg-background px-3 text-sm" />
+            <input value={sForm.phone} onChange={(e) => setSForm({ ...sForm, phone: e.target.value })} placeholder="전화" className="h-10 rounded-lg border border-input bg-background px-3 text-sm" />
+            <select value={sForm.tier} onChange={(e) => setSForm({ ...sForm, tier: e.target.value })} className="h-10 rounded-lg border border-input bg-background px-3 text-sm">
               <option value="A">A · 즉시예약</option>
               <option value="B">B · 요청예약</option>
               <option value="C">C · 정보</option>
             </select>
-            <button onClick={createStudio} className="h-10 rounded-md bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-1"><Plus className="w-4 h-4" />등록</button>
+            <button onClick={createStudio} className="h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-1 active:scale-95 transition-transform"><Plus className="w-4 h-4" />등록</button>
           </div>
         </div>
 
         {active && (
-          <>
+          <div className="lg:grid lg:grid-cols-2 lg:gap-5 lg:items-start space-y-5 lg:space-y-0">
+           {/* 좌측 컬럼: 합주실 + 슬롯 */}
+           <div className="space-y-5">
             {/* 합주실 */}
-            <div className="glass-card p-4">
-              <h2 className="font-semibold text-sm mb-3">합주실</h2>
+            <div className="glass-card p-4 lg:p-5">
+              <h2 className="font-bold text-base tracking-tight mb-3">합주실</h2>
               {rooms.map((r) => (
-                <div key={r.id} className="text-sm py-1 border-b border-border/30 last:border-0">
-                  {r.name} · {fmtWon(r.hourly_price)}/시간{r.capacity ? ` · ${r.capacity}명` : ""}
+                <div key={r.id} className="text-sm py-2 border-b border-border last:border-0 flex items-center justify-between gap-2">
+                  <span className="font-semibold tracking-tight truncate">{r.name}</span>
+                  <span className="font-mono text-[12px] text-muted-foreground tabular-nums shrink-0">{fmtWon(r.hourly_price)}/시간{r.capacity ? ` · ${r.capacity}명` : ""}</span>
                 </div>
               ))}
               <div className="grid grid-cols-3 gap-2 mt-3">
-                <input value={rForm.name} onChange={(e) => setRForm({ ...rForm, name: e.target.value })} placeholder="방 이름 *" className="h-10 rounded-md border border-input bg-background px-3 text-sm" />
-                <input value={rForm.hourly_price} onChange={(e) => setRForm({ ...rForm, hourly_price: e.target.value })} placeholder="시간당 원" type="number" className="h-10 rounded-md border border-input bg-background px-3 text-sm" />
-                <input value={rForm.capacity} onChange={(e) => setRForm({ ...rForm, capacity: e.target.value })} placeholder="정원" type="number" className="h-10 rounded-md border border-input bg-background px-3 text-sm" />
+                <input value={rForm.name} onChange={(e) => setRForm({ ...rForm, name: e.target.value })} placeholder="방 이름 *" className="h-10 rounded-lg border border-input bg-background px-3 text-sm" />
+                <input value={rForm.hourly_price} onChange={(e) => setRForm({ ...rForm, hourly_price: e.target.value })} placeholder="시간당 원" type="number" className="h-10 rounded-lg border border-input bg-background px-3 text-sm" />
+                <input value={rForm.capacity} onChange={(e) => setRForm({ ...rForm, capacity: e.target.value })} placeholder="정원" type="number" className="h-10 rounded-lg border border-input bg-background px-3 text-sm" />
               </div>
-              <button onClick={createRoom} className="mt-2 w-full h-10 rounded-md bg-secondary text-secondary-foreground text-sm font-medium flex items-center justify-center gap-1"><Plus className="w-4 h-4" />합주실 추가</button>
+              <button onClick={createRoom} className="mt-2 w-full h-10 rounded-lg border border-border text-sm font-semibold flex items-center justify-center gap-1 hover:bg-surface-hover active:scale-95 transition-all"><Plus className="w-4 h-4" />합주실 추가</button>
             </div>
 
             {/* 슬롯 */}
-            <div className="glass-card p-4">
-              <h2 className="font-semibold text-sm mb-3 flex items-center gap-2"><CalendarPlus className="w-4 h-4" /> 예약 가능 슬롯</h2>
+            <div className="glass-card p-4 lg:p-5">
+              <h2 className="font-bold text-base tracking-tight mb-3 flex items-center gap-2"><CalendarPlus className="w-4 h-4 text-primary" /> 예약 가능 슬롯</h2>
               {rooms.map((r) => (
-                <div key={r.id} className="mb-2">
-                  <p className="text-xs font-semibold text-muted-foreground mb-1">{r.name}</p>
+                <div key={r.id} className="mb-3">
+                  <p className="font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">{r.name}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {(slots[r.id] || []).map((s) => (
-                      <span key={s.id} className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded ${s.is_open ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground line-through"}`}>
+                      <span key={s.id} className={`flex items-center gap-1 font-mono text-[11px] tabular-nums px-2 py-1 rounded ${s.is_open ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground line-through"}`}>
                         {new Date(s.start_at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                         <button onClick={() => delSlot(s.id)}><Trash2 className="w-3 h-3" /></button>
                       </span>
@@ -195,62 +198,66 @@ const Partner = () => {
                 </div>
               ))}
               <div className="space-y-2 mt-3">
-                <select value={slotForm.roomId} onChange={(e) => setSlotForm({ ...slotForm, roomId: e.target.value })} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
+                <select value={slotForm.roomId} onChange={(e) => setSlotForm({ ...slotForm, roomId: e.target.value })} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm">
                   <option value="">합주실 선택</option>
                   {rooms.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
                 <div>
-                  <label className="text-[11px] text-muted-foreground mb-1 block">날짜</label>
-                  <input type="date" value={slotForm.date} onChange={(e) => setSlotForm({ ...slotForm, date: e.target.value })} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm" />
+                  <label className="font-mono text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground mb-1 block">날짜</label>
+                  <input type="date" value={slotForm.date} onChange={(e) => setSlotForm({ ...slotForm, date: e.target.value })} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[11px] text-muted-foreground mb-1 block">시작 시간</label>
-                    <select value={slotForm.start} onChange={(e) => setSlotForm({ ...slotForm, start: e.target.value })} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
+                    <label className="font-mono text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground mb-1 block">시작 시간</label>
+                    <select value={slotForm.start} onChange={(e) => setSlotForm({ ...slotForm, start: e.target.value })} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm">
                       <option value="">선택</option>
                       {timeOptions.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-[11px] text-muted-foreground mb-1 block">이용 시간</label>
-                    <select value={slotForm.duration} onChange={(e) => setSlotForm({ ...slotForm, duration: e.target.value })} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
+                    <label className="font-mono text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground mb-1 block">이용 시간</label>
+                    <select value={slotForm.duration} onChange={(e) => setSlotForm({ ...slotForm, duration: e.target.value })} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm">
                       {["1", "2", "3", "4"].map((h) => <option key={h} value={h}>{h}시간</option>)}
                     </select>
                   </div>
                 </div>
               </div>
-              <button onClick={addSlot} className="mt-2 w-full h-10 rounded-md bg-secondary text-secondary-foreground text-sm font-medium flex items-center justify-center gap-1"><Plus className="w-4 h-4" />슬롯 열기</button>
+              <button onClick={addSlot} className="mt-2 w-full h-10 rounded-lg border border-border text-sm font-semibold flex items-center justify-center gap-1 hover:bg-surface-hover active:scale-95 transition-all"><Plus className="w-4 h-4" />슬롯 열기</button>
             </div>
+           </div>
 
+           {/* 우측 컬럼: PIN + 예약 현황 */}
+           <div className="space-y-5">
             {/* PIN 풀 */}
-            <div className="glass-card p-4">
-              <h2 className="font-semibold text-sm mb-3 flex items-center gap-2"><KeyRound className="w-4 h-4" /> 도어락 PIN 풀 ({pins.filter((p) => !p.used).length}개 사용가능)</h2>
+            <div className="glass-card p-4 lg:p-5">
+              <h2 className="font-bold text-base tracking-tight mb-3 flex items-center gap-2"><KeyRound className="w-4 h-4 text-primary" /> 도어락 PIN 풀 <span className="font-mono text-xs font-semibold text-muted-foreground">({pins.filter((p) => !p.used).length}개 사용가능)</span></h2>
               <div className="flex gap-2">
-                <input value={pinInput} onChange={(e) => setPinInput(e.target.value)} placeholder="PIN (쉼표로 여러 개)" className="flex-1 h-10 rounded-md border border-input bg-background px-3 text-sm" />
-                <button onClick={addPin} className="px-4 h-10 rounded-md bg-secondary text-secondary-foreground text-sm font-medium">추가</button>
+                <input value={pinInput} onChange={(e) => setPinInput(e.target.value)} placeholder="PIN (쉼표로 여러 개)" className="flex-1 h-10 rounded-lg border border-input bg-background px-3 text-sm" />
+                <button onClick={addPin} className="px-4 h-10 rounded-lg border border-border text-sm font-semibold hover:bg-surface-hover active:scale-95 transition-all">추가</button>
               </div>
             </div>
 
             {/* 예약 현황 */}
-            <div className="glass-card p-4">
-              <h2 className="font-semibold text-sm mb-3">예약 현황 ({bookings.length})</h2>
-              {bookings.length === 0 && <p className="text-xs text-muted-foreground">예약이 없습니다.</p>}
+            <div className="glass-card p-4 lg:p-5">
+              <h2 className="font-bold text-base tracking-tight mb-3">예약 현황 <span className="font-mono text-xs font-semibold text-muted-foreground tabular-nums">({bookings.length})</span></h2>
+              {bookings.length === 0 && <p className="text-xs text-muted-foreground py-2">예약이 없습니다.</p>}
               {bookings.map((b) => (
-                <div key={b.id} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
+                <div key={b.id} className="flex items-center justify-between py-3 border-b border-border last:border-0 gap-2">
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold truncate">{roomName(b.room_id)} · {fmtWon(b.amount)}</p>
-                    <p className="text-[11px] text-muted-foreground">{new Date(b.created_at).toLocaleDateString("ko-KR")} · {statusLabel[b.status] || b.status}</p>
+                    <p className="text-[13px] font-semibold tracking-tight truncate">{roomName(b.room_id)} · <span className="font-mono tabular-nums">{fmtWon(b.amount)}</span></p>
+                    <p className="text-[11px] text-muted-foreground font-mono tabular-nums mt-0.5">{new Date(b.created_at).toLocaleDateString("ko-KR")} · {statusLabel[b.status] || b.status}</p>
                   </div>
                   {b.status === "confirmed" && (
                     <div className="flex gap-1 shrink-0">
-                      <button onClick={() => markBooking(b, "completed")} className="text-[11px] px-2 py-1 rounded bg-primary/10 text-primary font-medium">완료</button>
-                      <button onClick={() => markBooking(b, "no_show")} className="text-[11px] px-2 py-1 rounded bg-destructive/10 text-destructive font-medium">노쇼</button>
+                      <button onClick={() => markBooking(b, "completed")} className="text-[11px] px-2 py-1 rounded bg-primary/10 text-primary font-semibold">완료</button>
+                      <button onClick={() => markBooking(b, "no_show")} className="text-[11px] px-2 py-1 rounded bg-destructive/10 text-destructive font-semibold">노쇼</button>
                     </div>
                   )}
                 </div>
               ))}
             </div>
-          </>
+           </div>
+          </div>
         )}
       </div>
     </PageShell>
