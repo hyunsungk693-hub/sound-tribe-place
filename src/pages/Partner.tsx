@@ -24,7 +24,7 @@ const Partner = () => {
 
   const [sForm, setSForm] = useState({ name: "", address: "", phone: "", description: "", tier: "A" });
   const [rForm, setRForm] = useState({ name: "", hourly_price: "", capacity: "" });
-  const [slotForm, setSlotForm] = useState<{ roomId: string; date: string; start: string; end: string }>({ roomId: "", date: "", start: "", end: "" });
+  const [slotForm, setSlotForm] = useState<{ roomId: string; date: string; start: string; duration: string }>({ roomId: "", date: "", start: "", duration: "2" });
   const [pinInput, setPinInput] = useState("");
 
   const loadStudios = useCallback(async () => {
@@ -82,15 +82,29 @@ const Partner = () => {
   };
 
   const addSlot = async () => {
-    const { roomId, date, start, end } = slotForm;
-    if (!roomId || !date || !start || !end) return toast.error("합주실·날짜·시간을 입력하세요");
-    const startAt = new Date(`${date}T${start}`).toISOString();
-    const endAt = new Date(`${date}T${end}`).toISOString();
-    const { error } = await db.from("room_slots").insert({ room_id: roomId, start_at: startAt, end_at: endAt });
+    const { roomId, date, start, duration } = slotForm;
+    if (!roomId || !date || !start) return toast.error("합주실·날짜·시작 시간을 선택하세요");
+    const startAt = new Date(`${date}T${start}:00`);
+    const endAt = new Date(startAt.getTime() + Number(duration) * 60 * 60 * 1000);
+    const { error } = await db.from("room_slots").insert({ room_id: roomId, start_at: startAt.toISOString(), end_at: endAt.toISOString() });
     if (error) return toast.error(error.message.includes("overlap") || error.message.includes("exclu") ? "겹치는 슬롯이 있습니다" : "슬롯 추가 실패");
     toast.success("슬롯 추가됨");
+    setSlotForm((f) => ({ ...f, start: "" }));
     if (active) loadStudioDetail(active);
   };
+
+  // 06:00~23:30, 30분 간격 시작시각 옵션 (오전/오후 한국어 라벨)
+  const timeOptions = (() => {
+    const out: { value: string; label: string }[] = [];
+    for (let h = 6; h <= 23; h++) {
+      for (const m of [0, 30]) {
+        const ampm = h < 12 ? "오전" : "오후";
+        let hh = h % 12; if (hh === 0) hh = 12;
+        out.push({ value: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`, label: `${ampm} ${hh}:${String(m).padStart(2, "0")}` });
+      }
+    }
+    return out;
+  })();
 
   const delSlot = async (id: string) => {
     await db.from("room_slots").delete().eq("id", id);
@@ -180,14 +194,30 @@ const Partner = () => {
                   </div>
                 </div>
               ))}
-              <div className="grid grid-cols-4 gap-2 mt-3">
-                <select value={slotForm.roomId} onChange={(e) => setSlotForm({ ...slotForm, roomId: e.target.value })} className="h-10 rounded-md border border-input bg-background px-2 text-xs col-span-4">
+              <div className="space-y-2 mt-3">
+                <select value={slotForm.roomId} onChange={(e) => setSlotForm({ ...slotForm, roomId: e.target.value })} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
                   <option value="">합주실 선택</option>
                   {rooms.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
-                <input type="date" value={slotForm.date} onChange={(e) => setSlotForm({ ...slotForm, date: e.target.value })} className="h-10 rounded-md border border-input bg-background px-2 text-xs col-span-2" />
-                <input type="time" value={slotForm.start} onChange={(e) => setSlotForm({ ...slotForm, start: e.target.value })} className="h-10 rounded-md border border-input bg-background px-2 text-xs" />
-                <input type="time" value={slotForm.end} onChange={(e) => setSlotForm({ ...slotForm, end: e.target.value })} className="h-10 rounded-md border border-input bg-background px-2 text-xs" />
+                <div>
+                  <label className="text-[11px] text-muted-foreground mb-1 block">날짜</label>
+                  <input type="date" value={slotForm.date} onChange={(e) => setSlotForm({ ...slotForm, date: e.target.value })} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[11px] text-muted-foreground mb-1 block">시작 시간</label>
+                    <select value={slotForm.start} onChange={(e) => setSlotForm({ ...slotForm, start: e.target.value })} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
+                      <option value="">선택</option>
+                      {timeOptions.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-muted-foreground mb-1 block">이용 시간</label>
+                    <select value={slotForm.duration} onChange={(e) => setSlotForm({ ...slotForm, duration: e.target.value })} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
+                      {["1", "2", "3", "4"].map((h) => <option key={h} value={h}>{h}시간</option>)}
+                    </select>
+                  </div>
+                </div>
               </div>
               <button onClick={addSlot} className="mt-2 w-full h-10 rounded-md bg-secondary text-secondary-foreground text-sm font-medium flex items-center justify-center gap-1"><Plus className="w-4 h-4" />슬롯 열기</button>
             </div>
