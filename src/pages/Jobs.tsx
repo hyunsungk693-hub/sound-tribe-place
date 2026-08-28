@@ -148,7 +148,7 @@ const Jobs = () => {
     if (target && selectedJob) {
       const label = status === "accepted" ? "✅ 합격" : status === "rejected" ? "❌ 불합격" : "🔍 검토중";
       const { sendPushTo } = await import("@/lib/push");
-      sendPushTo({ userId: target.user_id, title: `${label} 알림`, body: `"${selectedJob.title}" 지원 상태가 변경되었습니다.`, url: `/post/${selectedJob.id}`, tag: `app-${appId}` });
+      sendPushTo({ type: "apply_status", userId: target.user_id, jobId: String(selectedJob.id), status });
     }
   };
 
@@ -245,7 +245,7 @@ const Jobs = () => {
     if (applyTarget.user_id && applyTarget.user_id !== user.id) {
       const actor = user.user_metadata?.full_name || user.email?.split("@")[0] || "지원자";
       const { sendPushTo } = await import("@/lib/push");
-      sendPushTo({ userId: applyTarget.user_id, title: `📩 새 지원자: ${actor}`, body: `"${applyTarget.title}" 공고에 지원했습니다.`, url: "/jobs", tag: `apply-${applyTarget.id}` });
+      sendPushTo({ type: "new_applicant", userId: applyTarget.user_id, jobId: String(applyTarget.id) });
     }
     setApplyTarget(null);
     setApplyMessage("");

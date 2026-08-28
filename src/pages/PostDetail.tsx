@@ -80,7 +80,7 @@ const PostDetail = () => {
           post_title: post.title,
         } as any);
         const { sendPushTo } = await import("@/lib/push");
-        sendPushTo({ userId: post.user_id, title: `❤️ ${actor}님이 좋아요`, body: post.title, url: `/post/${postId}`, tag: `like-${postId}` });
+        sendPushTo({ type: "like", userId: post.user_id, postId: String(postId) });
       }
     }
     await fetchMeta();
@@ -111,7 +111,7 @@ const PostDetail = () => {
           post_title: post.title,
         } as any);
         const { sendPushTo } = await import("@/lib/push");
-        sendPushTo({ userId: post.user_id, title: `💬 ${actor}님의 댓글`, body: newComment.trim().slice(0, 120), url: `/post/${postId}`, tag: `cmt-${postId}` });
+        sendPushTo({ type: "comment", userId: post.user_id, postId: String(postId) });
       }
       await fetchMeta();
     }

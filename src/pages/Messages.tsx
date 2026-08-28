@@ -410,13 +410,7 @@ const Messages = () => {
     const otherId = selectedConv.otherUserId;
     if (otherId) {
       const { sendPushTo } = await import("@/lib/push");
-      sendPushTo({
-        userId: otherId,
-        title: `💬 ${user.user_metadata?.full_name || user.email?.split("@")[0] || "새 메시지"}`,
-        body: (newMsg.trim() || (fileData ? `📎 ${fileData.name}` : "새 메시지가 도착했습니다")).slice(0, 120),
-        url: "/messages",
-        tag: `msg-${selectedConv.id}`,
-      });
+      sendPushTo({ type: "message", userId: otherId });
     }
 
     setNewMsg("");

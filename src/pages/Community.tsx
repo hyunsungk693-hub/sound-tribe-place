@@ -227,7 +227,7 @@ const Community = () => {
           post_title: post.title,
         } as any);
         const { sendPushTo } = await import("@/lib/push");
-        sendPushTo({ userId: ownerPost.user_id, title: `❤️ ${actor}님이 좋아요`, body: post.title, url: `/post/${post.id}`, tag: `like-${post.id}` });
+        sendPushTo({ type: "like", userId: ownerPost.user_id, postId: String(post.id) });
       }
     }
 
@@ -293,7 +293,7 @@ const Community = () => {
           post_title: selectedPost.title,
         } as any);
         const { sendPushTo } = await import("@/lib/push");
-        sendPushTo({ userId: ownerPost.user_id, title: `💬 ${actor}님의 댓글`, body: newComment.trim().slice(0, 120), url: `/post/${selectedPost.id}`, tag: `cmt-${selectedPost.id}` });
+        sendPushTo({ type: "comment", userId: ownerPost.user_id, postId: String(selectedPost.id) });
       }
     }
     setSubmittingComment(false);

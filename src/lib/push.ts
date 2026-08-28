@@ -67,13 +67,14 @@ export async function disablePushNotifications() {
   }
 }
 
-export async function sendPushTo(params: {
-  userId: string;
-  title: string;
-  body?: string;
-  url?: string;
-  tag?: string;
-}) {
+// 알림 제목·본문·링크는 서버가 구성한다. 클라이언트는 종류와 대상 식별자만 넘긴다.
+type PushRequest =
+  | { type: "message"; userId: string }
+  | { type: "like" | "comment"; userId: string; postId: string }
+  | { type: "new_applicant"; userId: string; jobId: string }
+  | { type: "apply_status"; userId: string; jobId: string; status: string };
+
+export async function sendPushTo(params: PushRequest) {
   try {
     await supabase.functions.invoke("send-push", { body: params });
   } catch (e) {

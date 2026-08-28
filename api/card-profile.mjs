@@ -36,7 +36,14 @@ export async function fetchCardData(handle) {
 
 // 아바타를 data URI로 (satori에 원격 URL 대신 버퍼 전달 — 실패 시 null)
 async function fetchAvatarDataUri(url) {
-  if (!url || !/^https?:\/\//.test(url)) return null;
+  if (!url) return null;
+  // SSRF 방어: Supabase storage 호스트만 허용 (내부망·메타데이터 URL fetch 차단)
+  try {
+    const host = new URL(url).hostname;
+    if (!host.endsWith(".supabase.co")) return null;
+  } catch {
+    return null;
+  }
   try {
     const res = await fetch(url);
     if (!res.ok) return null;

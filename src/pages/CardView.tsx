@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Download, Link2, User, ArrowLeft, Play } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { safeVideoUrl } from "@/lib/safeUrl";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 // dak.gg 카드 페이지처럼: 카드 단독 출력 + 이미지 저장 + 링크 공유
@@ -33,7 +34,7 @@ const CardView = () => {
         .maybeSingle();
       if (!data) { setNotFound(true); return; }
       setName(data.display_name || "instrut 음악인");
-      setVideoUrl(data.video_url || null);
+      setVideoUrl(safeVideoUrl(data.video_url));
       const { data: st } = await (supabase as any)
         .from("user_stats")
         .select("updated_at")

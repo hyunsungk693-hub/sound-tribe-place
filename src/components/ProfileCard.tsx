@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { safeVideoUrl } from "@/lib/safeUrl";
 import { useNavigate } from "react-router-dom";
 import { MapPin, Music, Award, PlayCircle, Sparkles, Clock, Instagram, Zap, ShieldCheck, CircleDot } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,9 +59,12 @@ export function isInstagramUrl(url: string): boolean {
 const purposeLabel = (p?: string | null) =>
   p === "pro" ? "프로" : p === "hobby" ? "취미" : null;
 
-const VideoEmbed = ({ url }: { url: string }) => {
+const VideoEmbed = ({ url: rawUrl }: { url: string }) => {
   const [playing, setPlaying] = useState(false);
-  const ytId = parseYouTubeId(url);
+  // 저장형 XSS 방어: 허용 호스트(YouTube/Instagram)가 아니면 렌더하지 않음
+  const url = safeVideoUrl(rawUrl);
+  const ytId = url ? parseYouTubeId(url) : null;
+  if (!url) return null;
 
   if (ytId) {
     return (
