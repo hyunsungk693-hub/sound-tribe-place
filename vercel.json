@@ -1,6 +1,9 @@
 {
   "rewrites": [
-    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
     {
       "source": "/post/:id",
       "has": [
@@ -23,6 +26,14 @@
       ],
       "destination": "/api/profile-prerender?handle=:handle"
     },
-    { "source": "/((?!api/|assets/|sw\\.js|manifest\\.webmanifest|workbox-|favicon|pwa-|apple-touch-icon|robots\\.txt|og-image\\.png|sitemap\\.xml).*)", "destination": "/index.html" }
-  ]
+    {
+      "source": "/((?!api/|assets/|sw\\.js|manifest\\.webmanifest|workbox-|favicon|pwa-|apple-touch-icon|robots\\.txt|og-image\\.png|sitemap\\.xml).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "functions": {
+    "api/og-profile.mjs": {
+      "includeFiles": "node_modules/**/*.wasm"
+    }
+  }
 }
