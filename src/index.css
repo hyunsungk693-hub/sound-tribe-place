@@ -89,6 +89,14 @@
     }
   }
 
+  /* PC 가독성: 데스크톱에서 루트 폰트를 키워 rem 기반 텍스트·간격을 전역 확대 */
+  @media (min-width: 1024px) {
+    html { font-size: 17.5px; }
+  }
+  @media (min-width: 1440px) {
+    html { font-size: 18px; }
+  }
+
   * {
     @apply border-border;
   }

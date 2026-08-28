@@ -120,9 +120,9 @@ const NotificationsPanel = ({ open, onClose }: Props) => {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center lg:p-8" onClick={onClose}>
       <div
-        className="w-full max-w-lg bg-background rounded-t-2xl lg:rounded-2xl max-h-[75vh] flex flex-col animate-in slide-in-from-bottom duration-300"
+        className="w-full max-w-lg bg-background rounded-t-2xl lg:rounded-2xl flex flex-col animate-in slide-in-from-bottom lg:zoom-in-95 lg:slide-in-from-bottom-0 duration-300 max-h-sheet lg:max-h-full lg:shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-5 pb-3 border-b border-border/30">

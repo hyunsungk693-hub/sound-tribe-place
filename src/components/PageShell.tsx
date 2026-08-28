@@ -23,7 +23,7 @@ const PageShell = ({ children, title, headerExtra }: PageShellProps) => (
       </header>
     )}
     {/* 모바일: 하단 고정 탭바 높이만큼 여백 / 데스크톱: 일반 여백 */}
-    <main className="page-main-pb flex-1 max-w-lg lg:max-w-5xl w-full mx-auto px-4 lg:px-6 pt-4">
+    <main className="page-main-pb flex-1 max-w-lg lg:max-w-5xl w-full mx-auto px-4 lg:px-8 pt-4 lg:pt-8">
       {children}
     </main>
     <CreatePostFab />

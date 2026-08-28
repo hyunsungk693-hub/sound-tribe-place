@@ -115,11 +115,11 @@ const Index = () => {
         <div className="relative overflow-hidden rounded-2xl">
           <div className="flex transition-transform duration-500 ease-out" style={{ transform: `translateX(-${currentBanner * 100}%)` }}>
             {adBanners.map((banner, i) => (
-              <div key={i} onClick={() => navigate(banner.path)} className="w-full shrink-0 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform min-h-[140px]">
+              <div key={i} onClick={() => navigate(banner.path)} className="w-full shrink-0 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform min-h-[210px] lg:min-h-[280px]">
                 <img src={banner.image} alt={banner.title} className="w-full h-full object-cover absolute inset-0" loading="lazy" />
-                <div className="relative z-10 p-5 flex flex-col justify-end min-h-[140px] bg-gradient-to-t from-black/60 to-transparent">
-                  <p className="text-xs text-white/80">{banner.title}</p>
-                  <p className="font-bold text-lg text-white leading-tight">{banner.desc}</p>
+                <div className="relative z-10 p-6 lg:p-8 flex flex-col justify-end min-h-[210px] lg:min-h-[280px] bg-gradient-to-t from-black/65 to-transparent">
+                  <p className="text-xs lg:text-sm text-white/80">{banner.title}</p>
+                  <p className="font-bold text-xl lg:text-2xl text-white leading-tight">{banner.desc}</p>
                 </div>
               </div>
             ))}
