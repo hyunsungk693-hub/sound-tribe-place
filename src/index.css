@@ -265,3 +265,12 @@
   .hold-menu-item { animation: fade-in 0.15s ease both; }
   .hold-menu-item.closing { animation: fade-out 0.12s ease both; }
 }
+
+/* 토스트(sonner) 위치: 모바일은 상태바·노치(safe-area) 아래, 데스크톱은 상단 내비 아래로 내려 잘림 방지 */
+[data-sonner-toaster] {
+  --offset-top: 20px;
+  --mobile-offset-top: calc(env(safe-area-inset-top, 0px) + 16px);
+}
+@media (min-width: 1024px) {
+  [data-sonner-toaster] { --offset-top: 84px; }
+}
