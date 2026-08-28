@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronRight, Music, Award, Edit3, Shield, HelpCircle, LogOut, Trash2, Sun, Moon, Calendar, MapPin, Users, Clock, History } from "lucide-react";
+import { ChevronRight, Music, Award, Edit3, Shield, HelpCircle, LogOut, Trash2, Sun, Moon, Calendar, MapPin, Users, Clock, History, IdCard } from "lucide-react";
 import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -200,6 +200,17 @@ const ProfilePage = () => {
               {profile?.location || "위치를 설정해주세요"}
             </p>
           </div>
+          <button
+            onClick={() => {
+              const h = (profile as any)?.handle;
+              if (h) navigate(`/u/${h}/card`);
+              else { toast.error("먼저 프로필 편집에서 핸들을 설정해주세요"); setEditOpen(true); }
+            }}
+            className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center hover:bg-surface-hover transition-colors active:scale-95"
+            aria-label="내 소개 카드"
+          >
+            <IdCard className="w-4 h-4 text-muted-foreground" />
+          </button>
           <button
             onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
             className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center hover:bg-surface-hover transition-colors active:scale-95"

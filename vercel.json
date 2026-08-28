@@ -16,6 +16,17 @@
       "destination": "/api/post-prerender?id=:id"
     },
     {
+      "source": "/u/:handle/card",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(bot|crawler|spider|facebookexternalhit|kakaotalk|twitterbot|slackbot|discordbot|telegrambot|whatsapp).*"
+        }
+      ],
+      "destination": "/api/profile-prerender?handle=:handle&card=1"
+    },
+    {
       "source": "/u/:handle",
       "has": [
         {
@@ -33,6 +44,9 @@
   ],
   "functions": {
     "api/og-profile.mjs": {
+      "includeFiles": "node_modules/**/*.wasm"
+    },
+    "api/card-profile.mjs": {
       "includeFiles": "node_modules/**/*.wasm"
     }
   }

@@ -16,7 +16,7 @@ const esc = (s) =>
     .replace(/"/g, "&quot;");
 
 // 순수 함수: 프로필 → 봇용 HTML (node로 직접 검증 가능)
-export function buildProfileHtml(profile, handle) {
+export function buildProfileHtml(profile, handle, isCard = false) {
   const found = !!profile;
   const name = profile?.display_name || "instrut 음악인";
   const inst = profile?.instruments?.[0] || null;
@@ -26,8 +26,12 @@ export function buildProfileHtml(profile, handle) {
   const desc = found
     ? `${name}님의 음악인 프로필 — 믿을 수 있는 밴드·세션 멤버를 찾고, 첫 합주까지 바로 잡는 곳, instrut에서 확인하세요.`
     : "믿을 수 있는 밴드·세션 멤버를 찾고, 첫 합주까지 바로 잡는 곳 — 음악인 구인구직·연습실 예약·커뮤니티";
-  const image = found ? `${SITE}/api/og-profile?handle=${encodeURIComponent(handle)}` : `${SITE}/og-image.png`;
-  const url = `${SITE}/u/${encodeURIComponent(handle)}`;
+  const image = found
+    ? isCard
+      ? `${SITE}/api/card-profile?handle=${encodeURIComponent(handle)}`
+      : `${SITE}/api/og-profile?handle=${encodeURIComponent(handle)}`
+    : `${SITE}/og-image.png`;
+  const url = `${SITE}/u/${encodeURIComponent(handle)}${isCard ? "/card" : ""}`;
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -71,7 +75,7 @@ export default async function handler(req, res) {
     const profile = handle ? await fetchProfileByHandle(handle) : null;
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Cache-Control", "s-maxage=600, stale-while-revalidate=3600");
-    res.status(profile ? 200 : 404).send(buildProfileHtml(profile, handle));
+    res.status(profile ? 200 : 404).send(buildProfileHtml(profile, handle, String(req.query?.card) === "1"));
   } catch (e) {
     res.status(500).send("prerender failed");
   }

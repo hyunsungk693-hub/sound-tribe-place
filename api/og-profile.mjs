@@ -5,7 +5,7 @@
 
 // satori/resvg(네이티브 바이너리)는 런타임 환경에 따라 로드가 실패할 수 있어
 // 지연 임포트한다 — 실패 시 핸들러의 302 폴백(정적 og-image.png)이 동작하도록.
-async function loadRenderers() {
+export async function loadRenderers() {
   const [{ default: satori }, { Resvg }] = await Promise.all([
     import("satori"),
     import("@resvg/resvg-js"),

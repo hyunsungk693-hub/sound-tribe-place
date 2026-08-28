@@ -55,8 +55,16 @@ const PublicProfile = () => {
             {/* stats는 미전달 → full 카드가 user_stats를 단건 조회해 신뢰 영역·배지를 점등 */}
             <ProfileCard profile={profile} variant="full" clickable={false} />
 
+            {/* 카드 보기 */}
+            <button
+              onClick={() => navigate(`/u/${profile.handle}/card`)}
+              className="mt-4 w-full h-11 rounded-xl bg-card border border-border text-sm font-medium hover:bg-surface-hover active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            >
+              🪪 소개 카드 보기
+            </button>
+
             {/* CTA */}
-            <div className="mt-4">
+            <div className="mt-3">
               {user ? (
                 user.id !== profile.user_id && (
                   <button
