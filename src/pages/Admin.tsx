@@ -279,19 +279,22 @@ type Totals = {
 const MetricsPanel = () => {
   const [totals, setTotals] = useState<Totals | null>(null);
   const [daily, setDaily] = useState<DailyMetric[]>([]);
+  const [adv, setAdv] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const [t, d] = await Promise.all([
+      const [t, d, a] = await Promise.all([
         (supabase as any).rpc("get_hook_totals"),
         (supabase as any).rpc("get_hook_metrics", { days: 30 }),
+        (supabase as any).rpc("get_advanced_metrics"),
       ]);
       if (t.error || d.error) {
         toast.error("지표를 불러오지 못했습니다. 마이그레이션이 적용됐는지 확인하세요.");
       } else {
         setTotals(t.data as Totals);
         setDaily((d.data as DailyMetric[]) || []);
+        if (!a.error) setAdv(a.data);
       }
       setLoading(false);
     })();
@@ -355,6 +358,34 @@ const MetricsPanel = () => {
           </LineChart>
         </ResponsiveContainer>
       </Card>
+
+      {adv && (
+        <Card className="p-3">
+          <h3 className="text-sm font-semibold mb-2">핵심 지표 (W12 · Kill/Go)</h3>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="p-2.5 rounded-lg bg-primary/5">
+              <p className="text-[11px] text-muted-foreground">NSM · 첫 합주(근사)</p>
+              <p className="text-xl font-bold tabular-nums text-primary">{adv.nsm_accepted_matches}</p>
+              <p className="text-[10px] text-muted-foreground">주간 +{adv.weekly_accepted_matches} · 수락된 지원</p>
+            </div>
+            <div className="p-2.5 rounded-lg bg-secondary/50">
+              <p className="text-[11px] text-muted-foreground">커뮤 → 구인 전환</p>
+              <p className="text-xl font-bold tabular-nums">{adv.community_to_job_rate != null ? `${Math.round(adv.community_to_job_rate * 100)}%` : "–"}</p>
+              <p className="text-[10px] text-muted-foreground">{adv.community_to_job_authors}/{adv.community_authors}명</p>
+            </div>
+            <div className="p-2.5 rounded-lg bg-secondary/50">
+              <p className="text-[11px] text-muted-foreground">누적 합주 후기</p>
+              <p className="text-xl font-bold tabular-nums">{adv.total_ratings}</p>
+              <p className="text-[10px] text-muted-foreground">주간 +{adv.weekly_ratings}{adv.avg_would_again != null ? ` · 재합주 ${Math.round(adv.avg_would_again * 100)}%` : ""}</p>
+            </div>
+            <div className="p-2.5 rounded-lg bg-secondary/50">
+              <p className="text-[11px] text-muted-foreground">파생 예약 비율</p>
+              <p className="text-xl font-bold tabular-nums text-muted-foreground">–</p>
+              <p className="text-[10px] text-muted-foreground">예약(B) 도입 후 산출</p>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <p className="text-xs text-muted-foreground">
         방문·체류·재방문 지표는 PostHog 대시보드에서 확인하세요.

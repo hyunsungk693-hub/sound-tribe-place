@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { ChevronRight, Music, Award, Edit3, Shield, HelpCircle, LogOut, Trash2, Sun, Moon, Calendar, MapPin, Users, Clock, History, IdCard } from "lucide-react";
+import { ChevronRight, Music, Award, Edit3, Shield, HelpCircle, LogOut, Trash2, Sun, Moon, Calendar, MapPin, Users, Clock, History, IdCard, Star } from "lucide-react";
 import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import ProfileEditModal from "@/components/ProfileEditModal";
+import RatingDialog from "@/components/RatingDialog";
 import { useTheme } from "@/contexts/ThemeContext";
 import { getRecentViews, RecentView } from "@/lib/recentViews";
 import { useAdmin } from "@/hooks/useAdmin";
@@ -53,6 +54,8 @@ const ProfilePage = () => {
   const [instrutTab, setInstrutTab] = useState<"apply" | "reserve">("apply");
   const [cancelAppTarget, setCancelAppTarget] = useState<any | null>(null);
   const [cancellingApp, setCancellingApp] = useState(false);
+  const [ratingTarget, setRatingTarget] = useState<{ id: string; name: string; appId: string } | null>(null);
+  const [myStats, setMyStats] = useState<any | null>(null);
   const [recentViews] = useState<RecentView[]>(() => getRecentViews());
   const [editOpen, setEditOpen] = useState(false);
   const { setTheme, resolvedTheme } = useTheme();
@@ -119,7 +122,7 @@ const ProfilePage = () => {
     if (jobIds.length > 0) {
       const { data: jobs } = await supabase
         .from("posts")
-        .select("id,title,venue,pay,category")
+        .select("id,title,venue,pay,category,user_id,author_name")
         .in("id", jobIds);
       (jobs || []).forEach((j: any) => { jobsById[j.id] = j; });
     }
@@ -170,6 +173,14 @@ const ProfilePage = () => {
     // Fetch my room reservations (with room title)
     fetchReservations();
     fetchApplications();
+
+    // 신뢰 지표(D3): 내 프로필에도 응답률·재합주율 등을 노출
+    (supabase as any)
+      .from("user_stats")
+      .select("response_rate, median_response_h, sessions_count, partners_count, rehire_rate, no_show_count")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }: any) => setMyStats(data || null));
   }, [user]);
 
   const handleLogout = async () => {
@@ -233,6 +244,26 @@ const ProfilePage = () => {
         {profile?.bio && (
           <p className="text-sm text-muted-foreground mb-3">{profile.bio}</p>
         )}
+
+        {(() => {
+          if (!myStats) return null;
+          const items: { label: string; value: string }[] = [];
+          if (myStats.response_rate != null) items.push({ label: "응답률", value: `${Math.round(myStats.response_rate * 100)}%` });
+          if (myStats.sessions_count > 0) items.push({ label: "합주", value: `${myStats.sessions_count}회` });
+          if (myStats.partners_count > 0) items.push({ label: "함께한 음악인", value: `${myStats.partners_count}명` });
+          if (myStats.rehire_rate != null) items.push({ label: "재합주율", value: `${Math.round(myStats.rehire_rate * 100)}%` });
+          if (items.length === 0) return null;
+          return (
+            <div className="pt-3 border-t border-border/40 grid grid-cols-2 gap-2">
+              {items.map((t) => (
+                <div key={t.label} className="text-center py-1.5 rounded-lg bg-secondary/50">
+                  <p className="text-sm font-bold text-primary">{t.value}</p>
+                  <p className="text-[10px] text-muted-foreground">{t.label}</p>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Instruments & Genres */}
@@ -322,6 +353,14 @@ const ProfilePage = () => {
                     <h4 className="text-sm font-semibold truncate">{a.job?.title || "삭제된 공고"}</h4>
                     {a.job?.venue && (
                       <p className="text-xs text-muted-foreground truncate mt-0.5">{a.job.venue}{a.job.pay ? ` · ${a.job.pay}` : ""}</p>
+                    )}
+                    {a.status === "accepted" && a.job?.user_id && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setRatingTarget({ id: a.job.user_id, name: a.job?.author_name || "공고 작성자", appId: a.id }); }}
+                        className="mt-2 inline-flex items-center gap-1 h-7 px-2.5 rounded-lg bg-primary/10 text-primary text-[11px] font-medium hover:bg-primary/15 transition-colors"
+                      >
+                        <Star className="w-3 h-3" /> 합주 후기 남기기
+                      </button>
                     )}
                   </div>
                 );
@@ -660,6 +699,15 @@ const ProfilePage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {ratingTarget && (
+        <RatingDialog
+          open={!!ratingTarget}
+          onClose={() => setRatingTarget(null)}
+          rateeId={ratingTarget.id}
+          rateeName={ratingTarget.name}
+          jobApplicationId={ratingTarget.appId}
+        />
+      )}
     </PageShell>
   );
 };

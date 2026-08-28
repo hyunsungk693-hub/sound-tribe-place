@@ -1,4 +1,4 @@
-import { Search, ArrowUpDown, ArrowLeft, Pencil, Trash2, MessageCircle, Check, Navigation } from "lucide-react";
+import { Search, ArrowUpDown, ArrowLeft, Pencil, Trash2, MessageCircle, Check, Navigation, Star } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
@@ -10,6 +10,7 @@ import { addRecentView } from "@/lib/recentViews";
 import { toast } from "sonner";
 import { JobCardSkeleton } from "@/components/skeletons/PostSkeleton";
 import ProfileCard, { ProfileCardData } from "@/components/ProfileCard";
+import RatingDialog from "@/components/RatingDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -84,6 +85,7 @@ const Jobs = () => {
   const applicantsSentinelRef = useRef<HTMLDivElement | null>(null);
   const [applicantStatusFilter, setApplicantStatusFilter] = useState<string>("all");
   const [applicantSortOrder, setApplicantSortOrder] = useState<"newest" | "oldest">("newest");
+  const [ratingTarget, setRatingTarget] = useState<{ id: string; name: string; appId: string } | null>(null);
 
   const filteredApplicants = jobApplicants
     .filter((a) => applicantStatusFilter === "all" ? true : a.status === applicantStatusFilter)
@@ -698,6 +700,14 @@ const Jobs = () => {
                                   >
                                     <MessageCircle className="w-3 h-3" /> 메시지
                                   </button>
+                                  {a.status === "accepted" && (
+                                    <button
+                                      onClick={() => setRatingTarget({ id: a.user_id, name: a.applicant?.display_name || "지원자", appId: a.id })}
+                                      className="h-8 px-2 rounded-md bg-primary/10 text-primary text-xs hover:bg-primary/15 transition-colors flex items-center gap-1"
+                                    >
+                                      <Star className="w-3 h-3" /> 후기
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -787,6 +797,16 @@ const Jobs = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {ratingTarget && (
+        <RatingDialog
+          open={!!ratingTarget}
+          onClose={() => setRatingTarget(null)}
+          rateeId={ratingTarget.id}
+          rateeName={ratingTarget.name}
+          jobApplicationId={ratingTarget.appId}
+        />
       )}
     </PageShell>
   );
