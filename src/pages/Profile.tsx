@@ -64,6 +64,7 @@ const ProfilePage = () => {
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
   const [detailTarget, setDetailTarget] = useState<any | null>(null);
+  const [paidDetail, setPaidDetail] = useState<any | null>(null);
 
   const fetchReservations = async () => {
     if (!user) return;
@@ -403,7 +404,11 @@ const ProfilePage = () => {
                 const pin = b.door_pins?.pin || (Array.isArray(b.door_pins) ? b.door_pins[0]?.pin : null);
                 const stMap: Record<string, string> = { held: "결제대기", confirmed: "확정", completed: "이용완료", no_show: "노쇼" };
                 return (
-                  <div key={b.id} className="p-3 rounded-xl bg-primary/5 border border-primary/20">
+                  <div
+                    key={b.id}
+                    onClick={() => setPaidDetail({ ...b, _pin: pin, _startD: startD })}
+                    className="p-3 rounded-xl bg-primary/5 border border-primary/20 hover:bg-primary/10 cursor-pointer transition-colors active:scale-[0.98]"
+                  >
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">제휴예약</span>
                       <span className="text-[10px] text-muted-foreground">{stMap[b.status] || b.status}</span>
@@ -708,6 +713,90 @@ const ProfilePage = () => {
           <DialogFooter>
             <button
               onClick={() => setDetailTarget(null)}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
+            >
+              닫기
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 제휴(유료) 예약 상세 */}
+      <Dialog open={!!paidDetail} onOpenChange={(o) => { if (!o) setPaidDetail(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>제휴 예약 상세</DialogTitle>
+          </DialogHeader>
+          {paidDetail && (() => {
+            const studio = paidDetail.rooms?.studios;
+            const startD: Date | null = paidDetail._startD || null;
+            const endD = startD && paidDetail.period
+              ? (() => { const parts = String(paidDetail.period).replace(/[[\])"]/g, "").split(","); return parts[1] ? new Date(parts[1].trim()) : null; })()
+              : null;
+            const stMap: Record<string, { label: string; cls: string }> = {
+              held: { label: "결제 대기", cls: "bg-yellow-500/10 text-yellow-600" },
+              confirmed: { label: "예약 확정", cls: "bg-green-500/10 text-green-600" },
+              completed: { label: "이용 완료", cls: "bg-muted text-muted-foreground" },
+              no_show: { label: "노쇼", cls: "bg-destructive/10 text-destructive" },
+              cancelled: { label: "취소됨", cls: "bg-muted text-muted-foreground" },
+            };
+            const st = stMap[paidDetail.status] || { label: paidDetail.status, cls: "bg-muted text-muted-foreground" };
+            const fmtT = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+            const addr = studio?.address || null;
+            return (
+              <div className="space-y-3 text-sm">
+                <div>
+                  <h3 className="font-semibold text-base">{studio?.name || "연습실"} · {paidDetail.rooms?.name || ""}</h3>
+                  <span className={`inline-block mt-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${st.cls}`}>{st.label}</span>
+                </div>
+                {addr && (
+                  <div className="flex items-start gap-2 text-muted-foreground">
+                    <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
+                    <span className="text-xs">{addr}</span>
+                  </div>
+                )}
+                {startD && (
+                  <div className="flex items-start gap-2 text-muted-foreground">
+                    <Calendar className="w-4 h-4 mt-0.5 shrink-0" />
+                    <span className="text-xs">{startD.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "short" })}</span>
+                  </div>
+                )}
+                {startD && endD && (
+                  <div className="flex items-start gap-2 text-muted-foreground">
+                    <Clock className="w-4 h-4 mt-0.5 shrink-0" />
+                    <span className="text-xs">{fmtT(startD)} ~ {fmtT(endD)}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                  <span className="text-xs text-muted-foreground">결제 금액</span>
+                  <span className="text-sm font-semibold">{(paidDetail.amount || 0).toLocaleString("ko-KR")}원</span>
+                </div>
+                {paidDetail.status === "confirmed" && paidDetail._pin && (
+                  <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 text-center">
+                    <p className="text-[11px] text-muted-foreground mb-1">도어락 PIN</p>
+                    <p className="text-2xl font-bold tracking-[0.3em] text-primary">{paidDetail._pin}</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">이용 시간에 입력하세요</p>
+                  </div>
+                )}
+                {addr && (
+                  <a
+                    href={`https://map.naver.com/p/search/${encodeURIComponent(`${studio?.name || ""} ${addr}`)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block text-center px-3 py-2.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                  >
+                    네이버 지도 길찾기
+                  </a>
+                )}
+                <p className="text-[10px] text-muted-foreground pt-1 leading-relaxed">
+                  취소 정책: 이용 24시간 전 100% / 12시간 전 50% / 이후 환불 불가. (현재 모의결제)
+                </p>
+              </div>
+            );
+          })()}
+          <DialogFooter>
+            <button
+              onClick={() => setPaidDetail(null)}
               className="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
             >
               닫기
