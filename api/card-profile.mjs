@@ -83,6 +83,11 @@ export async function renderProfileCard({ profile, stats }) {
   const loc = profile.location || null;
   const times = (profile.available_times || []).slice(0, 3).join(" · ") || null;
   const hasVideo = !!profile.video_url;
+  // 링크 표시용: 프로토콜 제거 + 40자 말줄임, 플랫폼 라벨 감지
+  const rawUrl = (profile.video_url || "").replace(/^https?:\/\//, "").replace(/^www\./, "");
+  const videoDisplay = rawUrl.length > 40 ? rawUrl.slice(0, 40) + "…" : rawUrl;
+  const videoPlatform = /youtu\.?be/i.test(profile.video_url || "") ? "YouTube"
+    : /instagram/i.test(profile.video_url || "") ? "Instagram" : "링크";
   const initial = name.trim().charAt(0).toUpperCase();
   const siteUrl = `instrut.vercel.app/u/${profile.handle || ""}`;
 
@@ -95,7 +100,7 @@ export async function renderProfileCard({ profile, stats }) {
   const allText =
     `${name}${handle}${purpose || ""}${instruments.join("")}${genres.join("")}` +
     `${loc || ""}${times || ""}${badges.join("")}악기장르지역가능 시간응답률응답 중앙값시간` +
-    `새로 시작하는 음악인연주영상 있음♪ instrut${siteUrl}${initial}` +
+    `새로 시작하는 음악인연주영상♪ instrut${siteUrl}${initial}${videoDisplay}${videoPlatform}링크` +
     (showRate ? `${Math.round(stats.response_rate * 100)}%${stats.median_response_h ?? ""}h` : "");
 
   const [bold, regular] = await Promise.all([
@@ -170,7 +175,7 @@ export async function renderProfileCard({ profile, stats }) {
                     children: [
                       handle ? { type: "div", props: { style: { display: "flex", fontSize: 26, color: "rgba(255,255,255,0.92)", fontWeight: 400 }, children: handle } } : null,
                       purpose ? chip(purpose, "rgba(255,255,255,0.25)", "#ffffff") : null,
-                      hasVideo ? chip("♪ 연주영상 있음", "rgba(255,255,255,0.25)", "#ffffff") : null,
+                      hasVideo ? chip(`♪ ${videoPlatform}`, "rgba(255,255,255,0.25)", "#ffffff") : null,
                     ].filter(Boolean),
                   },
                 },
@@ -199,6 +204,7 @@ export async function renderProfileCard({ profile, stats }) {
                   : null,
                 loc ? row("지역", loc) : null,
                 times ? row("가능 시간", times) : null,
+                hasVideo ? row("연주영상", videoDisplay) : null,
                 // 신뢰 영역 / 신규 뱃지
                 showRate
                   ? {

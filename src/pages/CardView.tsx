@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Download, Link2, User, ArrowLeft } from "lucide-react";
+import { Download, Link2, User, ArrowLeft, Play } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -10,6 +10,7 @@ const CardView = () => {
   const { handle } = useParams<{ handle: string }>();
   const navigate = useNavigate();
   const [name, setName] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [version, setVersion] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
@@ -27,11 +28,12 @@ const CardView = () => {
     (async () => {
       const { data } = await (supabase as any)
         .from("profiles")
-        .select("user_id, display_name, updated_at")
+        .select("user_id, display_name, updated_at, video_url")
         .eq("handle", handle.toLowerCase())
         .maybeSingle();
       if (!data) { setNotFound(true); return; }
       setName(data.display_name || "instrut 음악인");
+      setVideoUrl(data.video_url || null);
       const { data: st } = await (supabase as any)
         .from("user_stats")
         .select("updated_at")
@@ -127,6 +129,16 @@ const CardView = () => {
             <Link2 className="w-4 h-4" /> 링크 복사
           </button>
         </div>
+        {videoUrl && (
+          <a
+            href={videoUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="w-full h-12 rounded-xl bg-card border border-border text-sm font-semibold flex items-center justify-center gap-2 hover:bg-surface-hover active:scale-[0.98] transition-all"
+          >
+            <Play className="w-4 h-4 text-primary" /> 연주영상 보기
+          </a>
+        )}
         <button
           onClick={() => navigate(`/u/${handle}`)}
           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
