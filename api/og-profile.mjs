@@ -3,8 +3,15 @@
 // Noto Sans KR 서브셋 TTF를 구글 폰트에서 받아 satori에 직접 전달한다.
 // (@vercel/og 대신 satori+resvg를 쓴 이유: 순수 Node라 로컬 검증 가능, 폰트 제어 명시적)
 
-import satori from "satori";
-import { Resvg } from "@resvg/resvg-js";
+// satori/resvg(네이티브 바이너리)는 런타임 환경에 따라 로드가 실패할 수 있어
+// 지연 임포트한다 — 실패 시 핸들러의 302 폴백(정적 og-image.png)이 동작하도록.
+async function loadRenderers() {
+  const [{ default: satori }, { Resvg }] = await Promise.all([
+    import("satori"),
+    import("@resvg/resvg-js"),
+  ]);
+  return { satori, Resvg };
+}
 
 // 클라이언트에 이미 노출되는 공개값 (src/integrations/supabase/client.ts와 동일)
 const SUPABASE_URL =
@@ -42,6 +49,7 @@ export async function fetchKoreanFont(text, weight = 700) {
 
 // 순수 함수: 프로필 → PNG Buffer (node로 직접 검증 가능)
 export async function renderProfileOg(profile) {
+  const { satori, Resvg } = await loadRenderers();
   const name = profile?.display_name || "instrut 음악인";
   const inst = profile?.instruments?.[0] || null;
   const loc = profile?.location || null;
