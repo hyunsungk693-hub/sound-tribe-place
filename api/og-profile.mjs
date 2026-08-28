@@ -143,6 +143,12 @@ export default async function handler(req, res) {
     res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate=86400");
     res.status(200).send(png);
   } catch (e) {
+    // 진단용: ?debug=1 이면 오류 내용 반환 (민감정보 없음 — 렌더 스택뿐)
+    if (String(req.query?.debug) === "1") {
+      res.setHeader("Cache-Control", "no-store");
+      res.status(500).send(String((e && e.stack) || e).slice(0, 2000));
+      return;
+    }
     // 폰트·렌더 실패 시 정적 브랜드 이미지로 폴백
     res.setHeader("Cache-Control", "s-maxage=300");
     res.redirect(302, "/og-image.png");
