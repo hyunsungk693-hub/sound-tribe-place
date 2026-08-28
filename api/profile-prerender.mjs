@@ -26,10 +26,11 @@ export function buildProfileHtml(profile, handle, isCard = false) {
   const desc = found
     ? `${name}님의 음악인 프로필 — 믿을 수 있는 밴드·세션 멤버를 찾고, 첫 합주까지 바로 잡는 곳, instrut에서 확인하세요.`
     : "믿을 수 있는 밴드·세션 멤버를 찾고, 첫 합주까지 바로 잡는 곳 — 음악인 구인구직·연습실 예약·커뮤니티";
+  const ver = found && profile.updated_at ? `&v=${new Date(profile.updated_at).getTime()}` : "";
   const image = found
     ? isCard
-      ? `${SITE}/api/card-profile?handle=${encodeURIComponent(handle)}`
-      : `${SITE}/api/og-profile?handle=${encodeURIComponent(handle)}`
+      ? `${SITE}/api/card-profile?handle=${encodeURIComponent(handle)}${ver}`
+      : `${SITE}/api/og-profile?handle=${encodeURIComponent(handle)}${ver}`
     : `${SITE}/og-image.png`;
   const url = `${SITE}/u/${encodeURIComponent(handle)}${isCard ? "/card" : ""}`;
 
@@ -61,7 +62,7 @@ ${sub ? `<p>${esc(sub)}</p>` : ""}
 
 export async function fetchProfileByHandle(handle) {
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?handle=eq.${encodeURIComponent(handle)}&select=display_name,instruments,location,handle&limit=1`,
+    `${SUPABASE_URL}/rest/v1/profiles?handle=eq.${encodeURIComponent(handle)}&select=display_name,instruments,location,handle,updated_at&limit=1`,
     { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` } },
   );
   if (!res.ok) return null;

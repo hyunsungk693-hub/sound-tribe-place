@@ -10,30 +10,43 @@ const CardView = () => {
   const { handle } = useParams<{ handle: string }>();
   const navigate = useNavigate();
   const [name, setName] = useState<string | null>(null);
+  const [version, setVersion] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useDocumentTitle(name ? `${name}님의 카드` : null);
 
-  const cardUrl = `/api/card-profile?handle=${encodeURIComponent(handle || "")}`;
+  // 버전 파라미터: 프로필·지표가 수정되면 URL이 바뀌어 CDN/브라우저 캐시를 우회한다
+  const cardUrl = version
+    ? `/api/card-profile?handle=${encodeURIComponent(handle || "")}&v=${encodeURIComponent(version)}`
+    : null;
 
   useEffect(() => {
     if (!handle) { setNotFound(true); return; }
-    (supabase as any)
-      .from("profiles")
-      .select("display_name")
-      .eq("handle", handle.toLowerCase())
-      .maybeSingle()
-      .then(({ data }: { data: { display_name: string | null } | null }) => {
-        if (data) setName(data.display_name || "instrut 음악인");
-        else setNotFound(true);
-      });
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("profiles")
+        .select("user_id, display_name, updated_at")
+        .eq("handle", handle.toLowerCase())
+        .maybeSingle();
+      if (!data) { setNotFound(true); return; }
+      setName(data.display_name || "instrut 음악인");
+      const { data: st } = await (supabase as any)
+        .from("user_stats")
+        .select("updated_at")
+        .eq("user_id", data.user_id)
+        .maybeSingle();
+      // 프로필/지표 중 더 최근 수정 시각 = 카드 버전
+      const times = [data.updated_at, st?.updated_at].filter(Boolean).map((t: string) => new Date(t).getTime());
+      setVersion(String(Math.max(...times, 0)));
+    })();
   }, [handle]);
 
   const saveImage = async () => {
     setSaving(true);
     try {
+      if (!cardUrl) return;
       const res = await fetch(cardUrl);
       if (!res.ok) throw new Error("card fetch failed");
       const blob = await res.blob();
@@ -91,12 +104,12 @@ const CardView = () => {
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
           )}
-          <img
+          {cardUrl && <img
             src={cardUrl}
             alt={name ? `${name}님의 instrut 카드` : "instrut 카드"}
             className={`w-full h-full object-cover ${imgLoaded ? "" : "hidden"}`}
             onLoad={() => setImgLoaded(true)}
-          />
+          />}
         </div>
 
         <div className="w-full grid grid-cols-2 gap-2.5">
