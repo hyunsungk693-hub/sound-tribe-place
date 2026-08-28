@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronRight, Music, Award, Edit3, Shield, HelpCircle, LogOut, Trash2, Sun, Moon, Calendar, MapPin, Users, Clock, History, IdCard } from "lucide-react";
+import { ChevronRight, Music, Award, Edit3, Shield, HelpCircle, LogOut, Trash2, Sun, Moon, Calendar, MapPin, Users, Clock, History, IdCard, CalendarHeart } from "lucide-react";
 import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -49,6 +49,7 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState("내 게시물");
   const [myPosts, setMyPosts] = useState<any[]>([]);
   const [myReservations, setMyReservations] = useState<any[]>([]);
+  const [myBookings, setMyBookings] = useState<any[]>([]);
   const [myApplications, setMyApplications] = useState<any[]>([]);
   const [instrutTab, setInstrutTab] = useState<"apply" | "reserve">("apply");
   const [cancelAppTarget, setCancelAppTarget] = useState<any | null>(null);
@@ -170,7 +171,20 @@ const ProfilePage = () => {
     // Fetch my room reservations (with room title)
     fetchReservations();
     fetchApplications();
+    fetchPaidBookings();
   }, [user]);
+
+  // 제휴 연습실 유료 예약 (bookings) + 배정 PIN
+  const fetchPaidBookings = async () => {
+    if (!user) return;
+    const { data } = await (supabase as any)
+      .from("bookings")
+      .select("*, rooms(name, studios(name, address)), door_pins(pin)")
+      .eq("user_id", user.id)
+      .in("status", ["held", "confirmed", "completed", "no_show"])
+      .order("created_at", { ascending: false });
+    setMyBookings((data as any[]) || []);
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -273,7 +287,7 @@ const ProfilePage = () => {
           </h3>
         </div>
         <div className="flex border-b border-border/40">
-          {([["apply", `지원현황 (${myApplications.length})`], ["reserve", `예약현황 (${myReservations.length})`]] as ["apply" | "reserve", string][]).map(([key, label]) => (
+          {([["apply", `지원현황 (${myApplications.length})`], ["reserve", `예약현황 (${myBookings.length + myReservations.length})`]] as ["apply" | "reserve", string][]).map(([key, label]) => (
             <button
               key={key}
               onClick={() => setInstrutTab(key)}
@@ -323,6 +337,14 @@ const ProfilePage = () => {
                     {a.job?.venue && (
                       <p className="text-xs text-muted-foreground truncate mt-0.5">{a.job.venue}{a.job.pay ? ` · ${a.job.pay}` : ""}</p>
                     )}
+                    {a.status === "accepted" && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); navigate(`/first-rehearsal/${a.id}`); }}
+                        className="mt-2 w-full h-9 rounded-lg bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-primary/15 active:scale-[0.98] transition-all"
+                      >
+                        <CalendarHeart className="w-3.5 h-3.5" /> 첫 합주 잡기
+                      </button>
+                    )}
                   </div>
                 );
               })
@@ -330,8 +352,29 @@ const ProfilePage = () => {
               <p className="text-xs text-muted-foreground text-center py-6">지원 내역이 없습니다.</p>
             )
           ) : (
-            myReservations.length > 0 ? (
-              myReservations.map((r) => {
+            (myBookings.length > 0 || myReservations.length > 0) ? (
+              <>
+              {myBookings.map((b) => {
+                const [start] = (b.period || "").replace(/[[)"]/g, "").split(",");
+                const startD = start ? new Date(start.trim()) : null;
+                const pin = b.door_pins?.pin || (Array.isArray(b.door_pins) ? b.door_pins[0]?.pin : null);
+                const stMap: Record<string, string> = { held: "결제대기", confirmed: "확정", completed: "이용완료", no_show: "노쇼" };
+                return (
+                  <div key={b.id} className="p-3 rounded-xl bg-primary/5 border border-primary/20">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">제휴예약</span>
+                      <span className="text-[10px] text-muted-foreground">{stMap[b.status] || b.status}</span>
+                      <span className="text-[10px] text-muted-foreground ml-auto">{(b.amount || 0).toLocaleString("ko-KR")}원</span>
+                    </div>
+                    <h4 className="text-sm font-semibold truncate">{b.rooms?.studios?.name || "연습실"} · {b.rooms?.name || ""}</h4>
+                    {startD && <p className="text-xs text-muted-foreground mt-0.5">{startD.toLocaleString("ko-KR", { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>}
+                    {b.status === "confirmed" && pin && (
+                      <p className="text-xs mt-1">도어락 PIN <span className="font-bold tracking-widest">{pin}</span></p>
+                    )}
+                  </div>
+                );
+              })}
+              {myReservations.map((r) => {
                 const s = new Date(r.start_at);
                 const e = new Date(r.end_at);
                 const fmtT = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -363,7 +406,8 @@ const ProfilePage = () => {
                     <p className="text-xs text-muted-foreground mt-0.5">{fmtT(s)} - {fmtT(e)}</p>
                   </div>
                 );
-              })
+              })}
+              </>
             ) : (
               <p className="text-xs text-muted-foreground text-center py-6">예약 내역이 없습니다.</p>
             )
