@@ -17,6 +17,7 @@ import Auth from "./pages/Auth.tsx";
 import UserProfile from "./pages/UserProfile.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import PostDetail from "./pages/PostDetail.tsx";
+import PublicProfile from "./pages/PublicProfile.tsx";
 import Admin from "./pages/Admin.tsx";
 import PhoneShell from "@/components/PhoneShell";
 const queryClient = new QueryClient();
@@ -60,6 +61,7 @@ const App = () => {
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                   <Route path="/post/:postId" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
                   <Route path="/profile/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+                  <Route path="/u/:handle" element={<PublicProfile />} />
                   <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
