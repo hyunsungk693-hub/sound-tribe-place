@@ -1,6 +1,17 @@
 {
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    {
+      "source": "/u/:handle",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(bot|crawler|spider|facebookexternalhit|kakaotalk|twitterbot|slackbot|discordbot|telegrambot|whatsapp).*"
+        }
+      ],
+      "destination": "/api/profile-prerender?handle=:handle"
+    },
     { "source": "/((?!api/|assets/|sw\\.js|manifest\\.webmanifest|workbox-|favicon|pwa-|apple-touch-icon|robots\\.txt|og-image\\.png|sitemap\\.xml).*)", "destination": "/index.html" }
   ]
 }

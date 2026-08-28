@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo } from "react";
-import { X, Camera, Search, Plus } from "lucide-react";
+import { X, Camera, Search, Plus, Link as LinkIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -334,7 +334,25 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
                 placeholder="소문자 영문·숫자·하이픈 3~20자"
               />
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1">프로필 공유 주소에 사용됩니다 (추후 /u/핸들)</p>
+            <p className="text-[10px] text-muted-foreground mt-1">프로필 공유 주소에 사용됩니다</p>
+            {/^[a-z0-9-]{3,20}$/.test(handle.trim()) && (
+              <button
+                type="button"
+                onClick={async () => {
+                  const url = `https://instrut.vercel.app/u/${handle.trim()}`;
+                  try {
+                    await navigator.clipboard.writeText(url);
+                    toast.success("공개 카드 링크가 복사되었습니다");
+                  } catch {
+                    toast.error(`복사에 실패했습니다. 주소: ${url}`);
+                  }
+                }}
+                className="mt-2 w-full h-9 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/15 transition-colors active:scale-[0.98] flex items-center justify-center gap-1.5"
+              >
+                <LinkIcon className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">공개 카드 링크 복사 — instrut.vercel.app/u/{handle.trim()}</span>
+              </button>
+            )}
           </div>
 
           {/* Instruments */}

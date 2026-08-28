@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Music, Award, PlayCircle, Sparkles, Clock, Instagram } from "lucide-react";
+import { MapPin, Music, Award, PlayCircle, Sparkles, Clock, Instagram, Zap, ShieldCheck, CircleDot } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 // D1: 앱 전역에서 단일로 사용하는 프로필 카드.
@@ -19,14 +20,17 @@ export interface ProfileCardData {
   purpose?: string | null; // 'hobby' | 'pro'
   available_times?: string[] | null;
   handle?: string | null;
+  updated_at?: string | null;
 }
 
 // D3 자리: user_stats 집계가 생기면 채워진다. 모수 없는 항목은 null.
 export interface ProfileStats {
   response_rate?: number | null;
+  median_response_h?: number | null;
   sessions_count?: number | null;
   partners_count?: number | null;
   rehire_rate?: number | null;
+  no_show_count?: number | null;
 }
 
 interface Props {
@@ -123,6 +127,23 @@ const ProfileCard = ({ profile, variant = "compact", stats, className = "", onBe
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // D3: full 카드에서 stats를 넘겨받지 못하면 user_stats를 단건 조회한다.
+  // compact(목록)는 조회하지 않음 — §5.3 실시간 계산·N+1 금지.
+  const [fetchedStats, setFetchedStats] = useState<ProfileStats | null | undefined>(undefined);
+  const uid = profile?.user_id;
+  useEffect(() => {
+    if (variant !== "full" || stats !== undefined || !uid) return;
+    let alive = true;
+    supabase
+      .from("user_stats" as any)
+      .select("*")
+      .eq("user_id", uid)
+      .maybeSingle()
+      .then(({ data }) => { if (alive) setFetchedStats((data as ProfileStats | null) ?? null); });
+    return () => { alive = false; };
+  }, [variant, stats, uid]);
+  const effStats = stats !== undefined ? stats : fetchedStats;
+
   if (!profile) {
     // 삭제된 사용자 등: 자리 유지용 익명 표시
     return (
@@ -146,13 +167,27 @@ const ProfileCard = ({ profile, variant = "compact", stats, className = "", onBe
 
   // 신뢰 영역: 값이 하나라도 있어야 렌더 (없으면 통째로 숨김 — D6)
   const trustItems: { label: string; value: string }[] = [];
-  if (stats) {
-    if (stats.response_rate != null) trustItems.push({ label: "응답률", value: `${Math.round(stats.response_rate * 100)}%` });
-    if (stats.sessions_count != null && stats.sessions_count > 0) trustItems.push({ label: "합주", value: `${stats.sessions_count}회` });
-    if (stats.partners_count != null && stats.partners_count > 0) trustItems.push({ label: "함께한 음악인", value: `${stats.partners_count}명` });
-    if (stats.rehire_rate != null) trustItems.push({ label: "재합주율", value: `${Math.round(stats.rehire_rate * 100)}%` });
+  if (effStats) {
+    if (effStats.response_rate != null) trustItems.push({ label: "응답률", value: `${Math.round(effStats.response_rate * 100)}%` });
+    if (effStats.sessions_count != null && effStats.sessions_count > 0) trustItems.push({ label: "합주", value: `${effStats.sessions_count}회` });
+    if (effStats.partners_count != null && effStats.partners_count > 0) trustItems.push({ label: "함께한 음악인", value: `${effStats.partners_count}명` });
+    if (effStats.rehire_rate != null) trustItems.push({ label: "재합주율", value: `${Math.round(effStats.rehire_rate * 100)}%` });
   }
   const isNew = trustItems.length === 0;
+
+  // D4 배지: 획득한 것만, 최대 3개. 우선순위 = 빠른 응답 > 노쇼 0 > 활동 중 (§3.2 D4)
+  const badges: { icon: typeof Zap; label: string }[] = [];
+  if (effStats?.response_rate != null && effStats.response_rate >= 0.8) {
+    badges.push({ icon: Zap, label: "빠른 응답" });
+  }
+  if (effStats && (effStats.no_show_count ?? 0) === 0 && (effStats.sessions_count ?? 0) > 0) {
+    badges.push({ icon: ShieldCheck, label: "노쇼 0" });
+  }
+  // "활동 중"은 프로필 갱신 7일 이내를 근사치로 사용 (전 활동 스캔은 목록 비용 과다)
+  if (profile.updated_at && Date.now() - new Date(profile.updated_at).getTime() < 7 * 24 * 3600 * 1000) {
+    badges.push({ icon: CircleDot, label: "활동 중" });
+  }
+  const shownBadges = badges.slice(0, 3);
 
   if (variant === "compact") {
     return (
@@ -223,6 +258,17 @@ const ProfileCard = ({ profile, variant = "compact", stats, className = "", onBe
           )}
         </div>
       </div>
+
+      {/* D4 배지 (최대 3개) */}
+      {shownBadges.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          {shownBadges.map(({ icon: Icon, label }) => (
+            <span key={label} className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary">
+              <Icon className="w-3 h-3" /> {label}
+            </span>
+          ))}
+        </div>
+      )}
 
       {profile.bio && <p className="text-sm text-muted-foreground mt-3">{profile.bio}</p>}
 
