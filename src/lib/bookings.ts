@@ -71,12 +71,11 @@ export async function listRooms(studioId: string) {
 }
 
 export async function listOpenSlots(roomId: string) {
+  // bookable_slots 뷰: 이미 held/confirmed된 슬롯은 자동 제외 (실제 예약 가능분만)
   const { data } = await db
-    .from("room_slots")
+    .from("bookable_slots" as any)
     .select("*")
     .eq("room_id", roomId)
-    .eq("is_open", true)
-    .gte("end_at", new Date().toISOString())
     .order("start_at");
   return (data || []) as Slot[];
 }
