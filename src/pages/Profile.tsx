@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronRight, Music, Award, Edit3, Shield, HelpCircle, LogOut, Trash2, Sun, Moon, Calendar, MapPin, Users, Clock, History, IdCard, Star, CalendarHeart } from "lucide-react";
+import { ChevronRight, Music, Award, Edit3, Shield, HelpCircle, LogOut, Trash2, Calendar, MapPin, Users, Clock, History, IdCard, Star, CalendarHeart } from "lucide-react";
 import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import ProfileEditModal from "@/components/ProfileEditModal";
 import RatingDialog from "@/components/RatingDialog";
-import { useTheme } from "@/contexts/ThemeContext";
 import { getRecentViews, RecentView } from "@/lib/recentViews";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -59,7 +58,6 @@ const ProfilePage = () => {
   const [myStats, setMyStats] = useState<any | null>(null);
   const [recentViews] = useState<RecentView[]>(() => getRecentViews());
   const [editOpen, setEditOpen] = useState(false);
-  const { setTheme, resolvedTheme } = useTheme();
   const [cancelTarget, setCancelTarget] = useState<any | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
@@ -237,17 +235,6 @@ const ProfilePage = () => {
             aria-label="내 소개 카드"
           >
             <IdCard className="w-4 h-4 text-muted-foreground" />
-          </button>
-          <button
-            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-            className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center hover:bg-surface-hover transition-colors active:scale-95"
-            aria-label={resolvedTheme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}
-          >
-            {resolvedTheme === "dark" ? (
-              <Sun className="w-4 h-4 text-muted-foreground" />
-            ) : (
-              <Moon className="w-4 h-4 text-muted-foreground" />
-            )}
           </button>
           <button
             onClick={() => setEditOpen(true)}

@@ -2,43 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+/* 폰트는 index.html <head>에서 preconnect + link로 로드 (Sora / IBM Plex Sans KR / IBM Plex Mono) */
 
 @layer base {
   :root {
-    /* 앱 로고(스카이블루→민트 그라데이션 핀)와 같은 계열의 라이트 팔레트 */
-    --background: 200 45% 97%;
-    --foreground: 206 35% 13%;
+    /* 미니멀 리디자인 · 파스텔 + 로고 시안(#3aa5da→#6fd8ce) · 라이트 고정 */
+    --background: 203 62% 96%;
+    --foreground: 205 33% 13%;
 
     --card: 0 0% 100%;
-    --card-foreground: 206 35% 13%;
+    --card-foreground: 205 33% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 206 35% 13%;
+    --popover-foreground: 205 33% 13%;
 
-    --primary: 204 72% 45%;
+    --primary: 200 68% 54%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 201 40% 93%;
-    --secondary-foreground: 205 28% 30%;
+    --secondary: 203 71% 93%;
+    --secondary-foreground: 201 71% 40%;
 
-    --muted: 201 40% 94%;
-    --muted-foreground: 205 15% 45%;
+    --muted: 203 60% 94%;
+    --muted-foreground: 206 14% 41%;
 
-    --accent: 201 40% 93%;
-    --accent-foreground: 206 35% 13%;
+    --accent: 203 71% 93%;
+    --accent-foreground: 201 71% 40%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 60% 68%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 201 35% 88%;
-    --input: 201 35% 88%;
-    --ring: 204 72% 45%;
+    --border: 202 46% 91%;
+    --input: 202 46% 91%;
+    --ring: 200 68% 54%;
 
-    --radius: 0.75rem;
+    --radius: 0.625rem;
 
     --surface-elevated: 0 0% 100%;
-    --surface-hover: 200 45% 95%;
+    --surface-hover: 203 60% 95%;
+
+    /* 미니멀 신호색 (계측 장비 기능색) */
+    --signal: 154 49% 45%;
+    --amber: 40 58% 54%;
   }
 
   .dark {
@@ -175,8 +179,15 @@
     .fab-pos { bottom: 2rem; }
   }
 
+  /* 미니멀: 평면(flat) + 헤어라인 테두리, 그림자 제거 */
   .glass-card {
-    @apply bg-card border border-border/60 rounded-xl shadow-sm;
+    @apply bg-card border border-border rounded-lg;
+  }
+
+  /* mono 라벨 유틸 — 계측 장비 라벨 언어 */
+  .mono-label {
+    font-family: theme('fontFamily.mono');
+    @apply text-[0.6875rem] uppercase tracking-[0.14em] text-muted-foreground;
   }
 
   .scroll-reveal {

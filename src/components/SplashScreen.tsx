@@ -36,14 +36,14 @@ const SplashScreen = ({ onFinish }: { onFinish: () => void }) => {
         }}
       />
       <span
-        className="text-xl font-bold tracking-tight text-foreground"
+        className="text-2xl font-extrabold tracking-tight text-foreground"
         style={{
           animation: exiting
             ? "fade-out 0.2s ease-out both"
             : "splash-pop 0.85s 0.15s cubic-bezier(0.22, 1, 0.36, 1) both",
         }}
       >
-        instrut
+        instrut<span className="text-primary">.</span>
       </span>
     </div>
   );

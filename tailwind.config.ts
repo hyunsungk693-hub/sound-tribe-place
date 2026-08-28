@@ -13,14 +13,16 @@ export default {
       },
     },
     fontFamily: {
-      outfit: ['Outfit', 'sans-serif'],
+      sans: ['Sora', 'IBM Plex Sans KR', 'sans-serif'],
+      outfit: ['Sora', 'IBM Plex Sans KR', 'sans-serif'],
+      mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
     },
     extend: {
       colors: {
         "surface-elevated": "hsl(var(--surface-elevated))",
         "surface-hover": "hsl(var(--surface-hover))",
-        "amber-glow": "hsl(var(--amber-glow))",
-        "amber-soft": "hsl(var(--amber-soft))",
+        signal: "hsl(var(--signal))",
+        amber: "hsl(var(--amber))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
