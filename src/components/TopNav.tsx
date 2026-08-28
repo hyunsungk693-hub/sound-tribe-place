@@ -27,7 +27,7 @@ const TopNav = () => {
 
   return (
     <div className="hidden lg:block sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border">
-      <div className="max-w-5xl mx-auto h-16 px-6 flex items-center gap-10">
+      <div className="max-w-[1180px] mx-auto h-16 px-6 lg:px-8 flex items-center gap-10">
         <button
           onClick={() => navigate("/")}
           className="shrink-0 active:scale-95 transition-transform"

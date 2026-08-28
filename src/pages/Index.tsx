@@ -1,4 +1,4 @@
-import { Briefcase, Music2, Store, MessageCircle, Heart, MessageSquare, ChevronRight, Zap, MapPin } from "lucide-react";
+import { Briefcase, Music2, Store, MessageCircle, Heart, MessageSquare, ChevronRight, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import PageShell from "@/components/PageShell";
@@ -10,18 +10,18 @@ import banner1 from "@/assets/banner-1.png";
 import banner3 from "@/assets/banner-3.jpg";
 import banner4 from "@/assets/banner-4.jpg";
 
-// 채널 스트립 카테고리 — 라인 픽토그램 + 볼드 타이포
+// 카테고리 — 라인 픽토그램 + EN 라벨 + 볼드 타이포
 const categories = [
-  { icon: Briefcase, label: "구인구직", path: "/jobs" },
-  { icon: Music2, label: "연습실", path: "/rooms" },
-  { icon: Store, label: "악기사", path: "/shops" },
-  { icon: MessageCircle, label: "커뮤니티", path: "/community" },
+  { icon: Briefcase, en: "Jobs", label: "구인구직", path: "/jobs" },
+  { icon: Music2, en: "Rooms", label: "연습실", path: "/rooms" },
+  { icon: Store, en: "Shops", label: "악기사", path: "/shops" },
+  { icon: MessageCircle, en: "Community", label: "커뮤니티", path: "/community" },
 ];
 
 const adBanners = [
-  { title: "instrut", desc: "믿을 수 있는 밴드·세션 멤버 찾기", image: banner1, path: "/jobs" },
-  { title: "instrut", desc: "합주할 공간이 필요하다면, 연습실 찾기", image: banner3, path: "/rooms" },
-  { title: "instrut", desc: "음악인들과 자유롭게 이야기 나누기", image: banner4, path: "/community" },
+  { title: "Find", desc: "믿을 수 있는 밴드·세션 멤버 찾기", image: banner1, path: "/jobs" },
+  { title: "Rooms", desc: "합주할 공간이 필요하다면, 연습실 찾기", image: banner3, path: "/rooms" },
+  { title: "Community", desc: "음악인들과 자유롭게 이야기 나누기", image: banner4, path: "/community" },
 ];
 
 // VU 미터 — 세그먼트 게이지 (0~1)
@@ -51,21 +51,27 @@ const Index = () => {
   const [popularPosts, setPopularPosts] = useState<any[]>([]);
   const [studios, setStudios] = useState<any[]>([]);
   const [openJobCount, setOpenJobCount] = useState<number | null>(null);
+  const [communityCount, setCommunityCount] = useState<number | null>(null);
+  const [studioCount, setStudioCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [notiOpen, setNotiOpen] = useState(false);
   const { count: unreadCount } = useUnreadCount();
 
   const fetchData = async () => {
     setLoading(true);
-    const [jobRes, commRes, studioRes, jobCountRes] = await Promise.all([
-      supabase.from("posts").select("id,title,venue,category").eq("post_type", "job").order("created_at", { ascending: false }).limit(4),
+    const [jobRes, commRes, studioRes, jobCountRes, commCountRes, studioCountRes] = await Promise.all([
+      supabase.from("posts").select("id,title,venue,category").eq("post_type", "job").order("created_at", { ascending: false }).limit(5),
       supabase.from("posts").select("id,title,content,author_name").eq("post_type", "community").order("created_at", { ascending: false }).limit(12),
       (supabase as any).from("studios").select("id,name,address,tier").eq("tier", "A").limit(3),
       supabase.from("posts").select("id", { count: "exact", head: true }).eq("post_type", "job"),
+      supabase.from("posts").select("id", { count: "exact", head: true }).eq("post_type", "community"),
+      (supabase as any).from("studios").select("id", { count: "exact", head: true }),
     ]);
     setRecentJobs(jobRes.data || []);
     setStudios(studioRes.data || []);
     setOpenJobCount(jobCountRes.count ?? (jobRes.data?.length ?? 0));
+    setCommunityCount(commCountRes.count ?? null);
+    setStudioCount(studioCountRes.count ?? null);
 
     // 커뮤니티 인기글: 좋아요·댓글 수 합산 상위
     const comm = commRes.data || [];
@@ -82,7 +88,7 @@ const Index = () => {
       const ranked = [...comm]
         .map((p: any) => ({ ...p, ...score[p.id] }))
         .sort((a, b) => (b.likes + b.comments) - (a.likes + a.comments))
-        .slice(0, 4);
+        .slice(0, 5);
       setPopularPosts(ranked);
     }
     setLoading(false);
@@ -98,7 +104,6 @@ const Index = () => {
 
   return (
     <PageShell>
-      <div className="lg:max-w-3xl lg:mx-auto">
       {/* 모바일 상단 헤더: 워드마크 + 알림/로그인 */}
       <div
         className="lg:hidden sticky top-0 z-40 -mx-4 px-4 pb-3 bg-background/95 backdrop-blur-lg border-b border-border mb-5"
@@ -129,126 +134,123 @@ const Index = () => {
       </div>
 
       {loading ? <HomeSkeleton /> : <>
-      {/* 배너 캐러셀 */}
-      <section className="mb-6" style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) both" }}>
-        <div className="relative overflow-hidden rounded-lg">
-          <div className="flex transition-transform duration-500 ease-out" style={{ transform: `translateX(-${currentBanner * 100}%)` }}>
+      {/* 히어로: 배너(1fr) + 지표 카드(340px) */}
+      <section className="mb-9 lg:mb-14 grid gap-4 lg:grid-cols-[1fr_340px] lg:gap-5" style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) both" }}>
+        <div className="relative overflow-hidden rounded-lg h-[210px] lg:h-[300px]">
+          <div className="flex h-full transition-transform duration-500 ease-out" style={{ transform: `translateX(-${currentBanner * 100}%)` }}>
             {adBanners.map((banner, i) => (
-              <div key={i} onClick={() => navigate(banner.path)} className="w-full shrink-0 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform min-h-[210px] lg:min-h-[280px]">
-                <img src={banner.image} alt={banner.title} className="w-full h-full object-cover absolute inset-0" loading="lazy" />
-                <div className="relative z-10 p-6 lg:p-8 flex flex-col justify-end min-h-[210px] lg:min-h-[280px] bg-gradient-to-t from-black/65 to-transparent">
-                  <p className="text-xs lg:text-sm text-white/80 font-mono uppercase tracking-widest">{banner.title}</p>
-                  <p className="font-bold text-xl lg:text-2xl text-white leading-tight tracking-tight">{banner.desc}</p>
+              <div key={i} onClick={() => navigate(banner.path)} className="w-full h-full shrink-0 relative overflow-hidden cursor-pointer active:scale-[0.99] transition-transform">
+                <img src={banner.image} alt={banner.desc} className="w-full h-full object-cover absolute inset-0" loading="lazy" />
+                <div className="relative z-10 h-full p-6 lg:p-8 flex flex-col justify-end bg-gradient-to-t from-black/65 to-transparent">
+                  <p className="text-[11px] lg:text-xs text-white/85 font-mono uppercase tracking-widest mb-1.5">{banner.title}</p>
+                  <p className="font-extrabold text-xl lg:text-[28px] text-white leading-tight tracking-tight">{banner.desc}</p>
                 </div>
               </div>
             ))}
           </div>
-          <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex gap-1.5">
+          <div className="absolute bottom-4 right-5 flex gap-1.5">
             {adBanners.map((_, i) => (
-              <button key={i} onClick={() => setCurrentBanner(i)} className={`h-1 rounded-full transition-all duration-300 ${i === currentBanner ? "bg-primary w-5" : "bg-white/50 w-1.5"}`} />
+              <button key={i} onClick={() => setCurrentBanner(i)} className={`h-1.5 rounded-full transition-all duration-300 ${i === currentBanner ? "bg-white w-5" : "bg-white/50 w-1.5"}`} />
             ))}
           </div>
         </div>
-      </section>
 
-      {/* 히어로 지표 — 오버사이즈 수치 (지금 열린 구인 공고) */}
-      <section className="mb-7" style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) 0.04s both" }}>
-        <div className="glass-card px-5 py-6 lg:px-7 lg:py-7 flex items-end justify-between gap-4">
-          <div className="min-w-0">
-            <p className="mono-label mb-2.5">지금 열린 구인 공고</p>
-            <div className="flex items-end gap-3">
-              <span className="text-[64px] lg:text-[88px] leading-[0.8] font-extrabold tracking-tighter text-foreground tabular-nums">
-                {openJobCount ?? "—"}
-              </span>
-              <span className="text-sm text-muted-foreground mb-1.5 shrink-0">건이 멤버를<br />기다리는 중</span>
-            </div>
+        {/* 지표 카드 — 오버사이즈 수치 (실측) */}
+        <div className="glass-card px-6 py-6 lg:py-7 flex flex-col justify-center">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.09em] text-primary mb-2">지금 열린 구인 공고</p>
+          <span className="text-[64px] lg:text-[92px] font-extrabold leading-[0.82] tracking-tighter text-foreground tabular-nums">
+            {openJobCount ?? "—"}
+          </span>
+          <p className="text-[13.5px] text-muted-foreground mt-4 leading-relaxed">지원부터 첫 합주까지, 지금 멤버를 기다리는 공고</p>
+          <div className="h-px bg-border my-5" />
+          <div className="flex justify-between items-baseline mb-2.5">
+            <span className="text-[13px] text-muted-foreground font-medium">커뮤니티 글</span>
+            <b className="font-bold text-base tabular-nums">{communityCount ?? "—"}</b>
           </div>
-          <button
-            onClick={() => navigate("/jobs")}
-            className="shrink-0 px-4 h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors active:scale-95 flex items-center gap-1"
-          >
-            둘러보기 <ChevronRight className="w-4 h-4" />
-          </button>
+          <div className="flex justify-between items-baseline">
+            <span className="text-[13px] text-muted-foreground font-medium">제휴 연습실</span>
+            <b className="font-bold text-base tabular-nums">{studioCount ?? "—"}</b>
+          </div>
         </div>
       </section>
 
-      {/* 채널 스트립 카테고리 — 라인 픽토그램 + 볼드 타이포 */}
-      <section className="mb-8" style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) 0.08s both" }}>
-        <div className="grid grid-cols-4 gap-2">
-          {categories.map(({ icon: Icon, label, path }, i) => (
+      {/* 카테고리 — 픽토그램 + EN + 볼드 타이포 카드 */}
+      <section className="mb-10 lg:mb-14" style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) 0.06s both" }}>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 lg:gap-3">
+          {categories.map(({ icon: Icon, en, label, path }) => (
             <button
               key={path}
               onClick={() => navigate(path)}
-              className="glass-card p-3 lg:p-3.5 flex flex-col gap-4 items-stretch text-left hover:bg-surface-hover transition-colors active:scale-[0.97] group"
+              className="glass-card relative p-4 lg:p-5 flex flex-col text-left hover:border-primary transition-colors active:scale-[0.98] group"
             >
-              <div className="flex items-center justify-between">
-                <span className="mono-label">{String(i + 1).padStart(2, "0")}</span>
-                <Icon strokeWidth={1.6} className="w-[18px] h-[18px] text-primary group-hover:scale-110 transition-transform" />
-              </div>
-              <span className="text-[13px] lg:text-[15px] font-bold tracking-tight leading-tight">{label}</span>
+              <Icon strokeWidth={1.6} className="w-7 h-7 lg:w-8 lg:h-8 text-primary mb-3 group-hover:scale-110 transition-transform" />
+              <span className="font-mono text-[10px] lg:text-[11px] font-bold uppercase tracking-[0.08em] text-primary">{en}</span>
+              <span className="text-lg lg:text-[21px] font-extrabold tracking-tight leading-tight mt-0.5">{label}</span>
+              <ChevronRight className="absolute top-4 right-3.5 w-4 h-4 text-muted-foreground/50 group-hover:text-primary transition-colors" />
             </button>
           ))}
         </div>
       </section>
 
-      {/* 최근 구인글 */}
-      <section className="mb-8" style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) 0.12s both" }}>
-        <SectionHead title="최근 구인글" onMore={() => navigate("/jobs")} />
-        {recentJobs.length === 0 ? (
-          <EmptyRow text="아직 구인글이 없습니다. 첫 공고를 올려보세요!" />
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-            {recentJobs.map((job) => (
-              <div key={job.id} onClick={() => navigate(`/post/${job.id}`)} className="glass-card p-3.5 flex items-center justify-between hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold truncate tracking-tight">{job.title}</p>
-                  <p className="text-xs text-muted-foreground mt-1 truncate flex items-center gap-1"><MapPin className="w-3 h-3 shrink-0" />{job.venue || "장소 미정"}</p>
+      {/* 최근 구인글 + 커뮤니티 인기글 — 2단 배치 */}
+      <div className="grid gap-9 lg:grid-cols-2 lg:gap-11 mb-10 lg:mb-14">
+        <section style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) 0.1s both" }}>
+          <SectionHead title="최근 구인글" onMore={() => navigate("/jobs")} />
+          {recentJobs.length === 0 ? (
+            <EmptyRow text="아직 구인글이 없습니다. 첫 공고를 올려보세요!" />
+          ) : (
+            <div>
+              {recentJobs.map((job) => (
+                <div key={job.id} onClick={() => navigate(`/post/${job.id}`)} className="flex items-center gap-3.5 py-4 -mx-2 px-2 rounded border-b border-border last:border-b-0 cursor-pointer hover:bg-surface-hover transition-colors">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[15px] font-semibold truncate tracking-tight">{job.title}</p>
+                    <p className="text-[12.5px] text-muted-foreground mt-0.5 truncate flex items-center gap-1"><MapPin className="w-3 h-3 shrink-0" />{job.venue || "장소 미정"}</p>
+                  </div>
+                  <span className="font-mono text-[10.5px] font-bold tracking-wide text-secondary-foreground bg-secondary rounded px-2 py-1 shrink-0">{job.category || "기타"}</span>
                 </div>
-                <span className="text-[10px] font-mono font-semibold px-2 py-1 rounded bg-secondary text-secondary-foreground shrink-0 ml-2">{job.category || "기타"}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+              ))}
+            </div>
+          )}
+        </section>
 
-      {/* 커뮤니티 인기글 */}
-      <section className="mb-8" style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) 0.16s both" }}>
-        <SectionHead title="커뮤니티 인기글" onMore={() => navigate("/community")} />
-        {popularPosts.length === 0 ? (
-          <EmptyRow text="아직 커뮤니티 글이 없습니다. 첫 글을 남겨보세요!" />
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-            {popularPosts.map((p) => (
-              <div key={p.id} onClick={() => navigate(`/post/${p.id}`)} className="glass-card p-3.5 hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]">
-                <p className="text-sm font-semibold truncate tracking-tight">{p.title}</p>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{p.content}</p>
-                <div className="flex items-center gap-3 mt-2.5 text-[11px] text-muted-foreground">
-                  <span className="truncate max-w-[40%]">{p.author_name || "익명"}</span>
-                  <span className="flex items-center gap-1 ml-auto font-mono tabular-nums"><Heart className="w-3 h-3" />{p.likes || 0}</span>
-                  <span className="flex items-center gap-1 font-mono tabular-nums"><MessageSquare className="w-3 h-3" />{p.comments || 0}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* 제휴 연습실 · 즉시예약 (신뢰 등급 = VU 게이지) */}
-      {studios.length > 0 && (
-        <section className="mb-6" style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) 0.2s both" }}>
-          <SectionHead title="제휴 연습실 · 즉시예약" onMore={() => navigate("/studios")} />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-            {studios.map((s) => (
-              <div key={s.id} onClick={() => navigate("/studios")} className="glass-card p-3.5 flex items-center gap-3 hover:bg-surface-hover transition-colors duration-200 cursor-pointer active:scale-[0.98]">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold truncate tracking-tight">{s.name}</p>
-                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 truncate"><MapPin className="w-3 h-3 shrink-0" />{s.address}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <VuMeter level={tierLevel(s.tier)} />
-                    <span className="mono-label">신뢰 {s.tier || "—"}등급</span>
+        <section style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) 0.14s both" }}>
+          <SectionHead title="커뮤니티 인기글" onMore={() => navigate("/community")} />
+          {popularPosts.length === 0 ? (
+            <EmptyRow text="아직 커뮤니티 글이 없습니다. 첫 글을 남겨보세요!" />
+          ) : (
+            <div>
+              {popularPosts.map((p) => (
+                <div key={p.id} onClick={() => navigate(`/post/${p.id}`)} className="py-4 -mx-2 px-2 rounded border-b border-border last:border-b-0 cursor-pointer hover:bg-surface-hover transition-colors">
+                  <p className="text-[15px] font-semibold truncate tracking-tight">{p.title}</p>
+                  <p className="text-[12.5px] text-muted-foreground mt-1 line-clamp-1">{p.content}</p>
+                  <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
+                    <span className="truncate max-w-[45%]">{p.author_name || "익명"}</span>
+                    <span className="flex items-center gap-1 ml-auto font-mono tabular-nums"><Heart className="w-3 h-3" />{p.likes || 0}</span>
+                    <span className="flex items-center gap-1 font-mono tabular-nums"><MessageSquare className="w-3 h-3" />{p.comments || 0}</span>
                   </div>
                 </div>
-                <span className="text-[10px] font-mono font-bold px-2 py-1 rounded bg-primary/10 text-primary shrink-0 flex items-center gap-0.5"><Zap className="w-2.5 h-2.5" />즉시예약</span>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* 제휴 연습실 · 즉시예약 — 3단 배치 (신뢰 등급 = VU 게이지) */}
+      {studios.length > 0 && (
+        <section className="mb-6" style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) 0.18s both" }}>
+          <SectionHead title="제휴 연습실 · 즉시예약" onMore={() => navigate("/studios")} />
+          <div className="grid gap-2.5 lg:grid-cols-3 lg:gap-3.5 mt-4">
+            {studios.map((s) => (
+              <div key={s.id} onClick={() => navigate("/studios")} className="glass-card p-4 flex items-center justify-between gap-3 hover:border-primary transition-colors cursor-pointer">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] font-bold truncate tracking-tight">{s.name}</p>
+                  <p className="text-[12.5px] text-muted-foreground mt-0.5 flex items-center gap-1 truncate"><MapPin className="w-3 h-3 shrink-0" />{s.address}</p>
+                  <div className="flex items-center gap-2 mt-2.5">
+                    <VuMeter level={tierLevel(s.tier)} />
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-muted-foreground">신뢰 {s.tier || "—"}등급</span>
+                  </div>
+                </div>
+                <span className="font-mono text-[10px] font-bold tracking-wide text-signal bg-signal/10 rounded px-2 py-1 shrink-0">즉시예약</span>
               </div>
             ))}
           </div>
@@ -257,25 +259,21 @@ const Index = () => {
       </>}
 
       <NotificationsPanel open={notiOpen} onClose={() => setNotiOpen(false)} />
-      </div>
     </PageShell>
   );
 };
 
 const SectionHead = ({ title, onMore }: { title: string; onMore: () => void }) => (
-  <div className="flex items-center justify-between mb-3.5">
-    <h2 className="flex items-center gap-2 font-bold text-base lg:text-lg tracking-tight">
-      <span className="w-1 h-4 bg-primary rounded-full" />
-      {title}
-    </h2>
-    <button onClick={onMore} className="mono-label hover:text-foreground flex items-center gap-0.5 active:scale-95 transition-colors">
+  <div className="flex items-baseline justify-between pb-3 border-b-2 border-foreground mb-1">
+    <h2 className="text-lg lg:text-[19px] font-extrabold tracking-tight">{title}</h2>
+    <button onClick={onMore} className="text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-0.5 active:scale-95">
       전체보기 <ChevronRight className="w-3.5 h-3.5" />
     </button>
   </div>
 );
 
 const EmptyRow = ({ text }: { text: string }) => (
-  <p className="text-xs text-muted-foreground text-center py-6 glass-card">{text}</p>
+  <p className="text-[13px] text-muted-foreground text-center py-8">{text}</p>
 );
 
 export default Index;
