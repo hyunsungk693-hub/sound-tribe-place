@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Music, Mail, Lock, User, ArrowRight } from "lucide-react";
+import { Mail, Lock, User, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { track } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
@@ -61,11 +61,8 @@ const Auth = () => {
     <div className="min-h-app bg-background flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="flex items-center gap-3 justify-center mb-8" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) both" }}>
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Music className="w-6 h-6 text-primary" />
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight">instrut</h1>
+        <div className="flex items-center justify-center mb-8" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) both" }}>
+          <h1 className="text-4xl font-extrabold tracking-tight text-foreground">instrut<span className="text-primary">.</span></h1>
         </div>
 
         <p className="text-center text-muted-foreground text-sm mb-8" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.05s both" }}>
