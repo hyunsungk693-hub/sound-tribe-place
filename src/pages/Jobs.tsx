@@ -1,4 +1,4 @@
-import { Search, ArrowUpDown, ArrowLeft, Pencil, Trash2, MessageCircle, Check, Navigation, Star } from "lucide-react";
+import { Search, ArrowUpDown, ArrowLeft, Pencil, Trash2, MessageCircle, Check, Navigation, Star, CalendarHeart } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
@@ -709,6 +709,14 @@ const Jobs = () => {
                                     </button>
                                   )}
                                 </div>
+                                {a.status === "accepted" && (
+                                  <button
+                                    onClick={() => { setSelectedJob(null); navigate(`/first-rehearsal/${a.id}`); }}
+                                    className="w-full h-8 rounded-md bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center gap-1 hover:bg-primary/15 transition-colors"
+                                  >
+                                    <CalendarHeart className="w-3.5 h-3.5" /> 첫 합주 잡기
+                                  </button>
+                                )}
                               </div>
                             );
                           })}

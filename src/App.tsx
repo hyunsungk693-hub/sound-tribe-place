@@ -19,6 +19,9 @@ import NotFound from "./pages/NotFound.tsx";
 import PostDetail from "./pages/PostDetail.tsx";
 import CardView from "./pages/CardView.tsx";
 import PublicProfile from "./pages/PublicProfile.tsx";
+import Studios from "./pages/Studios.tsx";
+import Partner from "./pages/Partner.tsx";
+import FirstRehearsal from "./pages/FirstRehearsal.tsx";
 import Admin from "./pages/Admin.tsx";
 import PhoneShell from "@/components/PhoneShell";
 const queryClient = new QueryClient();
@@ -57,6 +60,9 @@ const App = () => {
                   <Route path="/jobs" element={<Jobs />} />
                   <Route path="/rooms" element={<ProtectedRoute><Rooms /></ProtectedRoute>} />
                   <Route path="/shops" element={<ProtectedRoute><Rooms /></ProtectedRoute>} />
+                  <Route path="/studios" element={<Studios />} />
+                  <Route path="/partner" element={<ProtectedRoute><Partner /></ProtectedRoute>} />
+                  <Route path="/first-rehearsal/:applicationId" element={<ProtectedRoute><FirstRehearsal /></ProtectedRoute>} />
                   <Route path="/community" element={<Community />} />
                   <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

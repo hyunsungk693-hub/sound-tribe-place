@@ -145,6 +145,21 @@ const Rooms = () => {
 
   return (
     <PageShell title={mode === "room" ? "연습실" : "악기사"}>
+      {mode === "room" && (
+        <button
+          onClick={() => navigate("/studios")}
+          className="w-full mb-4 p-3.5 rounded-xl bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-between hover:from-primary/20 transition-colors active:scale-[0.99]"
+        >
+          <div className="flex items-center gap-2.5 text-left">
+            <span className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center text-primary text-lg">⚡</span>
+            <div>
+              <p className="text-sm font-semibold">제휴 연습실 즉시예약</p>
+              <p className="text-[11px] text-muted-foreground">선결제로 바로 확정 · 도어락 PIN 자동 발급</p>
+            </div>
+          </div>
+          <span className="text-primary text-lg">›</span>
+        </button>
+      )}
       <div className="relative mb-5">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input
