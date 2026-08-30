@@ -171,9 +171,10 @@
     .page-main-pb { padding-bottom: 2.5rem; }
   }
 
-  /* 글쓰기 FAB 위치: 모바일은 탭바 위, 데스크톱은 우측 하단 */
+  /* 글쓰기 FAB 위치: 모바일은 탭바(64px) 위, 데스크톱은 우측 하단.
+     홈 탭 평탄화로 탭바 위로 튀어나온 원형 버튼이 사라져 12px만 띄운다. */
   .fab-pos {
-    bottom: calc(88px + var(--safe-bottom, 0px));
+    bottom: calc(76px + var(--safe-bottom, 0px));
   }
   @media (min-width: 1024px) {
     .fab-pos { bottom: 2rem; }
