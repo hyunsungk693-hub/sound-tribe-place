@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 const HOLD_MS = 300;
 
@@ -18,32 +19,13 @@ const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [unreadMessages, setUnreadMessages] = useState(0);
+  // 메시지 미읽음은 TopNav와 공유하는 전역 단일 구독을 쓴다 (중복 채널·토스트 방지)
+  const { count: unreadMessages } = useUnreadMessages();
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuClosing, setMenuClosing] = useState(false);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const openedByHold = useRef(false);
-
-  const fetchUnreadMessages = useCallback(async () => {
-    if (!user) return;
-    const { data: convs } = await supabase
-      .from("conversations")
-      .select("id")
-      .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
-
-    if (!convs || convs.length === 0) { setUnreadMessages(0); return; }
-
-    const convIds = convs.map((c: any) => c.id);
-    const { count } = await supabase
-      .from("messages")
-      .select("*", { count: "exact", head: true })
-      .in("conversation_id", convIds)
-      .neq("sender_id", user.id)
-      .eq("is_read", false);
-
-    setUnreadMessages(count || 0);
-  }, [user]);
 
   const fetchUnreadNotifications = useCallback(async () => {
     if (!user) return;
@@ -57,26 +39,7 @@ const BottomNav = () => {
 
   useEffect(() => {
     if (!user) return;
-    fetchUnreadMessages();
     fetchUnreadNotifications();
-
-    const msgChannel = supabase
-      .channel("unread-msg-badge")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload: any) => {
-        fetchUnreadMessages();
-        if (payload.new && payload.new.sender_id !== user.id) {
-          toast("💬 새 메시지가 도착했습니다", {
-            description: payload.new.content?.slice(0, 50) || "새 메시지",
-            duration: 4000,
-            action: {
-              label: "확인",
-              onClick: () => navigate("/messages"),
-            },
-          });
-        }
-      })
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages" }, () => fetchUnreadMessages())
-      .subscribe();
 
     const notiChannel = supabase
       .channel("unread-noti-badge")
@@ -103,10 +66,9 @@ const BottomNav = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(msgChannel);
       supabase.removeChannel(notiChannel);
     };
-  }, [user, fetchUnreadMessages, fetchUnreadNotifications]);
+  }, [user, fetchUnreadNotifications]);
 
   const closeMenu = useCallback(() => {
     if (!menuOpen) return;

@@ -87,7 +87,9 @@ const Messages = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const targetUserId = searchParams.get("to");
   const prefillText = searchParams.get("prefill");
+  const targetConvId = searchParams.get("c");
   const handledTargetRef = useRef<string | null>(null);
+  const handledConvRef = useRef<string | null>(null);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
@@ -245,6 +247,17 @@ const Messages = () => {
 
     openOrCreate();
   }, [targetUserId, user, loading, conversations, setSearchParams, fetchConversations]);
+
+  // 새 메시지 토스트 딥링크: ?c=<conversation_id> 로 해당 대화를 바로 연다
+  useEffect(() => {
+    if (!targetConvId || !user || loading) return;
+    if (handledConvRef.current === targetConvId) return;
+    const conv = conversations.find((c) => c.id === targetConvId);
+    if (!conv) return;
+    handledConvRef.current = targetConvId;
+    setSelectedConv(conv);
+    setSearchParams({}, { replace: true });
+  }, [targetConvId, user, loading, conversations, setSearchParams]);
 
   useEffect(() => {
     fetchConversations();

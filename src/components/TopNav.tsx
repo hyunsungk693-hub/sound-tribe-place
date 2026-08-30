@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationsPanel, { useUnreadCount } from "@/components/NotificationsPanel";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 const links = [
   { path: "/", label: "홈" },
@@ -19,6 +20,7 @@ const TopNav = () => {
   const navigate = useNavigate();
   const [notiOpen, setNotiOpen] = useState(false);
   const { count } = useUnreadCount();
+  const { count: unreadMessages } = useUnreadMessages();
 
   const textLink = (active: boolean) =>
     `relative text-sm font-medium transition-colors ${
@@ -69,6 +71,11 @@ const TopNav = () => {
               </button>
               <button onClick={() => navigate("/messages")} className={textLink(location.pathname === "/messages")}>
                 메시지
+                {unreadMessages > 0 && (
+                  <span className="absolute -top-1.5 -right-3 min-w-[15px] h-[15px] px-1 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[9px] font-bold font-mono">
+                    {unreadMessages > 99 ? "99+" : unreadMessages}
+                  </span>
+                )}
               </button>
               <button onClick={() => navigate("/profile")} className={textLink(location.pathname === "/profile")}>
                 프로필
