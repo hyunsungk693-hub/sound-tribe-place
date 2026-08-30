@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const categories = ["전체", "공연", "녹음", "레슨", "행사", "종교", "기타"];
-// A6: 포지션은 제외 필터가 아니라 우선 노출 — 선택해도 다른 공고를 숨기지 않는다
+// 포지션·카테고리 모두 제외 필터 — 선택 시 미반영 공고는 목록에서 숨긴다
 const POSITIONS = ["전체", "보컬", "기타", "베이스", "드럼", "건반", "관악", "현악", "그 외"];
 
 const APPLY_STATUSES: { value: string; label: string; cls: string }[] = [
@@ -292,13 +292,9 @@ const Jobs = () => {
   const filtered = allJobs
     .filter((j) => selectedCat === "전체" || j.tag === selectedCat)
     .filter((j) => !q || j.title.includes(q) || j.venue.includes(q) || j.content.includes(q))
-    .sort((a, b) => (sortOrder === "latest" ? b.createdAt - a.createdAt : a.createdAt - b.createdAt))
-    // A6 우선 노출: 포지션 선택 시 매칭 공고를 상단으로 (숨기지 않음, 안정 정렬로 날짜순 유지)
-    .sort((a, b) =>
-      selectedPosition === "전체"
-        ? 0
-        : (b.position === selectedPosition ? 1 : 0) - (a.position === selectedPosition ? 1 : 0)
-    );
+    // 포지션도 카테고리와 동일한 제외 필터 — 선택하면 미반영 공고는 목록에서 빠진다
+    .filter((j) => selectedPosition === "전체" || j.position === selectedPosition)
+    .sort((a, b) => (sortOrder === "latest" ? b.createdAt - a.createdAt : a.createdAt - b.createdAt));
 
   const startEditing = () => {
     if (!selectedJob) return;
@@ -393,7 +389,7 @@ const Jobs = () => {
           </button>
         ))}
         {selectedPosition !== "전체" && (
-          <span className="shrink-0 text-[10px] text-muted-foreground">· {selectedPosition} 공고 우선 표시 중</span>
+          <span className="shrink-0 text-[10px] text-muted-foreground">· {selectedPosition} 공고만 표시 중</span>
         )}
       </div>
 
@@ -431,11 +427,7 @@ const Jobs = () => {
                   </span>
                 )}
                 {job.position && (
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                    selectedPosition !== "전체" && job.position === selectedPosition
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground"
-                  }`}>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-secondary text-secondary-foreground">
                     🎯 {job.position}
                   </span>
                 )}
