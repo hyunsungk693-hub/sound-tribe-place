@@ -11,19 +11,17 @@ import banner3 from "@/assets/banner-3.jpg";
 import banner4 from "@/assets/banner-4.jpg";
 
 // 카테고리 — 라인 픽토그램 + EN 라벨 + 볼드 타이포
-// 채널 스트립 모티프: 채널마다 hue만 다른 파스텔 워시를 준다.
-// wash = 아이콘 칩 배경(가장 넓은 색면), ink = 그 위의 아이콘 스트로크와 hover 테두리.
-// mono 라벨·제목은 중립 톤으로 둔다 — 파스텔로는 작은 텍스트의 4.5:1을 못 맞춘다.
-// 클래스는 Tailwind JIT가 스캔할 수 있도록 리터럴 문자열로 유지한다.
+// 채널 스트립 모티프: 채널마다 hue만 다른 밝고 연한 파스텔 아이콘.
+// 색은 아이콘과 hover 테두리에만 쓰고, mono 라벨은 중립 톤으로 둔다.
 const categories = [
   { icon: Briefcase, en: "Jobs", label: "구인구직", path: "/jobs",
-    wash: "bg-ch-jobs", ink: "text-ch-jobs-ink", hoverBorder: "hover:border-ch-jobs-ink", hoverText: "group-hover:text-ch-jobs-ink" },
+    tint: "text-ch-jobs", hoverBorder: "hover:border-ch-jobs", hoverText: "group-hover:text-ch-jobs" },
   { icon: Music2, en: "Rooms", label: "연습실", path: "/rooms",
-    wash: "bg-ch-rooms", ink: "text-ch-rooms-ink", hoverBorder: "hover:border-ch-rooms-ink", hoverText: "group-hover:text-ch-rooms-ink" },
+    tint: "text-ch-rooms", hoverBorder: "hover:border-ch-rooms", hoverText: "group-hover:text-ch-rooms" },
   { icon: Store, en: "Shops", label: "악기사", path: "/shops",
-    wash: "bg-ch-shops", ink: "text-ch-shops-ink", hoverBorder: "hover:border-ch-shops-ink", hoverText: "group-hover:text-ch-shops-ink" },
+    tint: "text-ch-shops", hoverBorder: "hover:border-ch-shops", hoverText: "group-hover:text-ch-shops" },
   { icon: MessageCircle, en: "Community", label: "커뮤니티", path: "/community",
-    wash: "bg-ch-community", ink: "text-ch-community-ink", hoverBorder: "hover:border-ch-community-ink", hoverText: "group-hover:text-ch-community-ink" },
+    tint: "text-ch-community", hoverBorder: "hover:border-ch-community", hoverText: "group-hover:text-ch-community" },
 ];
 
 const adBanners = [
@@ -292,16 +290,13 @@ const Index = () => {
       {/* 카테고리 — 픽토그램 + EN + 볼드 타이포 카드 */}
       <section className="mb-10 lg:mb-14" style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) 0.06s both" }}>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 lg:gap-3">
-          {categories.map(({ icon: Icon, en, label, path, wash, ink, hoverBorder, hoverText }) => (
+          {categories.map(({ icon: Icon, en, label, path, tint, hoverBorder, hoverText }) => (
             <button
               key={path}
               onClick={() => navigate(path)}
               className={`glass-card relative p-4 lg:p-5 flex flex-col text-left transition-colors active:scale-[0.98] group ${hoverBorder}`}
             >
-              {/* 파스텔 워시 칩 — 타일에서 색이 가장 넓게 깔리는 면 */}
-              <span className={`mb-3 w-12 h-12 lg:w-14 lg:h-14 rounded-lg flex items-center justify-center transition-transform group-hover:scale-105 ${wash}`}>
-                <Icon strokeWidth={1.6} className={`w-6 h-6 lg:w-8 lg:h-8 ${ink}`} />
-              </span>
+              <Icon strokeWidth={1.8} className={`w-7 h-7 lg:w-8 lg:h-8 mb-3 group-hover:scale-110 transition-transform ${tint}`} />
               <span className="font-mono text-[10px] lg:text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">{en}</span>
               <span className="text-lg lg:text-[21px] font-extrabold tracking-tight leading-tight mt-0.5">{label}</span>
               <ChevronRight className={`absolute top-4 right-3.5 w-4 h-4 text-muted-foreground/50 transition-colors ${hoverText}`} />
