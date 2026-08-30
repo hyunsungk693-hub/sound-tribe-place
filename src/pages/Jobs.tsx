@@ -1010,7 +1010,7 @@ const Jobs = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>프로 인증이 필요합니다</AlertDialogTitle>
             <AlertDialogDescription>
-              활동 목적이 "프로"인 경우 졸업장·합격증·입상내역 중 1건을 인증해야 구인글 작성과 지원이 가능합니다.
+              활동 목적이 "프로"인 경우 졸업장·합격증·입상내역 등 1건을 인증해야 구인글 작성과 지원이 가능합니다.
               프로필에서 증빙을 제출해주세요.
             </AlertDialogDescription>
           </AlertDialogHeader>
