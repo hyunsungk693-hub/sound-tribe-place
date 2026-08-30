@@ -11,11 +11,17 @@ import banner3 from "@/assets/banner-3.jpg";
 import banner4 from "@/assets/banner-4.jpg";
 
 // 카테고리 — 라인 픽토그램 + EN 라벨 + 볼드 타이포
+// 채널 스트립 모티프: 채널마다 hue만 다른 틴트를 준다.
+// 클래스는 Tailwind JIT가 스캔할 수 있도록 리터럴 문자열로 유지한다.
 const categories = [
-  { icon: Briefcase, en: "Jobs", label: "구인구직", path: "/jobs" },
-  { icon: Music2, en: "Rooms", label: "연습실", path: "/rooms" },
-  { icon: Store, en: "Shops", label: "악기사", path: "/shops" },
-  { icon: MessageCircle, en: "Community", label: "커뮤니티", path: "/community" },
+  { icon: Briefcase, en: "Jobs", label: "구인구직", path: "/jobs",
+    tint: "text-ch-jobs", hoverBorder: "hover:border-ch-jobs", hoverText: "group-hover:text-ch-jobs" },
+  { icon: Music2, en: "Rooms", label: "연습실", path: "/rooms",
+    tint: "text-ch-rooms", hoverBorder: "hover:border-ch-rooms", hoverText: "group-hover:text-ch-rooms" },
+  { icon: Store, en: "Shops", label: "악기사", path: "/shops",
+    tint: "text-ch-shops", hoverBorder: "hover:border-ch-shops", hoverText: "group-hover:text-ch-shops" },
+  { icon: MessageCircle, en: "Community", label: "커뮤니티", path: "/community",
+    tint: "text-ch-community", hoverBorder: "hover:border-ch-community", hoverText: "group-hover:text-ch-community" },
 ];
 
 const adBanners = [
@@ -232,7 +238,7 @@ const Index = () => {
       {/* 히어로: 배너(1fr) + 지표 카드(340px) */}
       <section className="mb-9 lg:mb-14 grid gap-4 lg:grid-cols-[1fr_340px] lg:gap-5" style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) both" }}>
         <div
-          className="relative overflow-hidden rounded-lg h-[210px] lg:h-[300px] touch-pan-y select-none"
+          className="relative overflow-hidden rounded-lg h-[210px] lg:h-auto lg:min-h-[300px] touch-pan-y select-none"
           onPointerDown={onBannerPointerDown}
           onPointerMove={onBannerPointerMove}
           onPointerUp={onBannerPointerUp}
@@ -286,16 +292,16 @@ const Index = () => {
       {/* 카테고리 — 픽토그램 + EN + 볼드 타이포 카드 */}
       <section className="mb-10 lg:mb-14" style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) 0.06s both" }}>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 lg:gap-3">
-          {categories.map(({ icon: Icon, en, label, path }) => (
+          {categories.map(({ icon: Icon, en, label, path, tint, hoverBorder, hoverText }) => (
             <button
               key={path}
               onClick={() => navigate(path)}
-              className="glass-card relative p-4 lg:p-5 flex flex-col text-left hover:border-primary transition-colors active:scale-[0.98] group"
+              className={`glass-card relative p-4 lg:p-5 flex flex-col text-left transition-colors active:scale-[0.98] group ${hoverBorder}`}
             >
-              <Icon strokeWidth={1.6} className="w-7 h-7 lg:w-8 lg:h-8 text-primary mb-3 group-hover:scale-110 transition-transform" />
-              <span className="font-mono text-[10px] lg:text-[11px] font-bold uppercase tracking-[0.08em] text-primary">{en}</span>
+              <Icon strokeWidth={1.6} className={`w-7 h-7 lg:w-8 lg:h-8 mb-3 group-hover:scale-110 transition-transform ${tint}`} />
+              <span className={`font-mono text-[10px] lg:text-[11px] font-bold uppercase tracking-[0.08em] ${tint}`}>{en}</span>
               <span className="text-lg lg:text-[21px] font-extrabold tracking-tight leading-tight mt-0.5">{label}</span>
-              <ChevronRight className="absolute top-4 right-3.5 w-4 h-4 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+              <ChevronRight className={`absolute top-4 right-3.5 w-4 h-4 text-muted-foreground/50 transition-colors ${hoverText}`} />
             </button>
           ))}
         </div>

@@ -23,6 +23,12 @@ export default {
         "surface-hover": "hsl(var(--surface-hover))",
         signal: "hsl(var(--signal))",
         amber: "hsl(var(--amber))",
+        ch: {
+          jobs: "hsl(var(--ch-jobs))",
+          rooms: "hsl(var(--ch-rooms))",
+          shops: "hsl(var(--ch-shops))",
+          community: "hsl(var(--ch-community))",
+        },
         action: {
           DEFAULT: "hsl(var(--action))",
           foreground: "hsl(var(--action-foreground))",
