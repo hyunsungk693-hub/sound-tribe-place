@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { Bell, Heart, MessageSquare, BellOff, BellRing, BadgeCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -119,7 +120,10 @@ const NotificationsPanel = ({ open, onClose }: Props) => {
 
   if (!open) return null;
 
-  return (
+  // TopNav 등 backdrop-filter가 걸린 조상 안에서 렌더되면 position:fixed의
+  // 컨테이닝 블록이 그 조상 박스(높이 64px)가 되어 패널이 잘린다.
+  // 어디서 호출되든 안전하도록 오버레이를 body로 포털한다.
+  return createPortal(
     <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center lg:p-8" onClick={onClose}>
       <div
         className="w-full max-w-lg bg-background rounded-t-2xl lg:rounded-2xl flex flex-col animate-in slide-in-from-bottom lg:zoom-in-95 lg:slide-in-from-bottom-0 duration-300 max-h-sheet lg:max-h-[calc(100dvh-8rem)] lg:shadow-2xl overflow-hidden"
@@ -203,7 +207,8 @@ const NotificationsPanel = ({ open, onClose }: Props) => {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

@@ -1,4 +1,4 @@
-import { Briefcase, Music2, Store, MessageCircle, Heart, MessageSquare, ChevronRight, MapPin } from "lucide-react";
+import { Briefcase, Music2, Store, MessageCircle, Heart, MessageSquare, ChevronRight, MapPin, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef, useCallback } from "react";
 import PageShell from "@/components/PageShell";
@@ -215,9 +215,10 @@ const Index = () => {
           {user ? (
             <button
               onClick={() => setNotiOpen(true)}
-              className="relative text-sm font-medium text-muted-foreground hover:text-foreground transition-colors active:scale-95 pr-1"
+              aria-label={unreadCount > 0 ? `알림 ${unreadCount}개` : "알림"}
+              className="relative text-muted-foreground hover:text-foreground transition-colors active:scale-95 pr-1"
             >
-              알림
+              <Bell className="w-5 h-5" strokeWidth={2} />
               {unreadCount > 0 && (
                 <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[9px] font-bold font-mono">
                   {unreadCount > 99 ? "99+" : unreadCount}

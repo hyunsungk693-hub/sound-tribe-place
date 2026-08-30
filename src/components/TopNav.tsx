@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Bell } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationsPanel, { useUnreadCount } from "@/components/NotificationsPanel";
@@ -61,10 +62,14 @@ const TopNav = () => {
         <div className="flex items-center gap-6">
           {user ? (
             <>
-              <button onClick={() => setNotiOpen(true)} className={textLink(false)}>
-                알림
+              <button
+                onClick={() => setNotiOpen(true)}
+                aria-label={count > 0 ? `알림 ${count}개` : "알림"}
+                className={`${textLink(false)} flex items-center`}
+              >
+                <Bell className="w-[18px] h-[18px]" strokeWidth={2} />
                 {count > 0 && (
-                  <span className="absolute -top-1.5 -right-3 min-w-[15px] h-[15px] px-1 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[9px] font-bold font-mono">
+                  <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[9px] font-bold font-mono">
                     {count > 99 ? "99+" : count}
                   </span>
                 )}
