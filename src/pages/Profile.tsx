@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronRight, Edit3, Shield, HelpCircle, LogOut, Trash2, Calendar, MapPin, Users, Clock, History, IdCard, Star, CalendarHeart } from "lucide-react";
+import { ChevronRight, Edit3, Shield, HelpCircle, LogOut, Trash2, Calendar, MapPin, Users, Clock, History, IdCard, Star, CalendarHeart, Flag } from "lucide-react";
 import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -70,6 +70,11 @@ const ProfilePage = () => {
   const [myBookings, setMyBookings] = useState<any[]>([]);
   const [myApplications, setMyApplications] = useState<any[]>([]);
   const [instrutTab, setInstrutTab] = useState<"apply" | "reserve">("apply");
+  // 작업 2 이의 제기: 내가 받은 평가와 신고 폼
+  const [myRatings, setMyRatings] = useState<any[]>([]);
+  const [reportTarget, setReportTarget] = useState<any>(null);
+  const [reportReason, setReportReason] = useState("");
+  const [reporting, setReporting] = useState(false);
   const [cancelAppTarget, setCancelAppTarget] = useState<any | null>(null);
   const [cancellingApp, setCancellingApp] = useState(false);
   const [ratingTarget, setRatingTarget] = useState<{ id: string; name: string; appId: string } | null>(null);
@@ -169,6 +174,46 @@ const ProfilePage = () => {
   const typeLabel = (t: string) =>
     t === "job" ? "구인" : t === "room" ? "연습실" : t === "shop" ? "악기사" : "커뮤니티";
 
+  const fetchMyRatings = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("peer_ratings" as any)
+      .select("*")
+      .eq("ratee_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    const list = (data as any[]) || [];
+    const raterIds = Array.from(new Set(list.map((r) => r.rater_id)));
+    let nameById: Record<string, string> = {};
+    if (raterIds.length > 0) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id, display_name")
+        .in("user_id", raterIds);
+      (profs || []).forEach((pr: any) => { nameById[pr.user_id] = pr.display_name || "익명"; });
+    }
+    setMyRatings(list.map((r) => ({ ...r, raterName: nameById[r.rater_id] || "익명" })));
+  };
+
+  const submitReport = async () => {
+    if (!user || !reportTarget || !reportReason.trim()) return;
+    setReporting(true);
+    const { error } = await supabase.from("rating_reports" as any).insert({
+      rating_id: reportTarget.id,
+      reporter_id: user.id,
+      reason: reportReason.trim(),
+    } as any);
+    setReporting(false);
+    if (error) {
+      toast.error(error.code === "23505" ? "이미 신고한 평가입니다" : "신고에 실패했습니다");
+      return;
+    }
+    toast.success("신고가 접수되었습니다. 확인 전까지 이 평가는 등급 산정에서 제외됩니다.");
+    setReportTarget(null);
+    setReportReason("");
+    fetchMyRatings();
+  };
+
   useEffect(() => {
     if (!user) return;
     supabase
@@ -187,6 +232,9 @@ const ProfilePage = () => {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .then(({ data }) => setMyPosts(data || []));
+
+    // 내가 받은 평가 (이의 제기 대상)
+    fetchMyRatings();
 
     // Fetch my room reservations (with room title)
     fetchReservations();
@@ -501,6 +549,52 @@ const ProfilePage = () => {
           )}
         </div>
       </div>
+
+      {/* 받은 평가 — 이의 제기 창구 (작업 2) */}
+      {myRatings.length > 0 && (
+        <div className="glass-card overflow-hidden" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.105s both" }}>
+          <div className="px-5 pt-5 pb-3">
+            <h3 className="text-lg font-extrabold tracking-tight">받은 평가 ({myRatings.length})</h3>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              사실과 다른 평가는 신고할 수 있습니다. 신고된 평가는 확인 전까지 등급 산정에서 제외됩니다.
+            </p>
+          </div>
+          <div className="p-3 pt-0 space-y-2 max-h-[300px] overflow-y-auto">
+            {myRatings.map((r) => (
+              <div key={r.id} className="p-3 rounded-xl bg-secondary/50">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold truncate">{r.raterName}</span>
+                  <span className="font-mono text-[10px] text-muted-foreground shrink-0">
+                    {new Date(r.created_at).toLocaleDateString("ko-KR")}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {([["약속 지킴", r.kept_promise], ["실력 일치", r.skill_matched], ["또 하고 싶음", r.would_again]] as [string, boolean][]).map(([label, ok]) => (
+                    <span
+                      key={label}
+                      className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${ok ? "bg-signal/15 text-signal" : "bg-muted text-muted-foreground"}`}
+                    >
+                      {ok ? "\u2713" : "\u2717"} {label}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-2 flex justify-end">
+                  {r.disputed ? (
+                    <span className="text-[10px] font-medium text-muted-foreground">신고 접수됨 · 산정 제외 중</span>
+                  ) : (
+                    <button
+                      onClick={() => { setReportTarget(r); setReportReason(""); }}
+                      className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Flag className="w-3 h-3" /> 신고
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* My Activity */}
       <div className="glass-card overflow-hidden" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.11s both" }}>
@@ -886,6 +980,40 @@ const ProfilePage = () => {
           jobApplicationId={ratingTarget.appId}
         />
       )}
+      {/* 평가 신고 폼 */}
+      <Dialog open={!!reportTarget} onOpenChange={(o) => { if (!o) { setReportTarget(null); setReportReason(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>평가 신고</DialogTitle>
+            <DialogDescription>
+              어떤 점이 사실과 다른지 알려주세요. 접수되면 이 평가는 확인 전까지 등급 산정에서 제외됩니다.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={reportReason}
+            onChange={(e) => setReportReason(e.target.value)}
+            placeholder="예: 합주에 참석했는데 노쇼로 평가되었습니다"
+            rows={4}
+            maxLength={500}
+          />
+          <DialogFooter className="flex flex-col sm:flex-col sm:justify-normal sm:space-x-0 pt-2">
+            <button
+              onClick={submitReport}
+              disabled={reporting || !reportReason.trim()}
+              className="w-full h-12 rounded-lg bg-action text-action-foreground text-sm font-semibold hover:bg-action-hover transition-colors disabled:opacity-50"
+            >
+              {reporting ? "접수 중..." : "신고 접수"}
+            </button>
+            <button
+              onClick={() => { setReportTarget(null); setReportReason(""); }}
+              disabled={reporting}
+              className="mt-6 self-center px-4 py-3 text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
+            >
+              취소
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 };

@@ -56,6 +56,7 @@ const Community = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [selectedPost, setSelectedPost] = useState<PostItem | null>(null);
   const [authorProfile, setAuthorProfile] = useState<ProfileCardData | null>(null);
+  const [authorStats, setAuthorStats] = useState<any>(undefined);
   const [sortBy, setSortBy] = useState<"latest" | "likes" | "comments">("latest");
 
   // 상세 열람 시 최근 본 게시물 기록
@@ -73,6 +74,13 @@ const Community = () => {
       .eq("user_id", selectedPost.user_id)
       .single()
       .then(({ data }) => { if (data) setAuthorProfile(data as ProfileCardData); });
+    // 등급 배지용 집계 (단건 조회 — 목록이 아니므로 N+1 아님)
+    supabase
+      .from("user_stats" as any)
+      .select("*")
+      .eq("user_id", selectedPost.user_id)
+      .maybeSingle()
+      .then(({ data }) => setAuthorStats(data ?? null));
   }, [selectedPost?.user_id]);
 
   // Like/comment counts from DB
@@ -504,6 +512,7 @@ const Community = () => {
                 {authorProfile ? (
                   <ProfileCard
                     profile={authorProfile}
+                    stats={authorStats}
                     variant="compact"
                     onBeforeNavigate={() => setSelectedPost(null)}
                     className="flex-1"

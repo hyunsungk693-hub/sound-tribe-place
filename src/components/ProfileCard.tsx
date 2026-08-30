@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { safeVideoUrl } from "@/lib/safeUrl";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Music, Award, PlayCircle, Sparkles, Clock, Instagram, Zap, ShieldCheck, CircleDot } from "lucide-react";
+import { MapPin, Music, Award, PlayCircle, Sparkles, Clock, Instagram, Zap, ShieldCheck, CircleDot, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -32,7 +32,32 @@ export interface ProfileStats {
   partners_count?: number | null;
   rehire_rate?: number | null;
   no_show_count?: number | null;
+  // 작업 2: 집계 테이블에 미리 계산해 둔 등급 (렌더 시점 계산·조회 금지)
+  grade?: "trust" | "stable" | "caution" | "unrated" | null;
+  positive_rate?: number | null;
+  review_count?: number | null;
 }
+
+/**
+ * 등급 배지 — 신뢰·주의만 배지를 달고 안정은 아무것도 표시하지 않는다.
+ * 산정 전(평가 5건 미만)은 "새로 시작하는 음악인"으로 표기한다.
+ */
+const GRADE_BADGE = {
+  trust: { label: "신뢰", icon: ShieldCheck, cls: "bg-signal/15 text-signal" },
+  caution: { label: "주의", icon: AlertTriangle, cls: "bg-amber/20 text-amber" },
+} as const;
+
+const GradeBadge = ({ grade, size = "sm" }: { grade?: string | null; size?: "sm" | "md" }) => {
+  const meta = grade === "trust" || grade === "caution" ? GRADE_BADGE[grade] : null;
+  if (!meta) return null;
+  const Icon = meta.icon;
+  const box = size === "md" ? "text-[10px] px-2 py-0.5 gap-1" : "text-[9px] px-1.5 py-0.5 gap-0.5";
+  return (
+    <span className={`flex items-center ${box} font-semibold rounded-full shrink-0 ${meta.cls}`}>
+      <Icon className="w-3 h-3" /> {meta.label}
+    </span>
+  );
+};
 
 interface Props {
   profile: ProfileCardData | null;
@@ -177,7 +202,7 @@ const ProfileCard = ({ profile, variant = "compact", stats, className = "", onBe
     if (effStats.partners_count != null && effStats.partners_count > 0) trustItems.push({ label: "함께한 음악인", value: `${effStats.partners_count}명` });
     if (effStats.rehire_rate != null) trustItems.push({ label: "재합주율", value: `${Math.round(effStats.rehire_rate * 100)}%` });
   }
-  const isNew = trustItems.length === 0;
+  const isNew = effStats?.grade ? effStats.grade === "unrated" : trustItems.length === 0;
 
   // D4 배지: 획득한 것만, 최대 3개. 우선순위 = 빠른 응답 > 노쇼 0 > 활동 중 (§3.2 D4)
   const badges: { icon: typeof Zap; label: string }[] = [];
@@ -212,6 +237,7 @@ const ProfileCard = ({ profile, variant = "compact", stats, className = "", onBe
             {purpose && (
               <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">{purpose}</span>
             )}
+            <GradeBadge grade={effStats?.grade} />
           </div>
           {(mainInstrument || profile.location) && (
             <p className="text-[11px] text-muted-foreground truncate">
@@ -246,6 +272,7 @@ const ProfileCard = ({ profile, variant = "compact", stats, className = "", onBe
             {purpose && (
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">{purpose}</span>
             )}
+            <GradeBadge grade={effStats?.grade} size="md" />
             {isNew && (
               <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
                 <Sparkles className="w-3 h-3" /> 새로 시작하는 음악인
@@ -262,6 +289,11 @@ const ProfileCard = ({ profile, variant = "compact", stats, className = "", onBe
           )}
         </div>
       </div>
+
+      {/* 주의 등급에는 회복 조건을 함께 알린다 */}
+      {effStats?.grade === "caution" && (
+        <p className="mt-2.5 text-[11px] text-muted-foreground">노쇼 없이 3건 완료 시 해제됩니다</p>
+      )}
 
       {/* D4 배지 (최대 3개) */}
       {shownBadges.length > 0 && (

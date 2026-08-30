@@ -88,6 +88,7 @@ const Jobs = () => {
   const [applyTarget, setApplyTarget] = useState<JobItem | null>(null);
   const [applyMessage, setApplyMessage] = useState("");
   const [authorProfile, setAuthorProfile] = useState<ProfileCardData | null>(null);
+  const [authorStats, setAuthorStats] = useState<any>(undefined);
   const [videoGateOpen, setVideoGateOpen] = useState(false);
   const [applying, setApplying] = useState(false);
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
@@ -186,7 +187,20 @@ const Jobs = () => {
         .in("user_id", userIds);
       (profs || []).forEach((p: any) => { profilesById[p.user_id] = p; });
     }
-    setJobApplicants(list.map((a) => ({ ...a, applicant: profilesById[a.user_id] || null })));
+    // 등급 배지용 집계를 한 번에 조회해 카드에 주입한다 (카드별 단건 조회 = N+1 금지)
+    let statsById: Record<string, any> = {};
+    if (userIds.length > 0) {
+      const { data: stats } = await supabase
+        .from("user_stats" as any)
+        .select("*")
+        .in("user_id", userIds);
+      ((stats as any[]) || []).forEach((st) => { statsById[st.user_id] = st; });
+    }
+    setJobApplicants(list.map((a) => ({
+      ...a,
+      applicant: profilesById[a.user_id] || null,
+      stats: statsById[a.user_id] || null,
+    })));
     setLoadingApplicants(false);
   };
 
@@ -225,6 +239,7 @@ const Jobs = () => {
   // 상세의 작성자 프로필 카드(D1) 데이터 로드
   useEffect(() => {
     setAuthorProfile(null);
+    setAuthorStats(undefined);
     if (!selectedJob?.user_id) return;
     supabase
       .from("profiles")
@@ -232,6 +247,12 @@ const Jobs = () => {
       .eq("user_id", selectedJob.user_id)
       .single()
       .then(({ data }) => { if (data) setAuthorProfile(data as ProfileCardData); });
+    supabase
+      .from("user_stats" as any)
+      .select("*")
+      .eq("user_id", selectedJob.user_id)
+      .maybeSingle()
+      .then(({ data }) => setAuthorStats(data ?? null));
   }, [selectedJob?.user_id]);
 
   useEffect(() => {
@@ -612,7 +633,7 @@ const Jobs = () => {
                   )}
                   {authorProfile && (
                     <div className="mb-3 p-3 rounded-lg border border-border bg-card">
-                      <ProfileCard profile={authorProfile} variant="compact" onBeforeNavigate={() => setSelectedJob(null)} />
+                      <ProfileCard profile={authorProfile} stats={authorStats} variant="compact" onBeforeNavigate={() => setSelectedJob(null)} />
                     </div>
                   )}
                   <h2 className="text-lg font-extrabold tracking-tight mb-2">{selectedJob.title}</h2>
@@ -748,6 +769,7 @@ const Jobs = () => {
                               <div key={a.id} className="p-3 rounded-lg border border-border bg-card space-y-2">
                                 <div className="flex items-center gap-2">
                                   <ProfileCard
+                                    stats={a.stats}
                                     profile={(a.applicant as ProfileCardData) || null}
                                     variant="compact"
                                     onBeforeNavigate={() => setSelectedJob(null)}

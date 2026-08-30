@@ -94,6 +94,7 @@ const Messages = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
   const [chatPartnerProfile, setChatPartnerProfile] = useState<ProfileCardData | null>(null);
+  const [chatPartnerStats, setChatPartnerStats] = useState<any>(undefined);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMsg, setNewMsg] = useState("");
   const [sending, setSending] = useState(false);
@@ -296,6 +297,12 @@ const Messages = () => {
       .eq("user_id", selectedConv.otherUserId)
       .single()
       .then(({ data }) => { if (data) setChatPartnerProfile(data as ProfileCardData); });
+    supabase
+      .from("user_stats" as any)
+      .select("*")
+      .eq("user_id", selectedConv.otherUserId)
+      .maybeSingle()
+      .then(({ data }) => setChatPartnerStats(data ?? null));
   }, [selectedConv?.otherUserId]);
 
   useEffect(() => {
@@ -557,7 +564,7 @@ const Messages = () => {
           <ArrowLeft className="w-5 h-5" />
         </button>
         {chatPartnerProfile ? (
-          <ProfileCard profile={chatPartnerProfile} variant="compact" className="flex-1" />
+          <ProfileCard profile={chatPartnerProfile} stats={chatPartnerStats} variant="compact" className="flex-1" />
         ) : (
           <>
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-xs font-bold overflow-hidden shrink-0">
