@@ -441,13 +441,21 @@ const Community = () => {
               <span className="text-[10px] text-muted-foreground font-mono shrink-0">{post.time}</span>
               <span className="ml-auto font-mono text-[10px] font-bold tracking-wide px-2 py-0.5 rounded bg-secondary text-secondary-foreground shrink-0">{post.tab}</span>
             </div>
-            <h3 className="text-[15px] font-bold tracking-tight leading-snug mb-1.5">{post.title}</h3>
-            {post.image_url && (
-              <div className="mb-2 rounded-lg overflow-hidden">
-                <img src={post.image_url} alt="" className="w-full max-h-48 object-cover" />
+            {/* 사진은 고정 크기 썸네일로 — 사진 유무와 무관하게 카드 높이를 맞춘다 */}
+            <div className="flex items-start gap-3 min-h-[72px]">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-[15px] font-bold tracking-tight leading-snug mb-1.5">{post.title}</h3>
+                <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-2">{post.content}</p>
               </div>
-            )}
-            <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-2">{post.content}</p>
+              {post.image_url && (
+                <img
+                  src={post.image_url}
+                  alt=""
+                  className="w-[72px] h-[72px] rounded-lg object-cover shrink-0 bg-secondary"
+                  loading="lazy"
+                />
+              )}
+            </div>
             <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border">
               <button
                 onClick={(e) => handleLike(post, e)}
@@ -590,7 +598,7 @@ const Community = () => {
                   <h2 className="text-base font-bold mb-3">{selectedPost.title}</h2>
                   {selectedPost.image_url && (
                     <div className="mb-3 rounded-lg overflow-hidden">
-                      <img src={selectedPost.image_url} alt="" className="w-full max-h-64 object-cover" />
+                      <img src={selectedPost.image_url} alt="" className="w-full h-auto" />
                     </div>
                   )}
                   <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{selectedPost.content}</p>

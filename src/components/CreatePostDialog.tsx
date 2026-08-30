@@ -9,6 +9,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import PlaceSearchInput from "@/components/PlaceSearchInput";
 
+/** 급구 허용 기간 — DB 트리거(enforce_urgent_deadline)와 같은 값을 쓴다 */
+const URGENT_MAX_DAYS = 3;
+
+/** datetime-local 입력용 로컬 시각 문자열 (YYYY-MM-DDTHH:mm) */
+const localDateTime = (daysFromNow: number) => {
+  const d = new Date(Date.now() + daysFromNow * 86400000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
 export interface Field {
   key: string;
   label: string;
@@ -91,6 +101,23 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
     if (missing) {
       toast.error(`${missing.label}을(를) 입력해주세요`);
       return;
+    }
+
+    // 급구는 마감까지 3일 이하인 공고만 (DB 트리거와 동일한 규칙)
+    if (values.is_urgent === "true") {
+      const dl = values.deadline_at ? new Date(values.deadline_at).getTime() : NaN;
+      if (!dl || Number.isNaN(dl)) {
+        toast.error("급구 공고는 마감일시를 입력해주세요");
+        return;
+      }
+      if (dl <= Date.now()) {
+        toast.error("마감일시가 이미 지났습니다");
+        return;
+      }
+      if (dl > Date.now() + URGENT_MAX_DAYS * 86400000) {
+        toast.error(`급구는 마감까지 ${URGENT_MAX_DAYS}일 이하인 공고만 등록할 수 있습니다`);
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -182,6 +209,8 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
                 <Input
                   type="datetime-local"
                   value={values[field.key] || ""}
+                  min={localDateTime(0)}
+                  max={localDateTime(URGENT_MAX_DAYS)}
                   onChange={(e) => setValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
                   className="text-sm"
                 />

@@ -11,7 +11,8 @@ import banner3 from "@/assets/banner-3.jpg";
 import banner4 from "@/assets/banner-4.jpg";
 
 // 카테고리 — 라인 픽토그램 + EN 라벨 + 볼드 타이포
-// 채널 스트립 모티프: 채널마다 hue만 다른 틴트를 준다.
+// 채널 스트립 모티프: 채널마다 hue만 다른 연한 파스텔 틴트를 준다.
+// 색은 아이콘과 hover 테두리에만 쓰고, mono 라벨은 중립 톤으로 둔다(작은 텍스트 대비 확보).
 // 클래스는 Tailwind JIT가 스캔할 수 있도록 리터럴 문자열로 유지한다.
 const categories = [
   { icon: Briefcase, en: "Jobs", label: "구인구직", path: "/jobs",
@@ -31,15 +32,13 @@ const adBanners = [
 ];
 
 // VU 미터 — 세그먼트 게이지 (0~1)
-/** 급구 표식 — 마감이 지난 글은 더 이상 급구로 표시하지 않는다 */
+/** 급구 표식 — 마감까지 남은 일수만 표기(D-3 / D-DAY). 마감이 지나면 표시하지 않는다 */
 const urgentLabel = (job: { is_urgent?: boolean; deadline_at?: string | null }) => {
-  if (!job.is_urgent) return null;
-  if (!job.deadline_at) return "급구";
+  if (!job.is_urgent || !job.deadline_at) return null;
   const left = new Date(job.deadline_at).getTime() - Date.now();
   if (left < 0) return null;
-  const days = Math.floor(left / 86400000);
-  if (days === 0) return "오늘 마감";
-  return `급구 D-${days}`;
+  const days = Math.ceil(left / 86400000);
+  return days <= 0 ? "D-DAY" : `D-${days}`;
 };
 
 const VuMeter = ({ level, segs = 7 }: { level: number; segs?: number }) => {
@@ -299,7 +298,7 @@ const Index = () => {
               className={`glass-card relative p-4 lg:p-5 flex flex-col text-left transition-colors active:scale-[0.98] group ${hoverBorder}`}
             >
               <Icon strokeWidth={1.6} className={`w-7 h-7 lg:w-8 lg:h-8 mb-3 group-hover:scale-110 transition-transform ${tint}`} />
-              <span className={`font-mono text-[10px] lg:text-[11px] font-bold uppercase tracking-[0.08em] ${tint}`}>{en}</span>
+              <span className="font-mono text-[10px] lg:text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">{en}</span>
               <span className="text-lg lg:text-[21px] font-extrabold tracking-tight leading-tight mt-0.5">{label}</span>
               <ChevronRight className={`absolute top-4 right-3.5 w-4 h-4 text-muted-foreground/50 transition-colors ${hoverText}`} />
             </button>

@@ -233,7 +233,7 @@ const PostDetail = () => {
             <h1 className="text-2xl lg:text-[28px] font-extrabold tracking-tight leading-tight mb-4">{post.title}</h1>
             {post.image_url && (
               <div className="mb-4 rounded-lg overflow-hidden border border-border">
-                <img src={post.image_url} alt="" className="w-full max-h-72 object-cover" />
+                <img src={post.image_url} alt="" className="w-full h-auto" />
               </div>
             )}
             {/* Extra fields for jobs/rooms */}

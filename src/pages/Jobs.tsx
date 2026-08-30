@@ -27,14 +27,13 @@ const APPLY_STATUSES: { value: string; label: string; cls: string }[] = [
 ];
 const statusMeta = (s: string) => APPLY_STATUSES.find((x) => x.value === s) || APPLY_STATUSES[0];
 
-/** 급구 표식 — 마감이 지난 글은 더 이상 급구로 표시하지 않는다 */
+/** 급구 표식 — 마감까지 남은 일수만 표기(D-3 / D-DAY). 마감이 지나면 표시하지 않는다 */
 const urgentLabel = (isUrgent: boolean, deadlineAt: string | null) => {
-  if (!isUrgent) return null;
-  if (!deadlineAt) return "급구";
+  if (!isUrgent || !deadlineAt) return null;
   const left = new Date(deadlineAt).getTime() - Date.now();
   if (left < 0) return null;
-  const days = Math.floor(left / 86400000);
-  return days === 0 ? "오늘 마감" : `급구 D-${days}`;
+  const days = Math.ceil(left / 86400000);
+  return days <= 0 ? "D-DAY" : `D-${days}`;
 };
 
 
@@ -479,15 +478,26 @@ const Jobs = () => {
             className="glass-card overflow-hidden hover:border-primary transition-colors duration-200 cursor-pointer active:scale-[0.98]"
             style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${i * 0.06}s both` }}
           >
-            {job.image_url && (
-              <img src={job.image_url} alt={job.title} className="w-full h-36 object-cover" loading="lazy" />
-            )}
             <div className="p-4">
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <h3 className="text-[15px] font-bold tracking-tight leading-snug">{job.title}</h3>
-              <span className="font-mono text-[10.5px] font-bold tracking-wide px-2 py-1 rounded bg-secondary text-secondary-foreground shrink-0">{job.tag}</span>
+            {/* 사진은 고정 크기 썸네일로 — 사진 유무에 따라 카드 높이가 달라지지 않도록
+                헤더 영역에 최소 높이(썸네일과 동일)를 준다 */}
+            <div className="flex items-start gap-3 min-h-[64px]">
+              {job.image_url && (
+                <img
+                  src={job.image_url}
+                  alt={job.title}
+                  className="w-16 h-16 rounded-md object-cover shrink-0 bg-secondary"
+                  loading="lazy"
+                />
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <h3 className="text-[15px] font-bold tracking-tight leading-snug">{job.title}</h3>
+                  <span className="font-mono text-[10.5px] font-bold tracking-wide px-2 py-1 rounded bg-secondary text-secondary-foreground shrink-0">{job.tag}</span>
+                </div>
+                <p className="text-[12.5px] text-muted-foreground">{job.venue}</p>
+              </div>
             </div>
-            <p className="text-[12.5px] text-muted-foreground">{job.venue}</p>
             {(job.position || job.schedule) && (
               <div className="flex flex-wrap items-center gap-1.5 mt-2">
                 {urgentLabel(job.isUrgent, job.deadlineAt) && (
@@ -634,7 +644,7 @@ const Jobs = () => {
                 <>
                   {selectedJob.image_url && (
                     <div className="rounded-lg overflow-hidden mb-4 -mt-1">
-                      <img src={selectedJob.image_url} alt={selectedJob.title} className="w-full max-h-56 object-cover" />
+                      <img src={selectedJob.image_url} alt={selectedJob.title} className="w-full h-auto" />
                     </div>
                   )}
                   {authorProfile && (
