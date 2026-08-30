@@ -82,13 +82,14 @@ const Index = () => {
         .from("posts")
         .select("id,title,venue,category,is_urgent,deadline_at")
         .eq("post_type", "job")
+        .eq("status", "open")
         .order("is_urgent", { ascending: false })
         .order("deadline_at", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false })
         .limit(5),
       supabase.from("posts").select("id,title,content,author_name").eq("post_type", "community").order("created_at", { ascending: false }).limit(12),
       (supabase as any).from("studios").select("id,name,address,tier").eq("tier", "A").limit(3),
-      supabase.from("posts").select("id", { count: "exact", head: true }).eq("post_type", "job"),
+      supabase.from("posts").select("id", { count: "exact", head: true }).eq("post_type", "job").eq("status", "open"),
       supabase.from("posts").select("id", { count: "exact", head: true }).eq("post_type", "community"),
       (supabase as any).from("studios").select("id", { count: "exact", head: true }),
     ]);

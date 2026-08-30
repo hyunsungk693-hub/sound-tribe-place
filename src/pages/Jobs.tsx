@@ -91,6 +91,8 @@ const Jobs = () => {
   const [videoGateOpen, setVideoGateOpen] = useState(false);
   const [applying, setApplying] = useState(false);
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
+  const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
 
   // 지원 취소: 작성한 지원 메시지는 복구할 수 없으므로 내용이 있을 때만 확인을 받는다.
   const discardApply = () => {
@@ -101,6 +103,26 @@ const Jobs = () => {
   const requestDiscardApply = () => {
     if (applyMessage.trim()) setConfirmDiscardOpen(true);
     else discardApply();
+  };
+
+  // 모집 마감: 공고가 목록에서 빠지고 이후에는 작성자와 합격자만 열람할 수 있다.
+  const closeJob = async () => {
+    if (!selectedJob?.id || !user) return;
+    setClosing(true);
+    const { error } = await supabase
+      .from("posts")
+      .update({ status: "closed", closed_at: new Date().toISOString() } as any)
+      .eq("id", selectedJob.id)
+      .eq("user_id", user.id);
+    setClosing(false);
+    setConfirmCloseOpen(false);
+    if (error) {
+      toast.error("마감 처리에 실패했습니다");
+      return;
+    }
+    toast.success("모집을 마감했습니다");
+    setSelectedJob(null);
+    fetchJobs();
   };
 
   // Owner: applicants for selected job
@@ -123,7 +145,13 @@ const Jobs = () => {
 
   const fetchJobs = async () => {
     setLoadingJobs(true);
-    const { data } = await supabase.from("posts").select("*").eq("post_type", "job").order("created_at", { ascending: false });
+    // 마감된 공고는 목록에 노출하지 않는다 (합격자·작성자만 RLS로 열람 가능)
+    const { data } = await supabase
+      .from("posts")
+      .select("*")
+      .eq("post_type", "job")
+      .eq("status", "open")
+      .order("created_at", { ascending: false });
     setDbJobs(data || []);
     setLoadingJobs(false);
   };
@@ -660,6 +688,12 @@ const Jobs = () => {
 
                   {selectedJob.id && selectedJob.user_id === user?.id && (
                     <div className="mt-5 pt-4 border-t border-border">
+                      <button
+                        onClick={() => setConfirmCloseOpen(true)}
+                        className="w-full h-11 mb-4 rounded-lg border border-border text-sm font-semibold text-muted-foreground hover:border-primary hover:text-foreground active:scale-[0.98] transition-all"
+                      >
+                        모집 마감하기
+                      </button>
                       <div className="flex items-baseline justify-between gap-2 pb-2.5 border-b-2 border-foreground mb-3">
                         <h3 className="text-base font-extrabold tracking-tight">받은 지원</h3>
                         <span className="font-mono text-[12px] font-semibold text-muted-foreground tabular-nums">
@@ -833,6 +867,24 @@ const Jobs = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>계속 작성</AlertDialogCancel>
             <AlertDialogAction onClick={discardApply}>취소하기</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 모집 마감 확인 — 마감 후에는 공고가 목록에서 사라진다 */}
+      <AlertDialog open={confirmCloseOpen} onOpenChange={setConfirmCloseOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>모집을 마감할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              마감하면 이 공고는 구인 목록에서 사라지고, 이후에는 나와 합격자만 볼 수 있습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={closing}>돌아가기</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); closeJob(); }} disabled={closing}>
+              {closing ? "마감 중..." : "마감하기"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

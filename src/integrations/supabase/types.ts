@@ -278,6 +278,14 @@ export type Database = {
           title: string
           user_id: string
           venue: string | null
+          closed_at: string | null
+          deadline_at: string | null
+          is_urgent: boolean
+          position: string | null
+          schedule: string | null
+          status: string
+          subcategory: string | null
+          updated_at: string
         }
         Insert: {
           area?: string | null
@@ -297,6 +305,14 @@ export type Database = {
           title: string
           user_id: string
           venue?: string | null
+          closed_at?: string | null
+          deadline_at?: string | null
+          is_urgent?: boolean
+          position?: string | null
+          schedule?: string | null
+          status?: string
+          subcategory?: string | null
+          updated_at?: string
         }
         Update: {
           area?: string | null
@@ -316,6 +332,14 @@ export type Database = {
           title?: string
           user_id?: string
           venue?: string | null
+          closed_at?: string | null
+          deadline_at?: string | null
+          is_urgent?: boolean
+          position?: string | null
+          schedule?: string | null
+          status?: string
+          subcategory?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
