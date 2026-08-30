@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Bell, User } from "lucide-react";
-import PaperPlane from "@/components/icons/PaperPlane";
+import { Bell, Send, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationsPanel, { useUnreadCount } from "@/components/NotificationsPanel";
@@ -80,7 +79,7 @@ const TopNav = () => {
                 aria-label={unreadMessages > 0 ? `메시지 ${unreadMessages}개` : "메시지"}
                 className={`${textLink(location.pathname === "/messages")} flex items-center`}
               >
-                <PaperPlane className="w-[18px] h-[18px]" />
+                <Send className="w-[18px] h-[18px]" strokeWidth={2} />
                 {unreadMessages > 0 && (
                   <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[9px] font-bold font-mono">
                     {unreadMessages > 99 ? "99+" : unreadMessages}
