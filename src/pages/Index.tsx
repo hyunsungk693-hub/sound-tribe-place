@@ -91,7 +91,16 @@ const Index = () => {
         .order("deadline_at", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false })
         .limit(5),
-      supabase.from("posts").select("id,title,content,author_name").eq("post_type", "community").order("created_at", { ascending: false }).limit(12),
+      // 인기글: 전체 기준 정렬. popularity(=like_count+comment_count)는 생성 컬럼이고
+      // 두 카운트는 트리거로 유지되므로, 최근 N건만 훑던 이전 방식과 달리 오래된
+      // 인기글도 후보에 들어온다.
+      supabase
+        .from("posts")
+        .select("id,title,content,author_name,like_count,comment_count")
+        .eq("post_type", "community")
+        .order("popularity", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(5),
       (supabase as any).from("studios").select("id,name,address,tier").eq("tier", "A").limit(3),
       supabase.from("posts").select("id", { count: "exact", head: true }).eq("post_type", "job").eq("status", "open"),
       supabase.from("posts").select("id", { count: "exact", head: true }).eq("post_type", "community"),
@@ -103,24 +112,14 @@ const Index = () => {
     setCommunityCount(commCountRes.count ?? null);
     setStudioCount(studioCountRes.count ?? null);
 
-    // 커뮤니티 인기글: 좋아요·댓글 수 합산 상위
-    const comm = commRes.data || [];
-    const ids = comm.map((p: any) => p.id);
-    if (ids.length) {
-      const [likesRes, cmtsRes] = await Promise.all([
-        supabase.from("post_likes").select("post_id").in("post_id", ids),
-        supabase.from("post_comments").select("post_id").in("post_id", ids),
-      ]);
-      const score: Record<string, { likes: number; comments: number }> = {};
-      ids.forEach((id: string) => (score[id] = { likes: 0, comments: 0 }));
-      (likesRes.data || []).forEach((l: any) => { if (score[l.post_id]) score[l.post_id].likes++; });
-      (cmtsRes.data || []).forEach((c: any) => { if (score[c.post_id]) score[c.post_id].comments++; });
-      const ranked = [...comm]
-        .map((p: any) => ({ ...p, ...score[p.id] }))
-        .sort((a, b) => (b.likes + b.comments) - (a.likes + a.comments))
-        .slice(0, 5);
-      setPopularPosts(ranked);
-    }
+    // 커뮤니티 인기글: 서버가 이미 popularity 순으로 5건을 준다.
+    // (예전에는 최근 12건을 받아 클라이언트에서 재정렬해, 13번째 이후의
+    //  인기글이 후보에서 빠지는 문제가 있었다)
+    setPopularPosts((commRes.data || []).map((p: any) => ({
+      ...p,
+      likes: p.like_count ?? 0,
+      comments: p.comment_count ?? 0,
+    })));
     setLoading(false);
   };
 

@@ -288,6 +288,7 @@ export type Database = {
           updated_at: string
           comment_count: number
           like_count: number
+          popularity: number
         }
         Insert: {
           area?: string | null
