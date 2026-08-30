@@ -40,7 +40,7 @@ const PostDetail = () => {
   const fetchPost = useCallback(async () => {
     if (!postId) return;
     setLoading(true);
-    const { data } = await supabase.from("posts").select("*").eq("id", postId).single();
+    const { data } = await supabase.from("posts").select("*").eq("id", postId).maybeSingle();
     setPost(data);
     setLoading(false);
     if (data) addRecentView({ id: data.id, title: data.title, type: data.post_type || "community" });

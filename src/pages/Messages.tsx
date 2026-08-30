@@ -295,7 +295,7 @@ const Messages = () => {
       .from("profiles")
       .select("*")
       .eq("user_id", selectedConv.otherUserId)
-      .single()
+      .maybeSingle()
       .then(({ data }) => { if (data) setChatPartnerProfile(data as ProfileCardData); });
     supabase
       .from("user_stats" as any)

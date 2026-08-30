@@ -220,7 +220,7 @@ const ProfilePage = () => {
       .from("profiles")
       .select("*")
       .eq("user_id", user.id)
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
         if (data) setProfile(data);
       });

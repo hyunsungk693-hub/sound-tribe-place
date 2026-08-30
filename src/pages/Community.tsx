@@ -72,7 +72,7 @@ const Community = () => {
       .from("profiles")
       .select("*")
       .eq("user_id", selectedPost.user_id)
-      .single()
+      .maybeSingle()
       .then(({ data }) => { if (data) setAuthorProfile(data as ProfileCardData); });
     // 등급 배지용 집계 (단건 조회 — 목록이 아니므로 N+1 아님)
     supabase
@@ -163,7 +163,7 @@ const Community = () => {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
         .then(({ data }) => {
           if (data && isRecruitPost(data.title || "", data.content || "")) {
             toast("멤버를 찾고 계신가요?", {

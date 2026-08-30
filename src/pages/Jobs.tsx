@@ -245,7 +245,7 @@ const Jobs = () => {
       .from("profiles")
       .select("*")
       .eq("user_id", selectedJob.user_id)
-      .single()
+      .maybeSingle()
       .then(({ data }) => { if (data) setAuthorProfile(data as ProfileCardData); });
     supabase
       .from("user_stats" as any)
@@ -290,7 +290,7 @@ const Jobs = () => {
     if (!job.id || !job.user_id) { toast.error("샘플 공고는 지원할 수 없습니다"); return; }
     if (appliedJobIds.has(job.id)) { toast.info("이미 지원한 공고입니다"); return; }
     // A1: 연주영상 미등록이면 지원 불가 → 프로필 등록 유도
-    const { data: me } = await supabase.from("profiles").select("*").eq("user_id", user.id).single();
+    const { data: me } = await supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle();
     if (!(me as any)?.video_url) { setVideoGateOpen(true); return; }
     // 작업 8: 프로 목적인데 증빙 미인증이면 지원 불가 (RLS도 막지만 먼저 안내한다)
     if ((me as any)?.purpose === "pro" && !(me as any)?.credential_verified) {

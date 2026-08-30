@@ -27,7 +27,7 @@ const UserProfile = () => {
     const fetchData = async () => {
       setLoading(true);
       const [profileRes, postCountRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("user_id", userId).single(),
+        supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
         supabase.from("posts").select("id", { count: "exact", head: true }).eq("user_id", userId),
       ]);
       if (profileRes.data) setProfile(profileRes.data as ProfileCardData);
