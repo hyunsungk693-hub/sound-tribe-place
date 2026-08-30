@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { safeVideoUrl } from "@/lib/safeUrl";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Music, Award, PlayCircle, Sparkles, Clock, Instagram, Zap, ShieldCheck, CircleDot, AlertTriangle } from "lucide-react";
+import { MapPin, Music, Award, PlayCircle, Sparkles, Clock, Instagram, Zap, ShieldCheck, CircleDot, AlertTriangle, BadgeCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -21,6 +21,7 @@ export interface ProfileCardData {
   purpose?: string | null; // 'hobby' | 'pro'
   available_times?: string[] | null;
   handle?: string | null;
+  credential_verified?: boolean | null;
   updated_at?: string | null;
 }
 
@@ -206,6 +207,10 @@ const ProfileCard = ({ profile, variant = "compact", stats, className = "", onBe
 
   // D4 배지: 획득한 것만, 최대 3개. 우선순위 = 빠른 응답 > 노쇼 0 > 활동 중 (§3.2 D4)
   const badges: { icon: typeof Zap; label: string }[] = [];
+  // 증빙 인증 완료 (작업 8) — 종류는 공개하지 않고 "인증 완료" 여부만 노출
+  if (profile.credential_verified) {
+    badges.push({ icon: BadgeCheck, label: "인증 완료" });
+  }
   if (effStats?.response_rate != null && effStats.response_rate >= 0.8) {
     badges.push({ icon: Zap, label: "빠른 응답" });
   }

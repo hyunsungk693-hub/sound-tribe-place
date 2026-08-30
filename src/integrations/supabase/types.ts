@@ -355,6 +355,11 @@ export type Database = {
           location: string | null
           updated_at: string
           user_id: string
+          available_times: string[] | null
+          credential_verified: boolean
+          handle: string | null
+          purpose: string | null
+          video_url: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -367,6 +372,11 @@ export type Database = {
           location?: string | null
           updated_at?: string
           user_id: string
+          available_times?: string[] | null
+          credential_verified?: boolean
+          handle?: string | null
+          purpose?: string | null
+          video_url?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -379,6 +389,11 @@ export type Database = {
           location?: string | null
           updated_at?: string
           user_id?: string
+          available_times?: string[] | null
+          credential_verified?: boolean
+          handle?: string | null
+          purpose?: string | null
+          video_url?: string | null
         }
         Relationships: []
       }

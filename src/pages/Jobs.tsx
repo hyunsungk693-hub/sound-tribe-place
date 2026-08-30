@@ -90,6 +90,7 @@ const Jobs = () => {
   const [authorProfile, setAuthorProfile] = useState<ProfileCardData | null>(null);
   const [authorStats, setAuthorStats] = useState<any>(undefined);
   const [videoGateOpen, setVideoGateOpen] = useState(false);
+  const [proGateOpen, setProGateOpen] = useState(false);
   const [applying, setApplying] = useState(false);
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
@@ -292,6 +293,11 @@ const Jobs = () => {
     // A1: 연주영상 미등록이면 지원 불가 → 프로필 등록 유도
     const { data: me } = await supabase.from("profiles").select("*").eq("user_id", user.id).single();
     if (!(me as any)?.video_url) { setVideoGateOpen(true); return; }
+    // 작업 8: 프로 목적인데 증빙 미인증이면 지원 불가 (RLS도 막지만 먼저 안내한다)
+    if ((me as any)?.purpose === "pro" && !(me as any)?.credential_verified) {
+      setProGateOpen(true);
+      return;
+    }
     setApplyTarget(job);
     setApplyMessage(`"${job.title}" 공고에 지원합니다. 잘 부탁드립니다!`);
   };
@@ -907,6 +913,23 @@ const Jobs = () => {
             <AlertDialogAction onClick={(e) => { e.preventDefault(); closeJob(); }} disabled={closing}>
               {closing ? "마감 중..." : "마감하기"}
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 작업 8: 프로 증빙 미인증 게이트 */}
+      <AlertDialog open={proGateOpen} onOpenChange={setProGateOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>프로 인증이 필요합니다</AlertDialogTitle>
+            <AlertDialogDescription>
+              활동 목적이 "프로"인 경우 졸업장·합격증·입상내역 중 1건을 인증해야 구인글 작성과 지원이 가능합니다.
+              프로필에서 증빙을 제출해주세요.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>나중에</AlertDialogCancel>
+            <AlertDialogAction onClick={() => navigate("/profile")}>프로필로 이동</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

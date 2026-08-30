@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { X, Camera, Search, Plus, Link as LinkIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -59,6 +59,11 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || "");
   const [videoUrl, setVideoUrl] = useState(profile.video_url || "");
   const [purpose, setPurpose] = useState<string>(profile.purpose || "");
+  // 작업 8: 프로 목적 증빙. 원본은 비공개 버킷에만 두고 DB에는 결과값만 남는다.
+  const [credentials, setCredentials] = useState<any[]>([]);
+  const [credKind, setCredKind] = useState<"diploma" | "admission" | "award">("diploma");
+  const [uploadingCred, setUploadingCred] = useState(false);
+  const credInputRef = useRef<HTMLInputElement>(null);
   const [availableTimes, setAvailableTimes] = useState((profile.available_times || []).join(", "));
   const [handle, setHandle] = useState(profile.handle || "");
   const [uploading, setUploading] = useState(false);
@@ -138,12 +143,60 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
     setUploading(false);
   };
 
+  const fetchCredentials = useCallback(async () => {
+    const { data } = await supabase
+      .from("profile_credentials" as any)
+      .select("id, kind, status, verified_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    setCredentials((data as any[]) || []);
+  }, [userId]);
+
+  useEffect(() => { fetchCredentials(); }, [fetchCredentials]);
+
+  const hasVerified = credentials.some((c) => c.status === "verified");
+  const hasPending = credentials.some((c) => c.status === "pending");
+
+  const uploadCredential = async (file: File) => {
+    if (file.size > 5 * 1024 * 1024) { toast.error("증빙 파일은 5MB 이하로 올려주세요"); return; }
+    setUploadingCred(true);
+    // 1) 결과 행을 먼저 만들고(id 확보) 2) 그 id로 비공개 버킷에 올린다.
+    //    경로는 id에서 파생되므로 DB에 경로 컬럼을 두지 않는다.
+    const { data: row, error: insErr } = await supabase
+      .from("profile_credentials" as any)
+      .insert({ user_id: userId, kind: credKind, status: "pending" } as any)
+      .select("id")
+      .single();
+    if (insErr || !row) {
+      setUploadingCred(false);
+      toast.error("증빙 등록에 실패했습니다");
+      return;
+    }
+    const credId = (row as any).id as string;
+    const { error: upErr } = await supabase.storage
+      .from("credentials")
+      .upload(`${userId}/${credId}`, file, { upsert: true });
+    setUploadingCred(false);
+    if (upErr) {
+      await supabase.from("profile_credentials" as any).delete().eq("id", credId);
+      toast.error("파일 업로드에 실패했습니다");
+      return;
+    }
+    toast.success("증빙을 제출했습니다. 확인 후 인증이 완료됩니다.");
+    fetchCredentials();
+  };
+
   const handleSave = async () => {
     if (!displayName.trim()) { toast.error("닉네임을 입력해주세요"); return; }
     if (displayName.length > 50) { toast.error("닉네임은 50자 이내로 입력해주세요"); return; }
     if (bio.length > 300) { toast.error("소개는 300자 이내로 입력해주세요"); return; }
     const trimmedVideo = videoUrl.trim();
-    if (trimmedVideo && !/(youtube\.com|youtu\.be|instagram\.com)\//.test(trimmedVideo)) {
+    // 공통 필수: 연주영상 1개 (작업 8)
+    if (!trimmedVideo) {
+      toast.error("연주영상 링크는 필수입니다 (YouTube 또는 Instagram)");
+      return;
+    }
+    if (!/(youtube\.com|youtu\.be|instagram\.com)\//.test(trimmedVideo)) {
       toast.error("연주영상은 YouTube 또는 Instagram 링크만 등록할 수 있습니다");
       return;
     }
@@ -278,7 +331,7 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
           {/* 연주영상 (A1: 구인 지원에 필수) */}
           <div>
             <label className="text-xs font-semibold mb-1.5 block">
-              연주영상 <span className="text-primary">(구인 지원에 필요)</span>
+              연주영상 <span className="text-destructive">*</span> <span className="text-primary">(필수)</span>
             </label>
             <input
               value={videoUrl}
@@ -309,6 +362,81 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
               ))}
             </div>
           </div>
+
+          {/* 목적별 증빙 인증 (작업 8) — 프로 선택 시에만 요구 */}
+          {purpose === "pro" && (
+            <div className="rounded-lg border border-border p-3.5 space-y-3">
+              <div>
+                <p className="text-xs font-semibold">프로 인증</p>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  졸업장 · 합격증 · 입상내역 중 1건을 제출해주세요. 확인 전까지 프로필이 공개되지 않고
+                  구인글 작성·지원을 할 수 없습니다.
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  제출한 원본 이미지는 확인 후 30일 이내에 파기되며, 인증 결과만 남습니다.
+                </p>
+              </div>
+
+              {credentials.length > 0 && (
+                <div className="space-y-1.5">
+                  {credentials.map((c) => {
+                    const kindLabel = c.kind === "diploma" ? "졸업장" : c.kind === "admission" ? "합격증" : "입상내역";
+                    const st = c.status === "verified"
+                      ? { label: "인증 완료", cls: "bg-signal/15 text-signal" }
+                      : c.status === "rejected"
+                        ? { label: "반려", cls: "bg-destructive/10 text-destructive" }
+                        : { label: "확인 중", cls: "bg-secondary text-secondary-foreground" };
+                    return (
+                      <div key={c.id} className="flex items-center justify-between gap-2 text-[11px]">
+                        <span className="font-medium">{kindLabel}</span>
+                        <span className={`px-2 py-0.5 rounded-full font-semibold ${st.cls}`}>{st.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {!hasVerified && (
+                <>
+                  <div className="flex gap-1.5">
+                    {([["diploma", "졸업장"], ["admission", "합격증"], ["award", "입상내역"]] as const).map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setCredKind(value)}
+                        className={`flex-1 py-1.5 rounded-lg text-[11px] font-medium transition-all active:scale-95 ${
+                          credKind === value
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-secondary-foreground hover:bg-surface-hover"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    ref={credInputRef}
+                    type="file"
+                    accept="image/*,application/pdf"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) uploadCredential(f);
+                      e.target.value = "";
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => credInputRef.current?.click()}
+                    disabled={uploadingCred}
+                    className="w-full h-10 rounded-lg bg-action text-action-foreground text-xs font-semibold hover:bg-action-hover transition-colors disabled:opacity-50"
+                  >
+                    {uploadingCred ? "제출 중..." : hasPending ? "증빙 다시 제출" : "증빙 제출"}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
 
           {/* 합주 가능 시간 */}
           <div>

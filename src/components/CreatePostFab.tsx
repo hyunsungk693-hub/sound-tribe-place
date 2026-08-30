@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Plus, X, Briefcase, Music2, Store, Users } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import CreatePostDialog, { Field } from "./CreatePostDialog";
 
@@ -64,6 +66,7 @@ const TYPE_CONFIG: Record<PostType, { label: string; desc: string; icon: typeof 
 const CreatePostFab = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [chooserOpen, setChooserOpen] = useState(false);
   const [selected, setSelected] = useState<PostType | null>(null);
 
@@ -71,7 +74,21 @@ const CreatePostFab = () => {
   const hideOn = ["/messages", "/profile", "/auth", "/admin"];
   if (hideOn.some((p) => location.pathname === p || location.pathname.startsWith(p + "/"))) return null;
 
-  const handlePick = (t: PostType) => {
+  const handlePick = async (t: PostType) => {
+    // 작업 8: 프로 목적인데 증빙 미인증이면 글을 쓸 수 없다 (RLS도 막지만 먼저 안내한다)
+    if (user) {
+      const { data: me } = await supabase
+        .from("profiles")
+        .select("purpose, credential_verified")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if ((me as any)?.purpose === "pro" && !(me as any)?.credential_verified) {
+        setChooserOpen(false);
+        toast.error("프로 인증이 완료되어야 글을 작성할 수 있습니다. 프로필에서 증빙을 제출해주세요.");
+        navigate("/profile");
+        return;
+      }
+    }
     setChooserOpen(false);
     setSelected(t);
   };
