@@ -1,5 +1,5 @@
 import { Heart, MessageSquare, Share2, TrendingUp, ArrowLeft, Send, Search, X, Mail, Pencil, Trash2, ArrowUpDown } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,12 @@ import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import ProfileCard, { ProfileCardData } from "@/components/ProfileCard";
 
 const tabs = ["전체", "자유", "질문", "거래"];
+
+/** 목록 한 페이지 크기 — 서버에서 range()로 끊어 받는다 */
+const PAGE_SIZE = 20;
+
+/** PostgREST .or() 필터는 쉼표·괄호로 구문을 나누므로 검색어에서 제거한다 */
+const sanitizeSearch = (q: string) => q.trim().replace(/[,()%*\\]/g, " ").replace(/\s+/g, " ").trim();
 
 const communityFields = [
   { key: "title", label: "제목", placeholder: "글 제목을 입력해주세요" },
@@ -51,6 +57,13 @@ const Community = () => {
   const navigate = useNavigate();
   const [dbPosts, setDbPosts] = useState<any[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const postsSentinelRef = useRef<HTMLDivElement | null>(null);
+  const postsReqIdRef = useRef(0);
   const [selectedTab, setSelectedTab] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
@@ -100,16 +113,41 @@ const Community = () => {
   const [editCategory, setEditCategory] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
-  const fetchPosts = useCallback(async () => {
-    setLoadingPosts(true);
-    const { data } = await supabase
+  /** 서버 사이드 페이지네이션 — 탭·검색·최신순을 쿼리로 내린다 */
+  const fetchPosts = useCallback(async (pageIndex = 0) => {
+    const reqId = ++postsReqIdRef.current;
+    if (pageIndex === 0) setLoadingPosts(true);
+    else setLoadingMore(true);
+
+    let q = supabase
       .from("posts")
-      .select("*")
-      .eq("post_type", "community")
-      .order("created_at", { ascending: false });
-    setDbPosts(data || []);
+      .select("*", { count: "exact" })
+      .eq("post_type", "community");
+
+    if (selectedTab !== "전체") {
+      // 카드에서 category가 비면 "자유"로 보여주므로, 자유 선택 시 NULL도 함께 잡는다
+      if (selectedTab === "자유") q = q.or("category.eq.자유,category.is.null");
+      else q = q.eq("category", selectedTab);
+    }
+
+    const term = sanitizeSearch(debouncedSearch);
+    if (term) q = q.or(`title.ilike.%${term}%,content.ilike.%${term}%,author_name.ilike.%${term}%`);
+
+    const from = pageIndex * PAGE_SIZE;
+    const { data, count } = await q
+      .order("created_at", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (reqId !== postsReqIdRef.current) return;
+
+    const rows = data || [];
+    setDbPosts((prev) => (pageIndex === 0 ? rows : [...prev, ...rows]));
+    setTotalCount(count ?? 0);
+    setPage(pageIndex);
+    setHasMore(rows.length === PAGE_SIZE && from + rows.length < (count ?? 0));
     setLoadingPosts(false);
-  }, []);
+    setLoadingMore(false);
+  }, [selectedTab, debouncedSearch]);
 
   const fetchLikesAndComments = useCallback(async (postIds: string[]) => {
     if (postIds.length === 0) return;
@@ -124,7 +162,7 @@ const Community = () => {
     (likes || []).forEach((l: any) => {
       lc[l.post_id] = (lc[l.post_id] || 0) + 1;
     });
-    setLikeCounts(lc);
+    setLikeCounts((prev) => ({ ...prev, ...lc }));
 
     // Fetch comment counts
     const { data: cmts } = await supabase
@@ -136,7 +174,7 @@ const Community = () => {
     (cmts || []).forEach((c: any) => {
       cc[c.post_id] = (cc[c.post_id] || 0) + 1;
     });
-    setCommentCounts(cc);
+    setCommentCounts((prev) => ({ ...prev, ...cc }));
 
     // Fetch user's likes
     if (user) {
@@ -145,7 +183,7 @@ const Community = () => {
         .select("post_id")
         .eq("user_id", user.id)
         .in("post_id", postIds);
-      setUserLikes(new Set((myLikes || []).map((l: any) => l.post_id)));
+      setUserLikes((prev) => new Set([...prev, ...(myLikes || []).map((l: any) => l.post_id)]));
     }
   }, [user]);
 
@@ -183,6 +221,32 @@ const Community = () => {
     fetchLikesAndComments(ids);
   }, [dbPosts, fetchLikesAndComments]);
 
+  // 검색어 디바운스
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  // 탭·검색이 바뀌면 목록을 비우고 첫 페이지부터
+  useEffect(() => {
+    setDbPosts([]);
+    setHasMore(true);
+    fetchPosts(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTab, debouncedSearch]);
+
+  // 무한 스크롤
+  useEffect(() => {
+    const node = postsSentinelRef.current;
+    if (!node || !hasMore || loadingPosts || loadingMore) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) fetchPosts(page + 1);
+    }, { rootMargin: "240px" });
+    io.observe(node);
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore, loadingPosts, loadingMore, page, dbPosts.length]);
+
   const allPosts: PostItem[] = [
     ...dbPosts.map((p) => ({
       id: p.id as string,
@@ -199,12 +263,11 @@ const Community = () => {
     })),
   ];
 
-  const query = searchQuery.trim().toLowerCase();
-  const searched = query
-    ? allPosts.filter((p) => p.title.toLowerCase().includes(query) || p.content.toLowerCase().includes(query) || p.author.toLowerCase().includes(query))
-    : allPosts;
-  const filtered = selectedTab === "전체" ? searched : searched.filter((p) => p.tab === selectedTab);
+  // 탭·검색은 서버에서 끝난다
+  const filtered = allPosts;
 
+  // 좋아요·댓글 수는 post_likes/post_comments를 클라이언트에서 집계한 값이라
+  // 서버 정렬이 불가능하다 → 이 두 정렬은 "이미 불러온 페이지 안에서만" 적용된다.
   const sorted = [...filtered].sort((a, b) => {
     if (sortBy === "likes") return b.likeCount - a.likeCount;
     if (sortBy === "comments") return b.commentCount - a.commentCount;
@@ -407,7 +470,7 @@ const Community = () => {
       <div className="flex items-baseline justify-between pb-3 border-b-2 border-foreground mb-4">
         <h2 className="text-lg lg:text-[19px] font-extrabold tracking-tight">
           {selectedTab === "전체" ? "전체 글" : selectedTab}
-          <span className="ml-2 font-mono text-xs font-semibold text-muted-foreground tabular-nums align-middle">{sorted.length}</span>
+          <span className="ml-2 font-mono text-xs font-semibold text-muted-foreground tabular-nums align-middle">{totalCount}</span>
         </h2>
         <div className="flex items-center gap-1">
           <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground mr-0.5" />
@@ -472,7 +535,17 @@ const Community = () => {
             </div>
           </div>
         ))}
+        {loadingMore && [...Array(2)].map((_, i) => <PostCardSkeleton key={`more-${i}`} />)}
       </div>
+
+      {!loadingPosts && hasMore && (
+        <div ref={postsSentinelRef} className="py-6 text-center text-[11px] text-muted-foreground">
+          더 불러오는 중... ({sorted.length}/{totalCount})
+        </div>
+      )}
+      {!loadingPosts && !hasMore && totalCount > PAGE_SIZE && (
+        <p className="py-6 text-center text-[11px] text-muted-foreground">모든 게시물을 불러왔습니다 ({totalCount}건)</p>
+      )}
 
       
 

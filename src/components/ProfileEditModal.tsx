@@ -369,7 +369,7 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
               <div>
                 <p className="text-xs font-semibold">프로 인증</p>
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  졸업장 · 합격증 · 입상내역 중 1건을 제출해주세요. 확인 전까지 프로필이 공개되지 않고
+                  졸업장 · 합격증 · 입상내역 등 1건을 제출해주세요. 확인 전까지 프로필이 공개되지 않고
                   구인글 작성·지원을 할 수 없습니다.
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-1">

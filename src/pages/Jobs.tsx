@@ -27,6 +27,12 @@ const APPLY_STATUSES: { value: string; label: string; cls: string }[] = [
 ];
 const statusMeta = (s: string) => APPLY_STATUSES.find((x) => x.value === s) || APPLY_STATUSES[0];
 
+/** 목록 한 페이지 크기 — 서버에서 range()로 끊어 받는다 */
+const PAGE_SIZE = 20;
+
+/** PostgREST .or() 필터는 쉼표·괄호로 구문을 나누므로 검색어에서 제거한다 */
+const sanitizeSearch = (q: string) => q.trim().replace(/[,()%*\\]/g, " ").replace(/\s+/g, " ").trim();
+
 /** 급구 표식 — 마감까지 남은 일수만 표기(D-3 / D-DAY). 마감이 지나면 표시하지 않는다 */
 const urgentLabel = (isUrgent: boolean, deadlineAt: string | null) => {
   if (!isUrgent || !deadlineAt) return null;
@@ -64,6 +70,14 @@ const Jobs = () => {
   const navigate = useNavigate();
   const [dbJobs, setDbJobs] = useState<any[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const jobsSentinelRef = useRef<HTMLDivElement | null>(null);
+  // 필터가 바뀌는 사이 도착한 이전 요청 결과가 목록을 덮어쓰지 않도록 세대 번호로 막는다
+  const jobsReqIdRef = useRef(0);
   const [selectedCat, setSelectedCat] = useState("전체");
   const [selectedPosition, setSelectedPosition] = useState("전체");
   const [query, setQuery] = useState("");
@@ -144,17 +158,49 @@ const Jobs = () => {
       return applicantSortOrder === "newest" ? tb - ta : ta - tb;
     });
 
-  const fetchJobs = async () => {
-    setLoadingJobs(true);
+  /**
+   * 서버 사이드 페이지네이션.
+   * 필터·검색·정렬을 전부 쿼리로 내려야 첫 페이지 밖의 결과가 누락되지 않는다.
+   * pageIndex 0이면 목록을 새로 채우고, 그 이상이면 뒤에 이어 붙인다.
+   */
+  const fetchJobs = async (pageIndex = 0) => {
+    const reqId = ++jobsReqIdRef.current;
+    if (pageIndex === 0) setLoadingJobs(true);
+    else setLoadingMore(true);
+
     // 마감된 공고는 목록에 노출하지 않는다 (합격자·작성자만 RLS로 열람 가능)
-    const { data } = await supabase
+    let q = supabase
       .from("posts")
-      .select("*")
+      .select("*", { count: "exact" })
       .eq("post_type", "job")
-      .eq("status", "open")
-      .order("created_at", { ascending: false });
-    setDbJobs(data || []);
+      .eq("status", "open");
+
+    if (selectedCat !== "전체") {
+      // 카드에서 category가 비면 "기타"로 보여주므로, 기타 선택 시 NULL도 함께 잡는다
+      if (selectedCat === "기타") q = q.or("category.eq.기타,category.is.null");
+      else q = q.eq("category", selectedCat);
+    }
+    if (selectedPosition !== "전체") q = q.eq("position", selectedPosition);
+
+    const term = sanitizeSearch(debouncedQuery);
+    if (term) q = q.or(`title.ilike.%${term}%,venue.ilike.%${term}%,content.ilike.%${term}%`);
+
+    const from = pageIndex * PAGE_SIZE;
+    const { data, count, error } = await q
+      .order("created_at", { ascending: sortOrder === "oldest" })
+      .range(from, from + PAGE_SIZE - 1);
+
+    // 뒤늦게 도착한 이전 필터의 응답은 버린다
+    if (reqId !== jobsReqIdRef.current) return;
+
+    const rows = data || [];
+    if (error) toast.error("공고를 불러오지 못했습니다");
+    setDbJobs((prev) => (pageIndex === 0 ? rows : [...prev, ...rows]));
+    setTotalCount(count ?? 0);
+    setPage(pageIndex);
+    setHasMore(rows.length === PAGE_SIZE && from + rows.length < (count ?? 0));
     setLoadingJobs(false);
+    setLoadingMore(false);
   };
 
   const fetchApplications = async () => {
@@ -222,12 +268,38 @@ const Jobs = () => {
     }
   };
 
+  // 검색어는 입력마다 쿼리를 보내지 않도록 디바운스
   useEffect(() => {
-    fetchJobs();
-    const handler = (e: any) => { if (e.detail?.type === "job") fetchJobs(); };
+    const t = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  // 필터·검색·정렬이 바뀌면 목록을 비우고 첫 페이지부터 다시 받는다
+  useEffect(() => {
+    setDbJobs([]);
+    setHasMore(true);
+    fetchJobs(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCat, selectedPosition, sortOrder, debouncedQuery]);
+
+  useEffect(() => {
+    const handler = (e: any) => { if (e.detail?.type === "job") fetchJobs(0); };
     window.addEventListener("post-created", handler);
     return () => window.removeEventListener("post-created", handler);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCat, selectedPosition, sortOrder, debouncedQuery]);
+
+  // 무한 스크롤 — 지원자 목록과 같은 IntersectionObserver 패턴
+  useEffect(() => {
+    const node = jobsSentinelRef.current;
+    if (!node || !hasMore || loadingJobs || loadingMore) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) fetchJobs(page + 1);
+    }, { rootMargin: "240px" });
+    io.observe(node);
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore, loadingJobs, loadingMore, page, dbJobs.length]);
 
   useEffect(() => { fetchApplications(); }, [user]);
 
@@ -356,13 +428,8 @@ const Jobs = () => {
     })),
   ];
 
-  const q = query.trim();
-  const filtered = allJobs
-    .filter((j) => selectedCat === "전체" || j.tag === selectedCat)
-    .filter((j) => !q || j.title.includes(q) || j.venue.includes(q) || j.content.includes(q))
-    // 포지션도 카테고리와 동일한 제외 필터 — 선택하면 미반영 공고는 목록에서 빠진다
-    .filter((j) => selectedPosition === "전체" || j.position === selectedPosition)
-    .sort((a, b) => (sortOrder === "latest" ? b.createdAt - a.createdAt : a.createdAt - b.createdAt));
+  // 필터·검색·정렬은 서버에서 끝나므로 여기서 다시 거르지 않는다
+  const filtered = allJobs;
 
   const startEditing = () => {
     if (!selectedJob) return;
@@ -463,7 +530,7 @@ const Jobs = () => {
 
       <div className="flex items-baseline justify-between pb-3 border-b-2 border-foreground mb-4">
         <h2 className="text-lg lg:text-[19px] font-extrabold tracking-tight">전체 공고</h2>
-        <span className="font-mono text-[13px] font-semibold text-muted-foreground tabular-nums">{filtered.length}건</span>
+        <span className="font-mono text-[13px] font-semibold text-muted-foreground tabular-nums">{totalCount}건</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 items-start">
@@ -561,7 +628,17 @@ const Jobs = () => {
           </div>
         ))}
         {!loadingJobs && filtered.length === 0 && <div className="col-span-full text-center py-12 text-muted-foreground text-sm">구인글이 없습니다</div>}
+        {loadingMore && [...Array(2)].map((_, i) => <JobCardSkeleton key={`more-${i}`} />)}
       </div>
+
+      {!loadingJobs && hasMore && (
+        <div ref={jobsSentinelRef} className="py-6 text-center text-[11px] text-muted-foreground">
+          더 불러오는 중... ({filtered.length}/{totalCount})
+        </div>
+      )}
+      {!loadingJobs && !hasMore && totalCount > PAGE_SIZE && (
+        <p className="py-6 text-center text-[11px] text-muted-foreground">모든 공고를 불러왔습니다 ({totalCount}건)</p>
+      )}
 
       
 

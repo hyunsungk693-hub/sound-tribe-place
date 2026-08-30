@@ -268,8 +268,8 @@ const Index = () => {
           </div>
         </div>
 
-        {/* 지표 카드 — 오버사이즈 수치 (실측) */}
-        <div className="glass-card px-6 py-6 lg:py-7 flex flex-col justify-center">
+        {/* 지표 카드 — 오버사이즈 수치 (실측). 모바일에서는 숨김(데스크톱 전용) */}
+        <div className="glass-card px-6 py-6 lg:py-7 hidden lg:flex flex-col justify-center">
           <p className="font-mono text-[11px] font-bold uppercase tracking-[0.09em] text-primary mb-2">지금 열린 구인 공고</p>
           <span className="text-[64px] lg:text-[92px] font-extrabold leading-[0.82] tracking-tighter text-foreground tabular-nums">
             {openJobCount ?? "—"}

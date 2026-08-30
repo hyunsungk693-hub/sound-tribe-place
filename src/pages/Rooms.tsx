@@ -1,11 +1,17 @@
 import { Search, MapPin, Clock, Star, Music, ArrowLeft, Pencil, Trash2, MessageCircle, Navigation, ChevronRight } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { RoomCardSkeleton } from "@/components/skeletons/PostSkeleton";
+
+/** 목록 한 페이지 크기 — 서버에서 range()로 끊어 받는다 */
+const PAGE_SIZE = 20;
+
+/** PostgREST .or() 필터는 쉼표·괄호로 구문을 나누므로 검색어에서 제거한다 */
+const sanitizeSearch = (q: string) => q.trim().replace(/[,()%*\\]/g, " ").replace(/\s+/g, " ").trim();
 import RoomReservationPanel from "@/components/RoomReservationPanel";
 import { naverDirectionsUrl, googleDirectionsUrl, hasDirections } from "@/lib/directions";
 import { addRecentView } from "@/lib/recentViews";
@@ -39,6 +45,13 @@ const Rooms = () => {
   useDocumentTitle(mode === "room" ? "연습실" : "악기사");
   const [dbRooms, setDbRooms] = useState<any[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const roomsSentinelRef = useRef<HTMLDivElement | null>(null);
+  const roomsReqIdRef = useRef(0);
   const [selectedRoom, setSelectedRoom] = useState<RoomItem | null>(null);
   const [query, setQuery] = useState("");
   const [sortMode, setSortMode] = useState<"latest" | "name">("latest");
@@ -53,20 +66,70 @@ const Rooms = () => {
   const [editInstruments, setEditInstruments] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
-  const fetchRooms = async (m: Mode) => {
-    setLoadingRooms(true);
-    const { data } = await supabase.from("posts").select("*").eq("post_type", m).order("created_at", { ascending: false });
-    setDbRooms(data || []);
+  /** 서버 사이드 페이지네이션 — 검색·정렬을 쿼리로 내린다 */
+  const fetchRooms = async (m: Mode, pageIndex = 0) => {
+    const reqId = ++roomsReqIdRef.current;
+    if (pageIndex === 0) setLoadingRooms(true);
+    else setLoadingMore(true);
+
+    let q = supabase.from("posts").select("*", { count: "exact" }).eq("post_type", m);
+
+    const term = sanitizeSearch(debouncedQuery);
+    if (term) q = q.or(`title.ilike.%${term}%,area.ilike.%${term}%`);
+
+    // 이름순은 DB 콜레이션 기준 정렬이라 localeCompare("ko")와 미세하게 다를 수 있다.
+    // 페이지 경계를 넘어서도 순서가 유지되려면 서버 정렬이어야 한다.
+    q = sortMode === "name"
+      ? q.order("title", { ascending: true })
+      : q.order("created_at", { ascending: false });
+
+    const from = pageIndex * PAGE_SIZE;
+    const { data, count } = await q.range(from, from + PAGE_SIZE - 1);
+
+    if (reqId !== roomsReqIdRef.current) return;
+
+    const rows = data || [];
+    setDbRooms((prev) => (pageIndex === 0 ? rows : [...prev, ...rows]));
+    setTotalCount(count ?? 0);
+    setPage(pageIndex);
+    setHasMore(rows.length === PAGE_SIZE && from + rows.length < (count ?? 0));
     setLoadingRooms(false);
+    setLoadingMore(false);
   };
 
+  // 검색어 디바운스
   useEffect(() => {
-    fetchRooms(mode);
+    const t = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  // 모드·검색·정렬이 바뀌면 목록을 비우고 첫 페이지부터
+  useEffect(() => {
     setSelectedRoom(null);
-    const handler = (e: any) => { if (e.detail?.type === mode) fetchRooms(mode); };
+    setDbRooms([]);
+    setHasMore(true);
+    fetchRooms(mode, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, sortMode, debouncedQuery]);
+
+  useEffect(() => {
+    const handler = (e: any) => { if (e.detail?.type === mode) fetchRooms(mode, 0); };
     window.addEventListener("post-created", handler);
     return () => window.removeEventListener("post-created", handler);
-  }, [mode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, sortMode, debouncedQuery]);
+
+  // 무한 스크롤
+  useEffect(() => {
+    const node = roomsSentinelRef.current;
+    if (!node || !hasMore || loadingRooms || loadingMore) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) fetchRooms(mode, page + 1);
+    }, { rootMargin: "240px" });
+    io.observe(node);
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore, loadingRooms, loadingMore, page, dbRooms.length, mode]);
 
   const allItems: RoomItem[] = [
     ...dbRooms.map((r) => ({
@@ -83,9 +146,8 @@ const Rooms = () => {
       lat: r.lat ?? null,
       lng: r.lng ?? null,
     })),
-  ]
-    .filter((r) => !query.trim() || r.name.includes(query.trim()) || r.area.includes(query.trim()))
-    .sort((a, b) => (sortMode === "name" ? a.name.localeCompare(b.name, "ko") : 0));
+  ];
+  // 검색·정렬은 서버에서 끝난다
 
   const openDetail = (item: RoomItem) => {
     setSelectedRoom(item);
@@ -187,7 +249,7 @@ const Rooms = () => {
 
       <div className="flex items-baseline justify-between pb-3 border-b-2 border-foreground mb-4">
         <h2 className="text-lg lg:text-[19px] font-extrabold tracking-tight">
-          {mode === "room" ? "연습실" : "악기사"} <span className="font-mono text-sm text-muted-foreground tabular-nums">{allItems.length}</span>
+          {mode === "room" ? "연습실" : "악기사"} <span className="font-mono text-sm text-muted-foreground tabular-nums">{totalCount}</span>
         </h2>
       </div>
 
@@ -245,7 +307,17 @@ const Rooms = () => {
             {mode === "room" ? "연습실이 없습니다" : "등록된 악기사가 없습니다"}
           </div>
         )}
+        {loadingMore && [...Array(2)].map((_, i) => <RoomCardSkeleton key={`more-${i}`} />)}
       </div>
+
+      {!loadingRooms && hasMore && (
+        <div ref={roomsSentinelRef} className="py-6 text-center text-[11px] text-muted-foreground">
+          더 불러오는 중... ({allItems.length}/{totalCount})
+        </div>
+      )}
+      {!loadingRooms && !hasMore && totalCount > PAGE_SIZE && (
+        <p className="py-6 text-center text-[11px] text-muted-foreground">모두 불러왔습니다 ({totalCount}건)</p>
+      )}
 
       {/* Detail Modal */}
       {selectedRoom && (
