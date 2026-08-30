@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, Send, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationsPanel, { useUnreadCount } from "@/components/NotificationsPanel";
@@ -59,7 +59,7 @@ const TopNav = () => {
             );
           })}
         </nav>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-5">
           {user ? (
             <>
               <button
@@ -74,16 +74,24 @@ const TopNav = () => {
                   </span>
                 )}
               </button>
-              <button onClick={() => navigate("/messages")} className={textLink(location.pathname === "/messages")}>
-                메시지
+              <button
+                onClick={() => navigate("/messages")}
+                aria-label={unreadMessages > 0 ? `메시지 ${unreadMessages}개` : "메시지"}
+                className={`${textLink(location.pathname === "/messages")} flex items-center`}
+              >
+                <Send className="w-[18px] h-[18px]" strokeWidth={2} />
                 {unreadMessages > 0 && (
-                  <span className="absolute -top-1.5 -right-3 min-w-[15px] h-[15px] px-1 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[9px] font-bold font-mono">
+                  <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[9px] font-bold font-mono">
                     {unreadMessages > 99 ? "99+" : unreadMessages}
                   </span>
                 )}
               </button>
-              <button onClick={() => navigate("/profile")} className={textLink(location.pathname === "/profile")}>
-                프로필
+              <button
+                onClick={() => navigate("/profile")}
+                aria-label="프로필"
+                className={`${textLink(location.pathname === "/profile")} flex items-center`}
+              >
+                <User className="w-[18px] h-[18px]" strokeWidth={2} />
               </button>
             </>
           ) : (
