@@ -1,4 +1,5 @@
-import { Home, Briefcase, Music2, MessageCircle, Send, User, Store } from "lucide-react";
+import { Home, Briefcase, Music2, MessageCircle, User, Store } from "lucide-react";
+import PaperPlane from "@/components/icons/PaperPlane";
 import { toast } from "sonner";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -147,7 +148,9 @@ const BottomNav = () => {
           {/* 메시지 */}
           <button onClick={() => navigate("/messages")} className={tabBtnCls(location.pathname === "/messages")}>
             <div className="relative">
-              <Send className="w-[26px] h-[26px]" strokeWidth={location.pathname === "/messages" ? 2.4 : 2} />
+              {/* 면으로 채운 아이콘이라 strokeWidth로 활성 강조가 불가능하다.
+                  활성 표시는 tabBtnCls의 text-primary(색 대비)가 담당한다. */}
+              <PaperPlane className="w-[26px] h-[26px]" />
               <Badge count={unreadMessages} />
             </div>
             <span className="text-[11px] font-medium leading-none">메시지</span>
