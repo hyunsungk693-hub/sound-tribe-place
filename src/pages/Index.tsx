@@ -25,6 +25,17 @@ const adBanners = [
 ];
 
 // VU 미터 — 세그먼트 게이지 (0~1)
+/** 급구 표식 — 마감이 지난 글은 더 이상 급구로 표시하지 않는다 */
+const urgentLabel = (job: { is_urgent?: boolean; deadline_at?: string | null }) => {
+  if (!job.is_urgent) return null;
+  if (!job.deadline_at) return "급구";
+  const left = new Date(job.deadline_at).getTime() - Date.now();
+  if (left < 0) return null;
+  const days = Math.floor(left / 86400000);
+  if (days === 0) return "오늘 마감";
+  return `급구 D-${days}`;
+};
+
 const VuMeter = ({ level, segs = 7 }: { level: number; segs?: number }) => {
   const on = Math.max(0, Math.min(segs, Math.round(level * segs)));
   return (
@@ -65,7 +76,16 @@ const Index = () => {
   const fetchData = async () => {
     setLoading(true);
     const [jobRes, commRes, studioRes, jobCountRes, commCountRes, studioCountRes] = await Promise.all([
-      supabase.from("posts").select("id,title,venue,category").eq("post_type", "job").order("created_at", { ascending: false }).limit(5),
+      // 급구 우선 → 그중 마감 임박순 → 급구가 부족하면 최근순으로 채운다.
+      // 단일 쿼리 다중 정렬이므로 급구가 0건이어도 최근 글로 채워져 섹션이 비지 않는다.
+      supabase
+        .from("posts")
+        .select("id,title,venue,category,is_urgent,deadline_at")
+        .eq("post_type", "job")
+        .order("is_urgent", { ascending: false })
+        .order("deadline_at", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .limit(5),
       supabase.from("posts").select("id,title,content,author_name").eq("post_type", "community").order("created_at", { ascending: false }).limit(12),
       (supabase as any).from("studios").select("id,name,address,tier").eq("tier", "A").limit(3),
       supabase.from("posts").select("id", { count: "exact", head: true }).eq("post_type", "job"),
@@ -280,10 +300,10 @@ const Index = () => {
         </div>
       </section>
 
-      {/* 최근 구인글 + 커뮤니티 인기글 — 2단 배치 */}
+      {/* 급구 구인글 + 커뮤니티 인기글 — 2단 배치 */}
       <div className="grid gap-9 lg:grid-cols-2 lg:gap-11 mb-10 lg:mb-14">
         <section style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) 0.1s both" }}>
-          <SectionHead title="최근 구인글" onMore={() => navigate("/jobs")} />
+          <SectionHead title="급구 구인글" onMore={() => navigate("/jobs")} />
           {recentJobs.length === 0 ? (
             <EmptyRow text="아직 구인글이 없습니다. 첫 공고를 올려보세요!" />
           ) : (
@@ -291,7 +311,14 @@ const Index = () => {
               {recentJobs.map((job) => (
                 <div key={job.id} onClick={() => navigate(`/post/${job.id}`)} className="flex items-center gap-3.5 py-4 -mx-2 px-2 rounded border-b border-border last:border-b-0 cursor-pointer hover:bg-surface-hover transition-colors">
                   <div className="min-w-0 flex-1">
-                    <p className="text-[15px] font-semibold truncate tracking-tight">{job.title}</p>
+                    <p className="text-[15px] font-semibold truncate tracking-tight">
+                      {urgentLabel(job) && (
+                        <span className="font-mono text-[10px] font-bold align-middle mr-1.5 px-1.5 py-0.5 rounded bg-amber/15 text-amber">
+                          {urgentLabel(job)}
+                        </span>
+                      )}
+                      {job.title}
+                    </p>
                     <p className="text-[12.5px] text-muted-foreground mt-0.5 truncate flex items-center gap-1"><MapPin className="w-3 h-3 shrink-0" />{job.venue || "장소 미정"}</p>
                   </div>
                   <span className="font-mono text-[10.5px] font-bold tracking-wide text-secondary-foreground bg-secondary rounded px-2 py-1 shrink-0">{job.category || "기타"}</span>

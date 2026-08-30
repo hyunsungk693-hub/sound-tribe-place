@@ -21,6 +21,8 @@ const jobFields: Field[] = [
   },
   { key: "position", label: "모집 포지션", placeholder: "", type: "select" as const, options: ["보컬", "기타", "베이스", "드럼", "건반", "관악", "현악", "그 외"], required: true },
   { key: "schedule", label: "합주 요일/시간", placeholder: "예: 주말 오후, 협의 가능" },
+  { key: "is_urgent", label: "급구", placeholder: "급구로 등록 (홈 상단에 우선 노출)", type: "checkbox" as const },
+  { key: "deadline_at", label: "마감일시", placeholder: "", type: "datetime" as const, showIf: (v) => v.is_urgent === "true" },
   { key: "venue", label: "장소", placeholder: "장소를 검색해 선택하세요 (예: 홍대 라이브클럽)", type: "place" as const },
   { key: "pay", label: "급여/페이", placeholder: "예: 회당 15만원" },
   { key: "author_name", label: "작성자명", placeholder: "닉네임" },

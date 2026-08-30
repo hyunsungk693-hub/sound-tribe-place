@@ -27,6 +27,16 @@ const APPLY_STATUSES: { value: string; label: string; cls: string }[] = [
 ];
 const statusMeta = (s: string) => APPLY_STATUSES.find((x) => x.value === s) || APPLY_STATUSES[0];
 
+/** 급구 표식 — 마감이 지난 글은 더 이상 급구로 표시하지 않는다 */
+const urgentLabel = (isUrgent: boolean, deadlineAt: string | null) => {
+  if (!isUrgent) return null;
+  if (!deadlineAt) return "급구";
+  const left = new Date(deadlineAt).getTime() - Date.now();
+  if (left < 0) return null;
+  const days = Math.floor(left / 86400000);
+  return days === 0 ? "오늘 마감" : `급구 D-${days}`;
+};
+
 
 
 type JobItem = {
@@ -39,6 +49,8 @@ type JobItem = {
   date: string;
   createdAt: number;
   content: string;
+  isUrgent: boolean;
+  deadlineAt: string | null;
   subcategory: string;
   position: string;
   schedule: string;
@@ -279,6 +291,8 @@ const Jobs = () => {
       date: new Date(j.created_at).toLocaleDateString("ko-KR"),
       createdAt: new Date(j.created_at).getTime(),
       content: j.content || "",
+      isUrgent: !!j.is_urgent,
+      deadlineAt: j.deadline_at || null,
       subcategory: j.subcategory || "",
       position: j.position || "",
       schedule: j.schedule || "",
@@ -421,6 +435,11 @@ const Jobs = () => {
             <p className="text-[12.5px] text-muted-foreground">{job.venue}</p>
             {(job.position || job.schedule) && (
               <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                {urgentLabel(job.isUrgent, job.deadlineAt) && (
+                  <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber/15 text-amber">
+                    {urgentLabel(job.isUrgent, job.deadlineAt)}
+                  </span>
+                )}
                 {job.subcategory && (
                   <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-secondary text-secondary-foreground">
                     {job.subcategory}

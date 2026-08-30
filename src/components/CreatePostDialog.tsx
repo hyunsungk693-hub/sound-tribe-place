@@ -13,7 +13,7 @@ export interface Field {
   key: string;
   label: string;
   placeholder: string;
-  type?: "text" | "textarea" | "select" | "location" | "place";
+  type?: "text" | "textarea" | "select" | "location" | "place" | "checkbox" | "datetime";
   options?: string[];
   required?: boolean;
   /** 다른 필드 값에 따라 조건부로 노출 (예: 카테고리가 "종교"일 때만) */
@@ -114,6 +114,8 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
       if (values.category === "종교" && values.subcategory) postData.subcategory = values.subcategory;
       if (values.position) postData.position = values.position;
       if (values.schedule) postData.schedule = values.schedule;
+      if (values.is_urgent === "true") postData.is_urgent = true;
+      if (values.deadline_at) postData.deadline_at = new Date(values.deadline_at).toISOString();
       if (values.venue) postData.venue = values.venue;
       if (values.pay) postData.pay = values.pay;
       if (values.price) postData.price = values.price;
@@ -160,11 +162,30 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
         <div className="space-y-3">
           {visibleFields.map((field) => (
             <div key={field.key}>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                {field.label}
-                {field.required && <span className="text-destructive ml-0.5">*</span>}
-              </label>
-              {field.type === "textarea" ? (
+              {field.type !== "checkbox" && (
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                  {field.label}
+                  {field.required && <span className="text-destructive ml-0.5">*</span>}
+                </label>
+              )}
+              {field.type === "checkbox" ? (
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={values[field.key] === "true"}
+                    onChange={(e) => setValues((prev) => ({ ...prev, [field.key]: e.target.checked ? "true" : "" }))}
+                    className="w-4 h-4 accent-primary"
+                  />
+                  <span className="text-sm">{field.placeholder}</span>
+                </label>
+              ) : field.type === "datetime" ? (
+                <Input
+                  type="datetime-local"
+                  value={values[field.key] || ""}
+                  onChange={(e) => setValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                  className="text-sm"
+                />
+              ) : field.type === "textarea" ? (
                 <Textarea
                   placeholder={field.placeholder}
                   value={values[field.key] || ""}
