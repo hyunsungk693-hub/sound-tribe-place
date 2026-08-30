@@ -12,6 +12,7 @@ import { JobCardSkeleton } from "@/components/skeletons/PostSkeleton";
 import ProfileCard, { ProfileCardData } from "@/components/ProfileCard";
 import RatingDialog from "@/components/RatingDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
@@ -76,6 +77,18 @@ const Jobs = () => {
   const [authorProfile, setAuthorProfile] = useState<ProfileCardData | null>(null);
   const [videoGateOpen, setVideoGateOpen] = useState(false);
   const [applying, setApplying] = useState(false);
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
+
+  // 지원 취소: 작성한 지원 메시지는 복구할 수 없으므로 내용이 있을 때만 확인을 받는다.
+  const discardApply = () => {
+    setConfirmDiscardOpen(false);
+    setApplyTarget(null);
+    setApplyMessage("");
+  };
+  const requestDiscardApply = () => {
+    if (applyMessage.trim()) setConfirmDiscardOpen(true);
+    else discardApply();
+  };
 
   // Owner: applicants for selected job
   const [jobApplicants, setJobApplicants] = useState<any[]>([]);
@@ -744,7 +757,7 @@ const Jobs = () => {
         </div>
       )}
 
-      <Dialog open={!!applyTarget} onOpenChange={(o) => { if (!o) { setApplyTarget(null); setApplyMessage(""); } }}>
+      <Dialog open={!!applyTarget} onOpenChange={(o) => { if (!o) requestDiscardApply(); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>구인 지원</DialogTitle>
@@ -766,24 +779,42 @@ const Jobs = () => {
               rows={4}
             />
           </div>
-          <DialogFooter>
-            <button
-              onClick={() => { setApplyTarget(null); setApplyMessage(""); }}
-              disabled={applying}
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
-            >
-              취소
-            </button>
+          {/* 주 액션(채움)을 위에 두고 취소는 텍스트 링크로 강등 — 24px 이격으로 오탭 방지 */}
+          <DialogFooter className="flex flex-col sm:flex-col sm:justify-normal sm:space-x-0 pt-2">
             <button
               onClick={submitApply}
               disabled={applying}
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="w-full h-12 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {applying ? "지원 중..." : "지원 완료"}
+            </button>
+            <button
+              onClick={requestDiscardApply}
+              disabled={applying}
+              className="mt-6 self-center px-4 py-3 text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors disabled:opacity-50"
+            >
+              취소
             </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 지원 취소 확인 — 작성한 지원 메시지가 사라진다 */}
+      <AlertDialog open={confirmDiscardOpen} onOpenChange={setConfirmDiscardOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>지원을 취소할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              작성 중인 지원 메시지는 저장되지 않고 사라집니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>계속 작성</AlertDialogCancel>
+            <AlertDialogAction onClick={discardApply}>취소하기</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* A1: 연주영상 등록 유도 게이트 */}
       {videoGateOpen && (
         <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center" onClick={() => setVideoGateOpen(false)}>
