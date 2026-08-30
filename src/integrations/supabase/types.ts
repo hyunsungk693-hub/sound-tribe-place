@@ -286,6 +286,8 @@ export type Database = {
           status: string
           subcategory: string | null
           updated_at: string
+          comment_count: number
+          like_count: number
         }
         Insert: {
           area?: string | null
@@ -313,6 +315,8 @@ export type Database = {
           status?: string
           subcategory?: string | null
           updated_at?: string
+          comment_count?: number
+          like_count?: number
         }
         Update: {
           area?: string | null
@@ -340,6 +344,8 @@ export type Database = {
           status?: string
           subcategory?: string | null
           updated_at?: string
+          comment_count?: number
+          like_count?: number
         }
         Relationships: []
       }

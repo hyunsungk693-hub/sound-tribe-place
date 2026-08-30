@@ -71,6 +71,8 @@ const Community = () => {
   const [authorProfile, setAuthorProfile] = useState<ProfileCardData | null>(null);
   const [authorStats, setAuthorStats] = useState<any>(undefined);
   const [sortBy, setSortBy] = useState<"latest" | "likes" | "comments">("latest");
+  // MOST LIKED 배너 — 불러온 페이지가 아니라 전체 기준 1위여야 하므로 별도 단건 조회
+  const [topPost, setTopPost] = useState<{ id: string; title: string; likeCount: number; commentCount: number } | null>(null);
 
   // 상세 열람 시 최근 본 게시물 기록
   useEffect(() => {
@@ -133,10 +135,14 @@ const Community = () => {
     const term = sanitizeSearch(debouncedSearch);
     if (term) q = q.or(`title.ilike.%${term}%,content.ilike.%${term}%,author_name.ilike.%${term}%`);
 
+    // 정렬도 서버에서 끝낸다. like_count/comment_count는 트리거로 유지되는
+    // 비정규화 컬럼이라 페이지 경계와 무관하게 전체 기준으로 정렬된다.
+    if (sortBy === "likes") q = q.order("like_count", { ascending: false });
+    else if (sortBy === "comments") q = q.order("comment_count", { ascending: false });
+    q = q.order("created_at", { ascending: false });
+
     const from = pageIndex * PAGE_SIZE;
-    const { data, count } = await q
-      .order("created_at", { ascending: false })
-      .range(from, from + PAGE_SIZE - 1);
+    const { data, count } = await q.range(from, from + PAGE_SIZE - 1);
 
     if (reqId !== postsReqIdRef.current) return;
 
@@ -147,7 +153,7 @@ const Community = () => {
     setHasMore(rows.length === PAGE_SIZE && from + rows.length < (count ?? 0));
     setLoadingPosts(false);
     setLoadingMore(false);
-  }, [selectedTab, debouncedSearch]);
+  }, [selectedTab, debouncedSearch, sortBy]);
 
   const fetchLikesAndComments = useCallback(async (postIds: string[]) => {
     if (postIds.length === 0) return;
@@ -233,7 +239,25 @@ const Community = () => {
     setHasMore(true);
     fetchPosts(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTab, debouncedSearch]);
+  }, [selectedTab, debouncedSearch, sortBy]);
+
+  // 인기글 배너: 좋아요 1위 1건만 (like_count는 트리거로 유지되는 비정규화 컬럼)
+  useEffect(() => {
+    supabase
+      .from("posts")
+      .select("id,title,like_count,comment_count")
+      .eq("post_type", "community")
+      .order("like_count", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        const d = data as { id: string; title: string; like_count: number; comment_count: number } | null;
+        setTopPost(d && d.like_count > 0
+          ? { id: d.id, title: d.title, likeCount: d.like_count, commentCount: d.comment_count }
+          : null);
+      });
+  }, [dbPosts.length]);
 
   // 무한 스크롤
   useEffect(() => {
@@ -257,8 +281,8 @@ const Community = () => {
       title: p.title,
       content: p.content,
       image_url: p.image_url || null,
-      likeCount: likeCounts[p.id] || 0,
-      commentCount: commentCounts[p.id] || 0,
+      likeCount: likeCounts[p.id] ?? p.like_count ?? 0,
+      commentCount: commentCounts[p.id] ?? p.comment_count ?? 0,
       liked: userLikes.has(p.id),
     })),
   ];
@@ -266,15 +290,8 @@ const Community = () => {
   // 탭·검색은 서버에서 끝난다
   const filtered = allPosts;
 
-  // 좋아요·댓글 수는 post_likes/post_comments를 클라이언트에서 집계한 값이라
-  // 서버 정렬이 불가능하다 → 이 두 정렬은 "이미 불러온 페이지 안에서만" 적용된다.
-  const sorted = [...filtered].sort((a, b) => {
-    if (sortBy === "likes") return b.likeCount - a.likeCount;
-    if (sortBy === "comments") return b.commentCount - a.commentCount;
-    return 0; // latest is already default order
-  });
-
-  const topPost = [...allPosts].sort((a, b) => b.likeCount - a.likeCount)[0];
+  // 정렬은 서버에서 끝났다. 여기서 다시 정렬하면 페이지 경계에서 순서가 어긋난다.
+  const sorted = filtered;
 
   // Toggle like
   const handleLike = async (post: PostItem, e?: React.MouseEvent) => {
@@ -456,7 +473,7 @@ const Community = () => {
         <div
           className="glass-card p-4 mb-5 flex items-center gap-3 cursor-pointer hover:border-primary active:scale-[0.99] transition-colors"
           style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) both" }}
-          onClick={() => openPost(topPost)}
+          onClick={() => { const p = allPosts.find((x) => x.id === topPost.id); if (p) openPost(p); else navigate(`/post/${topPost.id}`); }}
         >
           <TrendingUp className="w-4 h-4 text-primary shrink-0" />
           <div className="overflow-hidden flex-1">
@@ -557,7 +574,7 @@ const Community = () => {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="p-5 pb-0">
+            <div className="p-5 pb-3 shrink-0">
               <div className="flex items-center justify-between mb-4">
                 <button onClick={() => { setSelectedPost(null); setEditing(false); }} className="p-1 rounded-full hover:bg-secondary">
                   <ArrowLeft className="w-5 h-5" />
@@ -588,7 +605,12 @@ const Community = () => {
                   <span className="font-mono text-[10px] font-bold tracking-wide px-2.5 py-1 rounded bg-secondary text-secondary-foreground">{editing ? editCategory : selectedPost.tab}</span>
                 </div>
               </div>
+            </div>
 
+            {/* 본문 + 댓글을 하나의 스크롤 영역으로 묶는다.
+               사진을 원본 비율로 보여주므로 세로로 긴 이미지에서는 본문·댓글이
+               모달 밖으로 밀려나는데, 여기서 스크롤을 받아 전부 볼 수 있게 한다. */}
+            <div className="flex-1 min-h-0 overflow-y-auto px-5">
               <div className="flex items-center gap-2 mb-4">
                 {authorProfile ? (
                   <ProfileCard
@@ -703,10 +725,9 @@ const Community = () => {
                   <MessageSquare className="w-4 h-4" /> {selectedPost.commentCount}
                 </span>
               </div>
-            </div>
 
-            {/* Comments */}
-            <div className="flex-1 overflow-y-auto px-5 border-t border-border">
+              {/* Comments — 부모 스크롤 영역을 공유한다 */}
+              <div className="border-t border-border -mx-5 px-5">
               <p className="text-xs font-semibold text-muted-foreground mt-4 mb-3">댓글</p>
               {selectedPost.id ? (
                 comments.length > 0 ? (
@@ -752,9 +773,11 @@ const Community = () => {
               )}
             </div>
 
+            </div>
+
             {/* Comment Input */}
             {selectedPost.id && (
-              <div className="p-4 border-t border-border flex gap-2">
+              <div className="p-4 border-t border-border flex gap-2 shrink-0">
                 <input
                   type="text"
                   value={newComment}

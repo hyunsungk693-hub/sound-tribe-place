@@ -1,4 +1,4 @@
-import { Home, Briefcase, Music2, MessageCircle, Mail, User, Store } from "lucide-react";
+import { Home, Briefcase, Music2, MessageCircle, Send, User, Store } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -147,7 +147,7 @@ const BottomNav = () => {
           {/* 메시지 */}
           <button onClick={() => navigate("/messages")} className={tabBtnCls(location.pathname === "/messages")}>
             <div className="relative">
-              <Mail className="w-[26px] h-[26px]" strokeWidth={location.pathname === "/messages" ? 2.4 : 2} />
+              <Send className="w-[26px] h-[26px]" strokeWidth={location.pathname === "/messages" ? 2.4 : 2} />
               <Badge count={unreadMessages} />
             </div>
             <span className="text-[11px] font-medium leading-none">메시지</span>
