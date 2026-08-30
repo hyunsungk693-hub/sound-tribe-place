@@ -1,6 +1,6 @@
 import { Briefcase, Music2, Store, MessageCircle, Heart, MessageSquare, ChevronRight, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,6 +47,11 @@ const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [currentBanner, setCurrentBanner] = useState(0);
+  const [dragDx, setDragDx] = useState(0);
+  const autoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const swipedRef = useRef(false);
+  const dragRef = useRef<{ x: number; y: number; moved: boolean } | null>(null);
+  const suppressClickRef = useRef(false);
   const [recentJobs, setRecentJobs] = useState<any[]>([]);
   const [popularPosts, setPopularPosts] = useState<any[]>([]);
   const [studios, setStudios] = useState<any[]>([]);
@@ -94,13 +99,82 @@ const Index = () => {
     setLoading(false);
   };
 
+  // 수동 스와이프가 한 번이라도 일어나면 해당 세션 동안 자동 전환을 멈춘다.
+  const stopAuto = useCallback(() => {
+    swipedRef.current = true;
+    if (autoTimerRef.current) {
+      clearInterval(autoTimerRef.current);
+      autoTimerRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
     fetchData();
-    const timer = setInterval(() => {
+    if (swipedRef.current) return;
+    autoTimerRef.current = setInterval(() => {
       setCurrentBanner((prev) => (prev + 1) % adBanners.length);
     }, 4000);
-    return () => clearInterval(timer);
+    return () => {
+      if (autoTimerRef.current) clearInterval(autoTimerRef.current);
+      autoTimerRef.current = null;
+    };
   }, []);
+
+  // 배너 드래그: 터치·마우스 공통(Pointer Events). 40px 이상 끌면 한 장 넘긴다.
+  const SWIPE_THRESHOLD = 40;
+
+  const onBannerPointerDown = (e: React.PointerEvent) => {
+    suppressClickRef.current = false;
+    dragRef.current = { x: e.clientX, y: e.clientY, moved: false };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onBannerPointerMove = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const dx = e.clientX - d.x;
+    const dy = e.clientY - d.y;
+    // 세로 의도가 명확하면 드래그를 포기하고 페이지 스크롤에 양보한다
+    if (!d.moved && Math.abs(dy) > Math.abs(dx)) {
+      dragRef.current = null;
+      setDragDx(0);
+      return;
+    }
+    if (!d.moved && Math.abs(dx) > 4) d.moved = true;
+    if (d.moved) {
+      stopAuto();
+      suppressClickRef.current = true;
+      setDragDx(dx);
+    }
+  };
+
+  const onBannerPointerUp = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    dragRef.current = null;
+    setDragDx(0);
+    if (!d || !d.moved) return; // 움직임이 없으면 탭 → onClick이 처리
+    const dx = e.clientX - d.x;
+    if (Math.abs(dx) >= SWIPE_THRESHOLD) {
+      setCurrentBanner((prev) =>
+        dx < 0
+          ? (prev + 1) % adBanners.length
+          : (prev - 1 + adBanners.length) % adBanners.length
+      );
+    }
+  };
+
+  const onBannerPointerCancel = () => {
+    dragRef.current = null;
+    setDragDx(0);
+  };
+
+  const onBannerClick = (path: string) => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return;
+    }
+    navigate(path);
+  };
 
   return (
     <PageShell>
@@ -136,10 +210,19 @@ const Index = () => {
       {loading ? <HomeSkeleton /> : <>
       {/* 히어로: 배너(1fr) + 지표 카드(340px) */}
       <section className="mb-9 lg:mb-14 grid gap-4 lg:grid-cols-[1fr_340px] lg:gap-5" style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) both" }}>
-        <div className="relative overflow-hidden rounded-lg h-[210px] lg:h-[300px]">
-          <div className="flex h-full transition-transform duration-500 ease-out" style={{ transform: `translateX(-${currentBanner * 100}%)` }}>
+        <div
+          className="relative overflow-hidden rounded-lg h-[210px] lg:h-[300px] touch-pan-y select-none"
+          onPointerDown={onBannerPointerDown}
+          onPointerMove={onBannerPointerMove}
+          onPointerUp={onBannerPointerUp}
+          onPointerCancel={onBannerPointerCancel}
+        >
+          <div
+            className={`flex h-full ease-out ${dragDx === 0 ? "transition-transform duration-500" : ""}`}
+            style={{ transform: `translateX(calc(-${currentBanner * 100}% + ${dragDx}px))` }}
+          >
             {adBanners.map((banner, i) => (
-              <div key={i} onClick={() => navigate(banner.path)} className="w-full h-full shrink-0 relative overflow-hidden cursor-pointer active:scale-[0.99] transition-transform">
+              <div key={i} onClick={() => onBannerClick(banner.path)} className="w-full h-full shrink-0 relative overflow-hidden cursor-pointer active:scale-[0.99] transition-transform">
                 <img src={banner.image} alt={banner.desc} className="w-full h-full object-cover absolute inset-0" loading="lazy" />
                 <div className="relative z-10 h-full p-6 lg:p-8 flex flex-col justify-end bg-gradient-to-t from-black/65 to-transparent">
                   <p className="text-[11px] lg:text-xs text-white/85 font-mono uppercase tracking-widest mb-1.5">{banner.title}</p>
@@ -150,7 +233,12 @@ const Index = () => {
           </div>
           <div className="absolute bottom-4 right-5 flex gap-1.5">
             {adBanners.map((_, i) => (
-              <button key={i} onClick={() => setCurrentBanner(i)} className={`h-1.5 rounded-full transition-all duration-300 ${i === currentBanner ? "bg-white w-5" : "bg-white/50 w-1.5"}`} />
+              <button
+                key={i}
+                onClick={() => { stopAuto(); setCurrentBanner(i); }}
+                aria-label={`${i + 1}번 배너로 이동`}
+                className={`h-1.5 rounded-full transition-all duration-300 ${i === currentBanner ? "bg-white w-5" : "bg-white/50 w-1.5"}`}
+              />
             ))}
           </div>
         </div>
