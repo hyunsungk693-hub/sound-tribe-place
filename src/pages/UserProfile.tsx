@@ -77,7 +77,7 @@ const UserProfile = () => {
         {user && (
           <button
             onClick={() => navigate(`/messages?to=${profile.user_id}`)}
-            className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 active:scale-[0.98] transition-all"
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-action text-action-foreground text-sm font-medium hover:bg-action-hover active:scale-[0.98] transition-all"
           >
             <Mail className="w-4 h-4" />
             메시지 보내기

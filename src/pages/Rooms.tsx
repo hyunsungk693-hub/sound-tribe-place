@@ -301,7 +301,7 @@ const Rooms = () => {
                   </div>
                   <div className="flex gap-2 pb-4">
                     <button onClick={() => setEditing(false)} className="flex-1 h-10 rounded-lg border border-border text-sm font-medium hover:bg-secondary transition-colors">취소</button>
-                    <button onClick={handleSaveEdit} disabled={savingEdit} className="flex-1 h-10 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 active:scale-95 transition-all">
+                    <button onClick={handleSaveEdit} disabled={savingEdit} className="flex-1 h-10 rounded-lg bg-action text-action-foreground text-sm font-medium hover:bg-action-hover disabled:opacity-50 active:scale-95 transition-all">
                       {savingEdit ? "저장 중..." : "저장"}
                     </button>
                   </div>
@@ -362,7 +362,7 @@ const Rooms = () => {
                         if (!selectedRoom.user_id) { toast.error("샘플 게시물에는 메시지를 보낼 수 없습니다"); return; }
                         navigate(`/messages?to=${selectedRoom.user_id}`);
                       }}
-                      className="mt-3 w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                      className="mt-3 w-full h-11 rounded-xl bg-action text-action-foreground text-sm font-medium hover:bg-action-hover active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                     >
                       <MessageCircle className="w-4 h-4" /> 메시지 보내기
                     </button>

@@ -205,7 +205,7 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
       <button
         onClick={handleReserve}
         disabled={submitting || !user}
-        className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 active:scale-[0.98] transition-all"
+        className="w-full h-11 rounded-xl bg-action text-action-foreground text-sm font-medium hover:bg-action-hover disabled:opacity-50 active:scale-[0.98] transition-all"
       >
         {submitting ? "예약 중..." : `${slotToHM(startSlot)} - ${endSlot === 48 ? "24:00" : slotToHM(endSlot)} 예약하기`}
       </button>

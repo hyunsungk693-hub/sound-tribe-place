@@ -155,7 +155,7 @@ const Partner = () => {
               <option value="B">B · 요청예약</option>
               <option value="C">C · 정보</option>
             </select>
-            <button onClick={createStudio} className="h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-1 active:scale-95 transition-transform"><Plus className="w-4 h-4" />등록</button>
+            <button onClick={createStudio} className="h-10 rounded-lg bg-action text-action-foreground text-sm font-semibold flex items-center justify-center gap-1 active:scale-95 transition-transform"><Plus className="w-4 h-4" />등록</button>
           </div>
         </div>
 

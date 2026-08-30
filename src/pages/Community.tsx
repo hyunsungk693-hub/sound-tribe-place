@@ -521,7 +521,7 @@ const Community = () => {
                       setSelectedPost(null);
                       navigate(`/messages?to=${selectedPost.user_id}`);
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-action text-action-foreground hover:bg-action-hover active:scale-95 transition-all"
                   >
                     <Mail className="w-3.5 h-3.5" />
                     메시지
@@ -570,7 +570,7 @@ const Community = () => {
                     <button
                       onClick={handleSaveEdit}
                       disabled={savingEdit}
-                      className="flex-1 h-10 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 active:scale-95 transition-all"
+                      className="flex-1 h-10 rounded-lg bg-action text-action-foreground text-sm font-medium hover:bg-action-hover disabled:opacity-50 active:scale-95 transition-all"
                     >
                       {savingEdit ? "저장 중..." : "저장"}
                     </button>
@@ -676,7 +676,7 @@ const Community = () => {
                 <button
                   onClick={handleSubmitComment}
                   disabled={submittingComment || !newComment.trim()}
-                  className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-50 active:scale-95 transition-all"
+                  className="w-10 h-10 rounded-lg bg-action text-action-foreground flex items-center justify-center disabled:opacity-50 active:scale-95 transition-all"
                 >
                   <Send className="w-4 h-4" />
                 </button>

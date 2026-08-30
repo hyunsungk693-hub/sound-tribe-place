@@ -77,7 +77,7 @@ const TopNav = () => {
           ) : (
             <button
               onClick={() => navigate("/auth")}
-              className="px-5 h-9 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors active:scale-95"
+              className="px-5 h-9 rounded-lg bg-action text-action-foreground text-sm font-semibold hover:bg-action-hover transition-colors active:scale-95"
             >
               로그인
             </button>

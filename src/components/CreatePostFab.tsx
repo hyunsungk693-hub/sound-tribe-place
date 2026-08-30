@@ -70,7 +70,7 @@ const CreatePostFab = () => {
       <button
         onClick={() => setChooserOpen(true)}
         aria-label="게시물 작성"
-        className="fab-pos fixed right-4 lg:right-8 z-[1990] w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 active:scale-90 transition-all"
+        className="fab-pos fixed right-4 lg:right-8 z-[1990] w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-action text-action-foreground shadow-lg flex items-center justify-center hover:bg-action-hover active:scale-90 transition-all"
       >
         <Plus className="w-5 h-5" />
       </button>

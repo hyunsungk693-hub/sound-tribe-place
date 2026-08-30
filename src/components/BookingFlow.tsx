@@ -135,7 +135,7 @@ const BookingFlow = ({ studio, room, slot, originApplicationId, onClose, onBooke
             <button
               onClick={startHold}
               disabled={busy}
-              className="w-full h-12 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50"
+              className="w-full h-12 rounded-xl bg-action text-action-foreground text-sm font-semibold flex items-center justify-center gap-2 hover:bg-action-hover active:scale-[0.98] transition-all disabled:opacity-50"
             >
               <CreditCard className="w-4 h-4" /> {busy ? "처리 중..." : "예약하고 결제하기"}
             </button>
@@ -154,7 +154,7 @@ const BookingFlow = ({ studio, room, slot, originApplicationId, onClose, onBooke
             <button
               onClick={pay}
               disabled={busy}
-              className="w-full h-12 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50"
+              className="w-full h-12 rounded-xl bg-action text-action-foreground text-sm font-semibold flex items-center justify-center gap-2 hover:bg-action-hover active:scale-[0.98] transition-all disabled:opacity-50"
             >
               <CreditCard className="w-4 h-4" /> {busy ? "결제 중..." : `${fmtWon(amount)} 결제하기 (모의)`}
             </button>

@@ -82,7 +82,7 @@ const CardView = () => {
     return (
       <div className="min-h-app bg-background flex flex-col items-center justify-center gap-4 px-6">
         <p className="text-sm text-muted-foreground">존재하지 않는 카드입니다.</p>
-        <button onClick={() => navigate("/")} className="px-4 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-semibold active:scale-95 transition-transform">
+        <button onClick={() => navigate("/")} className="px-4 h-10 rounded-xl bg-action text-action-foreground text-sm font-semibold active:scale-95 transition-transform">
           instrut 홈으로
         </button>
       </div>
@@ -119,7 +119,7 @@ const CardView = () => {
           <button
             onClick={saveImage}
             disabled={saving || !imgLoaded}
-            className="h-12 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50"
+            className="h-12 rounded-xl bg-action text-action-foreground text-sm font-semibold flex items-center justify-center gap-2 hover:bg-action-hover active:scale-[0.98] transition-all disabled:opacity-50"
           >
             <Download className="w-4 h-4" /> {saving ? "저장 중..." : "이미지 저장"}
           </button>

@@ -460,7 +460,7 @@ const Jobs = () => {
                       className={`mt-3 w-full h-9 rounded-lg text-xs font-medium active:scale-[0.98] transition-all ${
                         applied
                           ? "bg-secondary text-muted-foreground cursor-default"
-                          : "bg-primary text-primary-foreground hover:bg-primary/90"
+                          : "bg-action text-action-foreground hover:bg-action-hover"
                       }`}
                     >
                       {applied && meta ? (
@@ -552,7 +552,7 @@ const Jobs = () => {
                   </div>
                   <div className="flex gap-2 pb-4">
                     <button onClick={() => setEditing(false)} className="flex-1 h-10 rounded-lg border border-border text-sm font-medium hover:bg-secondary transition-colors">취소</button>
-                    <button onClick={handleSaveEdit} disabled={savingEdit} className="flex-1 h-10 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 active:scale-95 transition-all">
+                    <button onClick={handleSaveEdit} disabled={savingEdit} className="flex-1 h-10 rounded-lg bg-action text-action-foreground text-sm font-medium hover:bg-action-hover disabled:opacity-50 active:scale-95 transition-all">
                       {savingEdit ? "저장 중..." : "저장"}
                     </button>
                   </div>
@@ -601,7 +601,8 @@ const Jobs = () => {
                   )}
                   {/* 액션 영역: 작성자 정보가 있고 본인 글이 아닐 때만 노출 (샘플/본인 글은 숨김) */}
                   {!!selectedJob.user_id && selectedJob.user_id !== user?.id && (
-                    <div className="mt-5 flex gap-2">
+                    /* 상세 내용이 길면 지원 CTA가 접힘선 아래로 밀리므로 패널 하단에 고정한다 */
+                    <div className="mt-5 flex gap-2 sticky bottom-0 z-10 -mx-5 px-5 pt-3 pb-1 bg-background/95 backdrop-blur-sm border-t border-border/40">
                       <button
                         onClick={() => {
                           if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
@@ -621,7 +622,7 @@ const Jobs = () => {
                             className={`flex-1 h-11 rounded-lg text-sm font-semibold active:scale-[0.98] transition-all ${
                               applied
                                 ? "bg-secondary text-muted-foreground cursor-default"
-                                : "bg-primary text-primary-foreground hover:bg-primary/90"
+                                : "bg-action text-action-foreground hover:bg-action-hover"
                             }`}
                           >
                             {applied && meta ? (
@@ -784,7 +785,7 @@ const Jobs = () => {
             <button
               onClick={submitApply}
               disabled={applying}
-              className="w-full h-12 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="w-full h-12 rounded-lg bg-action text-action-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {applying ? "지원 중..." : "지원 완료"}
             </button>
@@ -835,7 +836,7 @@ const Jobs = () => {
               </button>
               <button
                 onClick={() => { setVideoGateOpen(false); navigate("/profile"); }}
-                className="flex-1 h-11 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all"
+                className="flex-1 h-11 rounded-lg bg-action text-action-foreground text-sm font-semibold hover:bg-action-hover active:scale-[0.98] transition-all"
               >
                 프로필에서 등록하기
               </button>

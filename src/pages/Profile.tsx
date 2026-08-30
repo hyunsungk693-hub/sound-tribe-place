@@ -731,7 +731,7 @@ const ProfilePage = () => {
                         href={`https://www.google.com/maps/dir/?api=1&destination=${detailTarget.room_lat},${detailTarget.room_lng}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex-1 text-center px-3 py-2 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                        className="flex-1 text-center px-3 py-2 text-xs font-medium rounded-lg bg-action text-action-foreground hover:opacity-90 transition-opacity"
                       >
                         Google 지도 길찾기
                       </a>
@@ -824,7 +824,7 @@ const ProfilePage = () => {
                     href={`https://map.naver.com/p/search/${encodeURIComponent(`${studio?.name || ""} ${addr}`)}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="block text-center px-3 py-2.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                    className="block text-center px-3 py-2.5 text-xs font-semibold rounded-lg bg-action text-action-foreground hover:opacity-90 transition-opacity"
                   >
                     네이버 지도 길찾기
                   </a>

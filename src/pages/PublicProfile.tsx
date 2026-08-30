@@ -45,7 +45,7 @@ const PublicProfile = () => {
             <p className="text-xs text-muted-foreground mt-1">@{handle} 핸들을 가진 음악인을 찾을 수 없습니다.</p>
             <button
               onClick={() => navigate("/")}
-              className="mt-5 px-4 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors active:scale-95"
+              className="mt-5 px-4 h-10 rounded-xl bg-action text-action-foreground text-sm font-semibold hover:bg-action-hover transition-colors active:scale-95"
             >
               instrut 둘러보기
             </button>
@@ -69,7 +69,7 @@ const PublicProfile = () => {
                 user.id !== profile.user_id && (
                   <button
                     onClick={() => navigate(`/messages?to=${profile.user_id}`)}
-                    className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                    className="w-full h-11 rounded-xl bg-action text-action-foreground text-sm font-medium hover:bg-action-hover active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                   >
                     <MessageCircle className="w-4 h-4" /> 메시지 보내기
                   </button>
@@ -77,7 +77,7 @@ const PublicProfile = () => {
               ) : (
                 <button
                   onClick={() => navigate("/auth")}
-                  className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  className="w-full h-11 rounded-xl bg-action text-action-foreground text-sm font-medium hover:bg-action-hover active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                 >
                   <LogIn className="w-4 h-4" /> instrut에서 함께하기
                 </button>

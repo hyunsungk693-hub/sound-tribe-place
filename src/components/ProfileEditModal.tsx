@@ -478,7 +478,7 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50 active:scale-[0.98] transition-all"
+            className="w-full h-11 rounded-xl bg-action text-action-foreground text-sm font-semibold disabled:opacity-50 active:scale-[0.98] transition-all"
           >
             {saving ? "저장 중..." : "저장하기"}
           </button>

@@ -663,7 +663,7 @@ const Messages = () => {
           <button
             onClick={handleSend}
             disabled={(!newMsg.trim() && !selectedFile) || sending}
-            className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-50 active:scale-95 transition-transform shrink-0"
+            className="w-10 h-10 rounded-lg bg-action text-action-foreground flex items-center justify-center disabled:opacity-50 active:scale-95 transition-transform shrink-0"
           >
             {uploading ? (
               <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />

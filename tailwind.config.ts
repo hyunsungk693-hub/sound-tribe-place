@@ -23,6 +23,11 @@ export default {
         "surface-hover": "hsl(var(--surface-hover))",
         signal: "hsl(var(--signal))",
         amber: "hsl(var(--amber))",
+        action: {
+          DEFAULT: "hsl(var(--action))",
+          foreground: "hsl(var(--action-foreground))",
+          hover: "hsl(var(--action-hover))",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

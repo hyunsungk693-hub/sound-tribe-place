@@ -118,7 +118,7 @@ const RatingDialog = ({ open, onClose, rateeId, rateeName, jobApplicationId, onR
           <button
             onClick={submit}
             disabled={saving || loading}
-            className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium rounded-lg bg-action text-action-foreground hover:bg-action-hover transition-colors disabled:opacity-50"
           >
             {saving ? "저장 중..." : existingId ? "평가 수정" : "평가 남기기"}
           </button>

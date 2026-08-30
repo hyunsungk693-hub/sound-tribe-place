@@ -200,7 +200,7 @@ const Index = () => {
               )}
             </button>
           ) : (
-            <button onClick={() => navigate("/auth")} className="px-4 h-9 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors active:scale-95">
+            <button onClick={() => navigate("/auth")} className="px-4 h-9 rounded-lg bg-action text-action-foreground text-xs font-semibold hover:bg-action-hover transition-colors active:scale-95">
               로그인
             </button>
           )}
