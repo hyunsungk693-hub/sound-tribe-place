@@ -24,10 +24,10 @@ export default {
         signal: "hsl(var(--signal))",
         amber: "hsl(var(--amber))",
         ch: {
-          jobs: "hsl(var(--ch-jobs))",
-          rooms: "hsl(var(--ch-rooms))",
-          shops: "hsl(var(--ch-shops))",
-          community: "hsl(var(--ch-community))",
+          jobs: { DEFAULT: "hsl(var(--ch-jobs))", ink: "hsl(var(--ch-jobs-ink))" },
+          rooms: { DEFAULT: "hsl(var(--ch-rooms))", ink: "hsl(var(--ch-rooms-ink))" },
+          shops: { DEFAULT: "hsl(var(--ch-shops))", ink: "hsl(var(--ch-shops-ink))" },
+          community: { DEFAULT: "hsl(var(--ch-community))", ink: "hsl(var(--ch-community-ink))" },
         },
         action: {
           DEFAULT: "hsl(var(--action))",
