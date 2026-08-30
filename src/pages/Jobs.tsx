@@ -16,7 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Textarea } from "@/components/ui/textarea";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
-const categories = ["전체", "공연", "녹음", "레슨", "행사", "기타"];
+const categories = ["전체", "공연", "녹음", "레슨", "행사", "종교", "기타"];
 // A6: 포지션은 제외 필터가 아니라 우선 노출 — 선택해도 다른 공고를 숨기지 않는다
 const POSITIONS = ["전체", "보컬", "기타", "베이스", "드럼", "건반", "관악", "현악", "그 외"];
 
@@ -39,6 +39,7 @@ type JobItem = {
   date: string;
   createdAt: number;
   content: string;
+  subcategory: string;
   position: string;
   schedule: string;
   image_url: string | null;
@@ -278,6 +279,7 @@ const Jobs = () => {
       date: new Date(j.created_at).toLocaleDateString("ko-KR"),
       createdAt: new Date(j.created_at).getTime(),
       content: j.content || "",
+      subcategory: j.subcategory || "",
       position: j.position || "",
       schedule: j.schedule || "",
       image_url: j.image_url || null,
@@ -423,6 +425,11 @@ const Jobs = () => {
             <p className="text-[12.5px] text-muted-foreground">{job.venue}</p>
             {(job.position || job.schedule) && (
               <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                {job.subcategory && (
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-secondary text-secondary-foreground">
+                    {job.subcategory}
+                  </span>
+                )}
                 {job.position && (
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
                     selectedPosition !== "전체" && job.position === selectedPosition
@@ -571,6 +578,9 @@ const Jobs = () => {
                   )}
                   <h2 className="text-lg font-extrabold tracking-tight mb-2">{selectedJob.title}</h2>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground mb-3">
+                    {selectedJob.subcategory && (
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-secondary text-secondary-foreground">{selectedJob.subcategory}</span>
+                    )}
                     {selectedJob.position && (
                       <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary">🎯 {selectedJob.position}</span>
                     )}

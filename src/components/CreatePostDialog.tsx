@@ -16,6 +16,8 @@ export interface Field {
   type?: "text" | "textarea" | "select" | "location" | "place";
   options?: string[];
   required?: boolean;
+  /** 다른 필드 값에 따라 조건부로 노출 (예: 카테고리가 "종교"일 때만) */
+  showIf?: (values: Record<string, string>) => boolean;
 }
 
 interface CreatePostDialogProps {
@@ -37,6 +39,8 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const visibleFields = fields.filter((f) => !f.showIf || f.showIf(values));
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -82,7 +86,8 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
       return;
     }
     // 필드별 필수 검증 (required 표시된 필드만 — 유형별 정책은 fields 정의가 결정)
-    const missing = fields.find((f) => f.required && !values[f.key]?.trim());
+    // 조건부로 숨겨진 필드는 검증 대상에서 제외한다
+    const missing = visibleFields.find((f) => f.required && !values[f.key]?.trim());
     if (missing) {
       toast.error(`${missing.label}을(를) 입력해주세요`);
       return;
@@ -105,6 +110,8 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
 
       if (imageUrl) postData.image_url = imageUrl;
       if (values.category) postData.category = values.category;
+      // 하위 유형은 해당 카테고리가 선택된 경우에만 저장 (DB CHECK와 일치)
+      if (values.category === "종교" && values.subcategory) postData.subcategory = values.subcategory;
       if (values.position) postData.position = values.position;
       if (values.schedule) postData.schedule = values.schedule;
       if (values.venue) postData.venue = values.venue;
@@ -151,7 +158,7 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
         </div>
 
         <div className="space-y-3">
-          {fields.map((field) => (
+          {visibleFields.map((field) => (
             <div key={field.key}>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">
                 {field.label}

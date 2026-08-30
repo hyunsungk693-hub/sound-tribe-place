@@ -9,7 +9,16 @@ type PostType = "job" | "room" | "shop" | "community";
 const jobFields: Field[] = [
   { key: "title", label: "제목", placeholder: "예: 밴드 기타리스트 모집", required: true },
   { key: "content", label: "상세 내용", placeholder: "구인 상세 내용을 작성해주세요", type: "textarea" as const, required: true },
-  { key: "category", label: "카테고리", placeholder: "", type: "select" as const, options: ["공연", "녹음", "레슨", "행사", "기타"], required: true },
+  { key: "category", label: "활동 목적", placeholder: "", type: "select" as const, options: ["공연", "녹음", "레슨", "행사", "종교", "기타"], required: true },
+  {
+    key: "subcategory",
+    label: "종교 활동 유형",
+    placeholder: "",
+    type: "select" as const,
+    options: ["교회 반주자", "찬양팀 세션"],
+    required: true,
+    showIf: (v) => v.category === "종교",
+  },
   { key: "position", label: "모집 포지션", placeholder: "", type: "select" as const, options: ["보컬", "기타", "베이스", "드럼", "건반", "관악", "현악", "그 외"], required: true },
   { key: "schedule", label: "합주 요일/시간", placeholder: "예: 주말 오후, 협의 가능" },
   { key: "venue", label: "장소", placeholder: "장소를 검색해 선택하세요 (예: 홍대 라이브클럽)", type: "place" as const },
