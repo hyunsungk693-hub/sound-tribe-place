@@ -296,7 +296,7 @@ const Index = () => {
               onClick={() => navigate(path)}
               className={`glass-card relative p-4 lg:p-5 flex flex-col text-left transition-colors active:scale-[0.98] group ${hoverBorder}`}
             >
-              <Icon strokeWidth={1.8} className={`w-7 h-7 lg:w-8 lg:h-8 mb-3 group-hover:scale-110 transition-transform ${tint}`} />
+              <Icon strokeWidth={2} className={`w-7 h-7 lg:w-8 lg:h-8 mb-3 group-hover:scale-110 transition-transform ${tint}`} />
               <span className="font-mono text-[10px] lg:text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">{en}</span>
               <span className="text-lg lg:text-[21px] font-extrabold tracking-tight leading-tight mt-0.5">{label}</span>
               <ChevronRight className={`absolute top-4 right-3.5 w-4 h-4 text-muted-foreground/50 transition-colors ${hoverText}`} />
