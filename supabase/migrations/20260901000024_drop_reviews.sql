@@ -1,0 +1,67 @@
+-- 쓰이지 않고 쓸 수도 없는 public.reviews 테이블을 지운다.
+--
+-- 무엇이 문제인가
+--   reviews는 20260401110304에서 "장소(구인·합주실·악기점) 후기"를 담으려고 만들었지만
+--   지금은 아무도 쓰지 않는 빈 껍데기다. 세 가지가 겹쳤다.
+--
+--   1. 프론트에서 참조가 0건이다.
+--      grep -rn 'from("reviews")' src/ 결과가 비어 있다. 읽는 화면도, 쓰는 화면도 없다.
+--      남아 있는 흔적은 자동 생성물인 src/integrations/supabase/types.ts의 타입뿐이라
+--      이 테이블이 사라지면 다음 타입 생성에서 같이 없어진다.
+--
+--   2. 애초에 연결이 불가능한 스키마다.
+--      reviews.place_id가 INTEGER인데, 이 앱에서 장소를 뜻하는 두 테이블의 기본키는
+--      places.id(20260506040704)도 posts.id(20260401120116)도 둘 다 UUID다.
+--      즉 place_id에 넣을 값이 이 DB 어디에도 없다. UUID로 넘어가기 전 설계의 잔해라
+--      화면만 붙이면 되살아나는 종류가 아니고, 살리려면 컬럼 타입부터 바꿔야 한다.
+--
+--   3. 실제 평가 기능은 이미 다른 테이블이 맡고 있다.
+--      peer_ratings(20260831000001)가 "합주한 상대"에 대한 후기를 받고,
+--      그 집계가 user_stats의 등급·재합주율로 나간다. 대상(장소 vs 사람)도
+--      방식(별점 1~5 + 자유 텍스트 vs 예/아니오 3항목)도 다르다.
+--      reviews를 남겨두면 "후기 테이블이 둘"인 상태가 계속되고, 나중에 장소 후기가
+--      필요해질 때도 이 테이블이 아니라 UUID 기준으로 새로 설계하는 편이 맞다.
+--
+--   데이터 손실은 없다. 적용 전 원격 DB에서 select count(*) from public.reviews; = 0을 확인했다.
+--
+-- 어떻게 지우는가
+--   RLS 정책 3개와 기본키 인덱스는 테이블에 딸린 객체라 DROP TABLE 한 번에 같이 사라진다.
+--   따로 DROP POLICY를 적을 필요가 없다.
+--
+--   CASCADE는 일부러 쓰지 않는다. 마이그레이션 전체를 grep한 결과 reviews를 참조하는
+--   외래키·뷰·함수·트리거는 없지만, 확인하지 못한 의존 객체가 원격에 있다면
+--   그것까지 조용히 같이 지워지는 것보다 에러로 멈춰서 사람이 보는 편이 낫다.
+
+DROP TABLE IF EXISTS public.reviews;
+
+-- ROLLBACK:
+--   -- 20260401110304의 정의를 그대로 되돌린다.
+--   CREATE TABLE public.reviews (
+--     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+--     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+--     place_id INTEGER NOT NULL,
+--     place_type TEXT NOT NULL CHECK (place_type IN ('job', 'room', 'shop')),
+--     rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+--     content TEXT NOT NULL,
+--     user_name TEXT NOT NULL DEFAULT '익명',
+--     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+--   );
+--
+--   ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
+--
+--   CREATE POLICY "Anyone can read reviews"
+--     ON public.reviews FOR SELECT
+--     TO authenticated
+--     USING (true);
+--
+--   CREATE POLICY "Users can create their own reviews"
+--     ON public.reviews FOR INSERT
+--     TO authenticated
+--     WITH CHECK (auth.uid() = user_id);
+--
+--   CREATE POLICY "Users can delete their own reviews"
+--     ON public.reviews FOR DELETE
+--     TO authenticated
+--     USING (auth.uid() = user_id);
+--
+--   되살아나는 것은 구조뿐이고 행은 돌아오지 않는다. 지금은 0건이라 문제될 것이 없다.
