@@ -256,26 +256,44 @@ const Rooms = () => {
         </h2>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 items-start">
+      {/* 모바일은 리스트(썸네일 + 정보 한 줄), lg 이상은 카드 그리드.
+          사진이 없어도 썸네일 자리를 비우지 않고 플레이스홀더를 둔다 — 있는 곳과
+          없는 곳이 섞이면 줄 높이가 제각각이 되어 목록이 들쭉날쭉해 보인다. */}
+      <div className="flex flex-col divide-y divide-border lg:divide-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
         {loadingRooms ? [...Array(4)].map((_, i) => <RoomCardSkeleton key={i} />) : null}
         {!loadingRooms && allItems.map((room, i) => (
           <div
             key={room.id || `sample-${i}`}
             onClick={() => openDetail(room)}
-            className="glass-card overflow-hidden hover:border-primary transition-colors duration-200 cursor-pointer active:scale-[0.98]"
-            style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${i * 0.06}s both` }}
+            className="flex gap-3 py-3 cursor-pointer active:scale-[0.99] transition-transform lg:block lg:gap-0 lg:py-0 lg:glass-card lg:overflow-hidden lg:hover:border-primary lg:transition-colors lg:duration-200 lg:active:scale-[0.98]"
+            style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${i * 0.04}s both` }}
           >
-            {room.image_url && (
-              <img src={room.image_url} alt={room.name} className="w-full h-36 object-cover" loading="lazy" />
+            {room.image_url ? (
+              <img
+                src={room.image_url}
+                alt={room.name}
+                className="w-20 h-20 shrink-0 rounded-lg object-cover lg:w-full lg:h-36 lg:rounded-none"
+                loading="lazy"
+              />
+            ) : (
+              <div className="w-20 h-20 shrink-0 rounded-lg bg-secondary flex items-center justify-center lg:w-full lg:h-36 lg:rounded-none">
+                <Music className="w-6 h-6 text-muted-foreground/40 lg:w-8 lg:h-8" />
+              </div>
             )}
-            <div className="p-4">
-              <h3 className="text-[15px] font-bold tracking-tight mb-2">{room.name}</h3>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-                {room.area && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{room.area}</span>}
-                {room.hours && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{room.hours}</span>}
+            <div className="min-w-0 flex-1 lg:p-4">
+              <h3 className="text-[15px] font-bold tracking-tight truncate lg:mb-2 lg:whitespace-normal">{room.name}</h3>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 lg:mt-0 lg:mb-3">
+                {room.area && <span className="flex items-center gap-1 min-w-0"><MapPin className="w-3 h-3 shrink-0" /><span className="truncate">{room.area}</span></span>}
+                {room.hours && <span className="flex items-center gap-1 shrink-0"><Clock className="w-3 h-3" />{room.hours}</span>}
               </div>
               {room.instruments.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-3">
+                <p className="mt-1 text-[11px] text-muted-foreground truncate lg:hidden">
+                  {room.instruments.join(" · ")}
+                </p>
+              )}
+              {/* 장비 칩은 카드(PC)에서만 — 리스트 한 줄에는 텍스트로 압축해 넣는다 */}
+              {room.instruments.length > 0 && (
+                <div className="hidden lg:flex flex-wrap gap-1.5 mb-3">
                   {room.instruments.map((inst: string) => (
                     <span key={inst} className="flex items-center gap-1 font-mono text-[10px] font-semibold px-2 py-0.5 rounded bg-secondary text-secondary-foreground">
                       <Music className="w-2.5 h-2.5" />{inst}
@@ -283,12 +301,12 @@ const Rooms = () => {
                   ))}
                 </div>
               )}
-              <div className="pt-3 border-t border-border flex items-center justify-between">
-                <span className="text-[13px] font-bold text-primary font-mono tabular-nums">{room.price}</span>
+              <div className="flex items-center justify-between gap-2 mt-1.5 lg:mt-0 lg:pt-3 lg:border-t lg:border-border">
+                <span className="text-[13px] font-bold text-primary font-mono tabular-nums truncate">{room.price}</span>
                 {hasDirections(room.lat, room.lng, room.area || room.name) && (
                   <button
                     onClick={(e) => { e.stopPropagation(); openDirections(room); }}
-                    className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/15 transition-colors active:scale-95"
+                    className="shrink-0 flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/15 transition-colors active:scale-95"
                   >
                     <Navigation className="w-3 h-3" /> 길찾기
                   </button>

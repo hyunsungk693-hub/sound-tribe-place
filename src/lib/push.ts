@@ -72,7 +72,8 @@ type PushRequest =
   | { type: "message"; userId: string }
   | { type: "like" | "comment"; userId: string; postId: string }
   | { type: "new_applicant"; userId: string; jobId: string }
-  | { type: "apply_status"; userId: string; jobId: string; status: string };
+  | { type: "apply_status"; userId: string; jobId: string; status: string }
+  | { type: "booking_result"; userId: string; bookingId: string; status: "approved" | "rejected" };
 
 export async function sendPushTo(params: PushRequest) {
   try {

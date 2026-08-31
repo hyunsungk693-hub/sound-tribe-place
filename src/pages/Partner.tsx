@@ -8,6 +8,7 @@ import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { supabase } from "@/integrations/supabase/client";
 import PlaceSearchInput from "@/components/PlaceSearchInput";
 import { Studio, Room, Slot, Booking, fmtWon, decideBookingRequest } from "@/lib/bookings";
+import { sendPushTo } from "@/lib/push";
 
 const db = supabase as any;
 
@@ -143,6 +144,9 @@ const Partner = () => {
     if (!approve && !confirm("예약 요청을 거절하시겠습니까?")) return;
     try {
       await decideBookingRequest(b.id, approve);
+      // 인앱 알림은 트리거가 발행한다(20260901000022). 푸시는 사용자 JWT가 있어야
+      // send-push를 통과하므로 여기서만 보낼 수 있다 — 자동 만료는 pg_cron이라 푸시가 없다.
+      sendPushTo({ type: "booking_result", userId: b.user_id, bookingId: b.id, status: approve ? "approved" : "rejected" });
       toast.success(approve ? "예약을 승인했습니다" : "예약 요청을 거절했습니다");
       if (active) loadStudioDetail(active);
     } catch (e: any) {

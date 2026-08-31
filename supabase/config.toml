@@ -1,4 +1,6 @@
-project_id = "dhuzcfayjucfteysxhrj"
+# Lovable Cloud 시절 프로젝트 id가 남아 있었다. 실제 연결 대상은 서울 리전의 instrut다.
+# 어긋난 채로 두면 config.toml을 보고 URL을 만드는 코드가 조용히 엉뚱한 곳을 친다.
+project_id = "syxodrmnukybnnlgttuw"
 
 
 [functions.send-push]
