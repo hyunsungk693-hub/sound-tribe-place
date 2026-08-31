@@ -107,9 +107,10 @@ const Messages = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
 
-  const fetchConversations = useCallback(async () => {
+  /** @param silent realtime 갱신처럼 사용자가 요청하지 않은 재조회는 스켈레톤을 띄우지 않는다 */
+  const fetchConversations = useCallback(async ({ silent }: { silent?: boolean } = {}) => {
     if (!user) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
 
     const { data: convs } = await supabase
       .from("conversations")
@@ -334,6 +335,44 @@ const Messages = () => {
       supabase.removeChannel(channel);
     };
   }, [selectedConv, user]);
+
+  // 열려 있는 대화 id를 ref로도 들고 있는다 — 아래 목록 구독이 대화를 열고 닫을 때마다
+  // 재구독되지 않게 하려는 것이다.
+  const selectedConvIdRef = useRef<string | null>(null);
+  useEffect(() => { selectedConvIdRef.current = selectedConv?.id ?? null; }, [selectedConv]);
+
+  // 대화 목록 레벨 realtime — 목록 화면에 머무는 동안 다른 대화방에 새 메시지가 와도
+  // 미리보기·정렬·안읽음 배지가 갱신되게 한다.
+  // conversations 테이블은 realtime publication에 없고 messages만 등록돼 있으므로
+  // messages 변경을 듣고 목록을 통째로 조용히 다시 읽는다. 필터 없이 구독하지만
+  // RLS(내가 속한 대화의 메시지만 SELECT 가능)가 남의 대화를 걸러준다.
+  useEffect(() => {
+    if (!user) return;
+
+    // 짧은 시간에 여러 건이 들어오거나 읽음 처리로 UPDATE가 무더기로 뜰 때 재조회를 1회로 모은다
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => { fetchConversations({ silent: true }); }, 300);
+    };
+
+    const channel = supabase
+      // 스레드 구독(`messages-<대화id>`)과 이름이 겹치지 않게 사용자 id를 쓴다
+      .channel(`messages-list-${user.id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+        // 지금 열려 있는 대화는 스레드 구독이 이미 처리한다(읽음 처리 포함) — 중복 재조회 방지
+        if ((payload.new as { conversation_id?: string })?.conversation_id === selectedConvIdRef.current) return;
+        scheduleRefresh();
+      })
+      // 읽음 처리(is_read UPDATE)도 목록의 안읽음 배지에 반영돼야 한다
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages" }, () => scheduleRefresh())
+      .subscribe();
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchConversations]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });

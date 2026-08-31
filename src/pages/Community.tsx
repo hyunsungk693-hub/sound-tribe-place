@@ -18,13 +18,6 @@ const PAGE_SIZE = 20;
 /** PostgREST .or() 필터는 쉼표·괄호로 구문을 나누므로 검색어에서 제거한다 */
 const sanitizeSearch = (q: string) => q.trim().replace(/[,()%*\\]/g, " ").replace(/\s+/g, " ").trim();
 
-const communityFields = [
-  { key: "title", label: "제목", placeholder: "글 제목을 입력해주세요" },
-  { key: "content", label: "내용", placeholder: "내용을 작성해주세요", type: "textarea" as const },
-  { key: "category", label: "카테고리", placeholder: "", type: "select" as const, options: ["자유", "질문", "거래"] },
-  { key: "author_name", label: "닉네임", placeholder: "닉네임" },
-];
-
 type PostItem = {
   id: string | null;
   user_id: string | null;
@@ -339,6 +332,32 @@ const Community = () => {
     setComments((data || []) as Comment[]);
   };
 
+  // 카드 공유 — Web Share API가 있으면 OS 공유 시트, 없으면(주로 데스크톱) 링크 복사로 대체한다.
+  // 공유 대상은 App.tsx의 /post/:postId 라우트다.
+  const handleShare = async (post: PostItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!post.id) { toast("샘플 게시물은 공유할 수 없습니다"); return; }
+    const url = `${window.location.origin}/post/${post.id}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: post.title, text: post.content.slice(0, 80), url });
+        return;
+      } catch (err) {
+        // 사용자가 공유 시트를 닫은 것(AbortError)은 실패가 아니므로 조용히 끝낸다
+        if ((err as DOMException)?.name === "AbortError") return;
+        // 그 외(권한 거부 등)는 아래 링크 복사로 폴백한다
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("게시물 링크를 복사했습니다");
+    } catch {
+      toast.error("링크 복사에 실패했습니다");
+    }
+  };
+
   const openPost = (post: PostItem) => {
     if (!user) { toast.error("자세히 보려면 로그인이 필요합니다"); navigate("/auth"); return; }
     setSelectedPost(post);
@@ -543,10 +562,19 @@ const Community = () => {
               >
                 <Heart className={`w-3.5 h-3.5 ${post.liked ? "fill-red-500" : ""}`} /> {post.likeCount}
               </button>
-              <button className="flex items-center gap-1 text-xs font-mono tabular-nums text-muted-foreground hover:text-primary transition-colors active:scale-95">
+              {/* 카드 클릭과 동작이 같지만, 버블링에 기대지 않고 의도를 드러낸다 */}
+              <button
+                onClick={(e) => { e.stopPropagation(); openPost(post); }}
+                aria-label="댓글 보기"
+                className="flex items-center gap-1 text-xs font-mono tabular-nums text-muted-foreground hover:text-primary transition-colors active:scale-95"
+              >
                 <MessageSquare className="w-3.5 h-3.5" /> {post.commentCount}
               </button>
-              <button className="ml-auto text-muted-foreground hover:text-primary transition-colors active:scale-95">
+              <button
+                onClick={(e) => handleShare(post, e)}
+                aria-label="공유"
+                className="ml-auto text-muted-foreground hover:text-primary transition-colors active:scale-95"
+              >
                 <Share2 className="w-3.5 h-3.5" />
               </button>
             </div>

@@ -1,4 +1,4 @@
-import { Search, MapPin, Clock, Star, Music, ArrowLeft, Pencil, Trash2, MessageCircle, Navigation, ChevronRight, Phone } from "lucide-react";
+import { Search, MapPin, Clock, Music, ArrowLeft, Pencil, Trash2, MessageCircle, Navigation, ChevronRight, Phone } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import PageShell from "@/components/PageShell";
@@ -28,7 +28,6 @@ type RoomItem = {
   name: string;
   area: string;
   price: string;
-  rating: number;
   instruments: string[];
   hours: string;
   phone: string;
@@ -140,7 +139,6 @@ const Rooms = () => {
       name: r.title,
       area: r.area || "",
       price: r.price || "",
-      rating: 0,
       instruments: r.instruments || [],
       hours: r.hours || "",
       phone: r.phone || "",
@@ -271,15 +269,7 @@ const Rooms = () => {
               <img src={room.image_url} alt={room.name} className="w-full h-36 object-cover" loading="lazy" />
             )}
             <div className="p-4">
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="text-[15px] font-bold tracking-tight">{room.name}</h3>
-                {room.rating > 0 && (
-                  <div className="flex items-center gap-1 shrink-0 ml-2">
-                    <Star className="w-3.5 h-3.5 text-primary fill-primary" />
-                    <span className="text-xs font-semibold font-mono tabular-nums">{room.rating}</span>
-                  </div>
-                )}
-              </div>
+              <h3 className="text-[15px] font-bold tracking-tight mb-2">{room.name}</h3>
               <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
                 {room.area && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{room.area}</span>}
                 {room.hours && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{room.hours}</span>}

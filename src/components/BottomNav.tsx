@@ -164,10 +164,18 @@ const BottomNav = () => {
             onContextMenu={(e) => e.preventDefault()}
             className={`${tabBtnCls(location.pathname === "/")} select-none ${menuOpen ? "scale-95" : ""}`}
             style={{ touchAction: "manipulation", WebkitUserSelect: "none", WebkitTouchCallout: "none" } as React.CSSProperties}
-            aria-label="홈 (길게 누르면 바로가기 메뉴)"
+            aria-label={
+              unreadNotifications > 0
+                ? `홈 (알림 ${unreadNotifications}개, 길게 누르면 바로가기 메뉴)`
+                : "홈 (길게 누르면 바로가기 메뉴)"
+            }
           >
             <div className="relative">
               <Home className="w-[26px] h-[26px]" strokeWidth={location.pathname === "/" ? 2.4 : 2} />
+              {/* 하단 탭에는 알림 탭이 없다. 모바일에서 알림 패널(NotificationsPanel)을 여는
+                  종 버튼은 홈(Index.tsx)의 lg:hidden 헤더에만 있으므로, 미읽음 표시는
+                  그 화면으로 가는 유일한 입구인 홈 탭에 붙인다. */}
+              <Badge count={unreadNotifications} />
             </div>
             <span className="text-[11px] font-medium leading-none">홈</span>
           </button>
