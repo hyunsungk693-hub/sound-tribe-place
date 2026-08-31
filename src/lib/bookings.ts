@@ -37,10 +37,12 @@ export type Booking = {
   room_id: string;
   slot_id: string | null;
   period: string;
-  status: "held" | "confirmed" | "cancelled" | "completed" | "no_show";
+  status: "held" | "requested" | "confirmed" | "cancelled" | "completed" | "no_show";
   hold_expires_at: string | null;
   user_id: string;
   amount: number;
+  // 결제가 실제로 확인된 예약인지. PG 연동 전이라 항상 false이며, false면 도어락 PIN이 배정되지 않는다.
+  paid: boolean;
   created_at: string;
 };
 
@@ -107,6 +109,8 @@ export async function suggestSlots(areaHint?: string | null, limit = 3) {
   return out;
 }
 
+// 홀드 생성. A등급은 5분 TTL의 held, B등급은 사장님 승인을 기다리는 requested로 들어간다.
+// C등급은 RPC가 거부한다 (프론트에서도 예약 UI를 감추지만 관문은 DB다).
 export async function createHold(slotId: string, originApplicationId?: string | null) {
   const { data, error } = await db.rpc("create_booking_hold", {
     _slot_id: slotId,
@@ -116,10 +120,11 @@ export async function createHold(slotId: string, originApplicationId?: string | 
   return data as string; // booking id
 }
 
+// 확정 RPC. 결제 검증이 아직 없어 paid=false로 돌아오며, 그때는 pin도 null이다.
 export async function confirmBooking(bookingId: string) {
   const { data, error } = await db.rpc("confirm_booking", { _booking_id: bookingId });
   if (error) throw new Error(error.message);
-  return data as { booking_id: string; pin: string | null };
+  return data as { booking_id: string; pin: string | null; paid: boolean };
 }
 
 export async function cancelBooking(bookingId: string) {
@@ -127,22 +132,8 @@ export async function cancelBooking(bookingId: string) {
   if (error) throw new Error(error.message);
 }
 
-export async function getBooking(id: string) {
-  const { data } = await db.from("bookings").select("*").eq("id", id).maybeSingle();
-  return data as Booking | null;
-}
-
-// 확정 예약의 배정 PIN 조회 (RLS로 본인 예약만)
-export async function getAssignedPin(bookingId: string) {
-  const { data } = await db.from("door_pins").select("pin").eq("assigned_booking_id", bookingId).maybeSingle();
-  return (data?.pin as string) || null;
-}
-
-// 내 예약 목록
-export async function myBookings() {
-  const { data } = await db
-    .from("bookings")
-    .select("*")
-    .order("created_at", { ascending: false });
-  return (data || []) as Booking[];
+// B등급(요청예약) 예약 요청에 대한 사장님 판단. 승인해도 결제 전이라 PIN은 나가지 않는다.
+export async function decideBookingRequest(bookingId: string, approve: boolean) {
+  const { error } = await db.rpc("decide_booking_request", { _booking_id: bookingId, _approve: approve });
+  if (error) throw new Error(error.message);
 }

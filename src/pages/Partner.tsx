@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { Navigate } from "react-router-dom";
-import { Plus, Trash2, KeyRound, CalendarPlus, Building2 } from "lucide-react";
+import { Plus, Trash2, KeyRound, CalendarPlus, Building2, Eye, EyeOff, Check, X, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { supabase } from "@/integrations/supabase/client";
-import { Studio, Room, Slot, Booking, fmtWon } from "@/lib/bookings";
+import PlaceSearchInput from "@/components/PlaceSearchInput";
+import { Studio, Room, Slot, Booking, fmtWon, decideBookingRequest } from "@/lib/bookings";
 
 const db = supabase as any;
 
@@ -22,7 +23,11 @@ const Partner = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [pins, setPins] = useState<any[]>([]);
 
-  const [sForm, setSForm] = useState({ name: "", address: "", phone: "", description: "", tier: "A" });
+  // 좌표는 장소 검색으로만 채운다. NULL이면 Studios 화면의 길찾기가 이름·주소 검색으로 떨어진다.
+  const [sForm, setSForm] = useState<{
+    name: string; address: string; phone: string; description: string; tier: string;
+    lat: number | null; lng: number | null;
+  }>({ name: "", address: "", phone: "", description: "", tier: "A", lat: null, lng: null });
   const [rForm, setRForm] = useState({ name: "", hourly_price: "", capacity: "" });
   const [slotForm, setSlotForm] = useState<{ roomId: string; date: string; start: string; duration: string }>({ roomId: "", date: "", start: "", duration: "2" });
   const [pinInput, setPinInput] = useState("");
@@ -64,7 +69,7 @@ const Partner = () => {
     const { error } = await db.from("studios").insert({ ...sForm, owner_id: user.id });
     if (error) return toast.error("등록 실패: " + error.message);
     toast.success("스튜디오 등록됨");
-    setSForm({ name: "", address: "", phone: "", description: "", tier: "A" });
+    setSForm({ name: "", address: "", phone: "", description: "", tier: "A", lat: null, lng: null });
     loadStudios();
   };
 
@@ -111,11 +116,31 @@ const Partner = () => {
     if (active) loadStudioDetail(active);
   };
 
+  // 슬롯 닫기/열기. 삭제와 달리 슬롯 자체는 남으므로 다시 열 수 있고, 예약 이력도 끊기지 않는다.
+  const toggleSlot = async (slot: Slot) => {
+    const { error } = await db.from("room_slots").update({ is_open: !slot.is_open }).eq("id", slot.id);
+    if (error) return toast.error("변경 실패: " + error.message);
+    toast.success(slot.is_open ? "슬롯을 닫았습니다" : "슬롯을 열었습니다");
+    if (active) loadStudioDetail(active);
+  };
+
   const markBooking = async (b: Booking, status: "completed" | "no_show") => {
     const { error } = await db.from("bookings").update({ status }).eq("id", b.id);
     if (error) return toast.error("변경 실패: " + error.message);
     toast.success(status === "completed" ? "이용 완료 처리" : "노쇼 처리");
     if (active) loadStudioDetail(active);
+  };
+
+  // B(요청예약) 등급 예약 요청 처리. 승인하면 confirmed가 되지만 결제 연동 전이라 PIN은 나가지 않는다.
+  const decideRequest = async (b: Booking, approve: boolean) => {
+    if (!approve && !confirm("예약 요청을 거절하시겠습니까?")) return;
+    try {
+      await decideBookingRequest(b.id, approve);
+      toast.success(approve ? "예약을 승인했습니다" : "예약 요청을 거절했습니다");
+      if (active) loadStudioDetail(active);
+    } catch (e: any) {
+      toast.error(e.message || "처리에 실패했습니다");
+    }
   };
 
   const addPin = async () => {
@@ -129,7 +154,7 @@ const Partner = () => {
   };
 
   const roomName = (id: string) => rooms.find((r) => r.id === id)?.name || "삭제된 방";
-  const statusLabel: Record<string, string> = { held: "결제대기", confirmed: "확정", cancelled: "취소", completed: "완료", no_show: "노쇼" };
+  const statusLabel: Record<string, string> = { held: "결제대기", requested: "승인대기", confirmed: "확정", cancelled: "취소", completed: "완료", no_show: "노쇼" };
 
   return (
     <PageShell title="사장님 콘솔">
@@ -148,7 +173,21 @@ const Partner = () => {
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
             <input value={sForm.name} onChange={(e) => setSForm({ ...sForm, name: e.target.value })} placeholder="스튜디오 이름 *" className="h-10 rounded-lg border border-input bg-background px-3 text-sm sm:col-span-2 lg:col-span-4" />
-            <input value={sForm.address} onChange={(e) => setSForm({ ...sForm, address: e.target.value })} placeholder="주소" className="h-10 rounded-lg border border-input bg-background px-3 text-sm" />
+            <div>
+              <PlaceSearchInput
+                value={sForm.address}
+                placeholder="주소 · 장소 검색"
+                selected={sForm.lat != null && sForm.lng != null}
+                onChange={(v) => setSForm({ ...sForm, address: v, lat: null, lng: null })}
+                onSelect={({ name, lat, lng }) => setSForm({ ...sForm, address: name, lat, lng })}
+              />
+              <p className="mt-1 flex items-center gap-1 font-mono text-[10px] text-muted-foreground">
+                <MapPin className="w-3 h-3 shrink-0" />
+                {sForm.lat != null && sForm.lng != null
+                  ? `${sForm.lat.toFixed(4)}, ${sForm.lng.toFixed(4)}`
+                  : "검색 결과를 선택하면 좌표가 저장돼 길찾기가 켜집니다"}
+              </p>
+            </div>
             <input value={sForm.phone} onChange={(e) => setSForm({ ...sForm, phone: e.target.value })} placeholder="전화" className="h-10 rounded-lg border border-input bg-background px-3 text-sm" />
             <select value={sForm.tier} onChange={(e) => setSForm({ ...sForm, tier: e.target.value })} className="h-10 rounded-lg border border-input bg-background px-3 text-sm">
               <option value="A">A · 즉시예약</option>
@@ -188,9 +227,13 @@ const Partner = () => {
                   <p className="font-mono text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">{r.name}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {(slots[r.id] || []).map((s) => (
-                      <span key={s.id} className={`flex items-center gap-1 font-mono text-[11px] tabular-nums px-2 py-1 rounded ${s.is_open ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground line-through"}`}>
+                      <span key={s.id} className={`flex items-center gap-1.5 font-mono text-[11px] tabular-nums px-2 py-1 rounded ${s.is_open ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground line-through"}`}>
                         {new Date(s.start_at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                        <button onClick={() => delSlot(s.id)}><Trash2 className="w-3 h-3" /></button>
+                        {/* 닫기는 삭제와 다르다 — 손님에게 안 보이게만 하고 언제든 다시 연다 */}
+                        <button onClick={() => toggleSlot(s)} title={s.is_open ? "슬롯 닫기" : "슬롯 열기"} aria-label={s.is_open ? "슬롯 닫기" : "슬롯 열기"}>
+                          {s.is_open ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                        </button>
+                        <button onClick={() => delSlot(s.id)} title="슬롯 삭제" aria-label="슬롯 삭제"><Trash2 className="w-3 h-3" /></button>
                       </span>
                     ))}
                     {(slots[r.id] || []).length === 0 && <span className="text-[11px] text-muted-foreground">없음</span>}
@@ -239,14 +282,33 @@ const Partner = () => {
 
             {/* 예약 현황 */}
             <div className="glass-card p-4 lg:p-5">
-              <h2 className="font-bold text-base tracking-tight mb-3">예약 현황 <span className="font-mono text-xs font-semibold text-muted-foreground tabular-nums">({bookings.length})</span></h2>
+              <h2 className="font-bold text-base tracking-tight mb-3">
+                예약 현황 <span className="font-mono text-xs font-semibold text-muted-foreground tabular-nums">({bookings.length})</span>
+                {bookings.some((b) => b.status === "requested") && (
+                  <span className="ml-2 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber/15 text-amber tabular-nums">
+                    승인대기 {bookings.filter((b) => b.status === "requested").length}
+                  </span>
+                )}
+              </h2>
               {bookings.length === 0 && <p className="text-xs text-muted-foreground py-2">예약이 없습니다.</p>}
               {bookings.map((b) => (
                 <div key={b.id} className="flex items-center justify-between py-3 border-b border-border last:border-0 gap-2">
                   <div className="min-w-0">
                     <p className="text-[13px] font-semibold tracking-tight truncate">{roomName(b.room_id)} · <span className="font-mono tabular-nums">{fmtWon(b.amount)}</span></p>
-                    <p className="text-[11px] text-muted-foreground font-mono tabular-nums mt-0.5">{new Date(b.created_at).toLocaleDateString("ko-KR")} · {statusLabel[b.status] || b.status}</p>
+                    <p className="text-[11px] text-muted-foreground font-mono tabular-nums mt-0.5 flex items-center gap-1.5">
+                      {new Date(b.created_at).toLocaleDateString("ko-KR")} · {statusLabel[b.status] || b.status}
+                      {/* 결제 연동 전이라 확정이어도 돈은 들어오지 않았다. 현장 정산 대상임을 여기서 알린다. */}
+                      {!b.paid && b.status !== "cancelled" && (
+                        <span className="px-1.5 py-0.5 rounded bg-amber/15 text-amber font-bold">미결제</span>
+                      )}
+                    </p>
                   </div>
+                  {b.status === "requested" && (
+                    <div className="flex gap-1 shrink-0">
+                      <button onClick={() => decideRequest(b, true)} className="text-[11px] px-2 py-1 rounded bg-primary/10 text-primary font-semibold flex items-center gap-1"><Check className="w-3 h-3" />승인</button>
+                      <button onClick={() => decideRequest(b, false)} className="text-[11px] px-2 py-1 rounded bg-destructive/10 text-destructive font-semibold flex items-center gap-1"><X className="w-3 h-3" />거절</button>
+                    </div>
+                  )}
                   {b.status === "confirmed" && (
                     <div className="flex gap-1 shrink-0">
                       <button onClick={() => markBooking(b, "completed")} className="text-[11px] px-2 py-1 rounded bg-primary/10 text-primary font-semibold">완료</button>

@@ -137,8 +137,12 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
     fetchReservations();
   };
 
-  const handleCancel = async (id: string) => {
-    if (!confirm("예약을 취소하시겠습니까?")) return;
+  // 방 주인(isHost)은 자기 방의 남의 예약도 정리할 수 있다.
+  // DELETE 정책도 20260901000018에서 함께 열었다 — 화면 조건만 고치면 RLS에 막힌다.
+  const isHost = !!ownerId && user?.id === ownerId;
+
+  const handleCancel = async (id: string, mine: boolean) => {
+    if (!confirm(mine ? "예약을 취소하시겠습니까?" : "이 예약을 취소하시겠습니까? 예약자에게 별도 안내가 가지 않습니다.")) return;
     const { error } = await supabase.from("room_reservations" as any).delete().eq("id", id);
     if (error) { toast.error("취소 실패"); return; }
     toast.success("예약이 취소되었습니다");
@@ -225,8 +229,8 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
               return (
                 <li key={r.id} className={`flex items-center justify-between text-xs px-3 py-2 rounded-lg ${mine ? "bg-primary/10 text-primary" : "bg-secondary text-secondary-foreground"}`}>
                   <span className="font-medium">{fmtTime(r.start_at)} - {fmtTime(r.end_at)} {mine && "(내 예약)"}</span>
-                  {(mine || r.user_id === ownerId && user?.id === ownerId) && (
-                    <button onClick={() => handleCancel(r.id)} className="p-1 rounded hover:bg-destructive/10 text-destructive">
+                  {(mine || isHost) && (
+                    <button onClick={() => handleCancel(r.id, mine)} className="p-1 rounded hover:bg-destructive/10 text-destructive">
                       <Trash2 className="w-3 h-3" />
                     </button>
                   )}

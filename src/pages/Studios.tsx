@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { MapPin, ArrowLeft, CalendarClock } from "lucide-react";
+import { MapPin, ArrowLeft, CalendarClock, Navigation, Info, Phone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import BookingFlow from "@/components/BookingFlow";
+import { naverDirectionsUrl, googleDirectionsUrl, hasDirections } from "@/lib/directions";
 import {
   Studio, Room, Slot, TIER_LABEL, fmtWon, slotDuration,
   listStudios, listRooms, listOpenSlots,
@@ -42,11 +43,28 @@ const Studios = () => {
 
   const openStudio = async (s: Studio) => {
     setSelected(s);
+    // C(정보) 업소는 예약을 받지 않는다 — 슬롯을 불러올 이유도, 보여줄 이유도 없다.
+    if (s.tier === "C") {
+      setRooms([]);
+      setSlotsByRoom({});
+      return;
+    }
     const rs = await listRooms(s.id);
     setRooms(rs);
     const map: Record<string, Slot[]> = {};
     for (const r of rs) map[r.id] = await listOpenSlots(r.id);
     setSlotsByRoom(map);
+  };
+
+  // 좌표가 있으면 좌표로, 없으면 이름+주소 검색으로 (Rooms 화면과 같은 방식)
+  const openDirections = (s: Studio) => {
+    window.open(
+      s.lat != null && s.lng != null
+        ? naverDirectionsUrl(s.name, s.lat, s.lng)
+        : naverDirectionsUrl(`${s.name} ${s.address || ""}`.trim()),
+      "_blank",
+      "noopener",
+    );
   };
 
   const fmtSlot = (s: Slot) => {
@@ -59,8 +77,13 @@ const Studios = () => {
       <div>
         {!selected ? (
           <>
-            <p className="text-[13px] text-muted-foreground mb-5">
-              제휴 연습실은 <span className="text-primary font-semibold">즉시예약·선결제</span>로 확정됩니다.
+            <p className="text-[13px] text-muted-foreground mb-2 leading-relaxed">
+              <span className="text-primary font-semibold">A 즉시예약</span>은 바로 확정,
+              <span className="text-foreground font-semibold"> B 요청예약</span>은 사장님 승인 후 확정,
+              <span className="text-foreground font-semibold"> C</span>는 정보만 제공합니다.
+            </p>
+            <p className="text-[11.5px] text-muted-foreground mb-5 leading-relaxed">
+              실제 결제(PG) 연동 전이라 결제는 이뤄지지 않으며, 출입 PIN도 발급되지 않습니다.
             </p>
             {loading ? (
               <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
@@ -112,10 +135,55 @@ const Studios = () => {
                 <VuMeter level={tierLevel(selected.tier)} />
                 <span className="font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-muted-foreground">신뢰 {selected.tier}등급</span>
               </div>
+              {/* 좌표(lat/lng)는 사장님 콘솔의 장소 검색으로 들어온다. 없으면 이름·주소 검색 링크로 대체된다. */}
+              {hasDirections(selected.lat, selected.lng, selected.address || selected.name) && (
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={() => openDirections(selected)}
+                    className="flex-1 h-10 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/15 transition-colors active:scale-[0.98] flex items-center justify-center gap-1.5"
+                  >
+                    <Navigation className="w-3.5 h-3.5" /> 네이버 지도 길찾기
+                  </button>
+                  {selected.lat != null && selected.lng != null && (
+                    <a
+                      href={googleDirectionsUrl(selected.lat, selected.lng)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex-1 h-10 rounded-lg bg-secondary text-secondary-foreground text-xs font-semibold hover:bg-surface-hover transition-colors active:scale-[0.98] flex items-center justify-center gap-1.5"
+                    >
+                      Google 지도
+                    </a>
+                  )}
+                </div>
+              )}
+              {selected.phone && (
+                <a
+                  href={`tel:${selected.phone.replace(/[^0-9+]/g, "")}`}
+                  className="mt-2 w-full h-10 rounded-lg bg-secondary text-secondary-foreground text-xs font-semibold hover:bg-surface-hover transition-colors active:scale-[0.98] flex items-center justify-center gap-1.5"
+                >
+                  <Phone className="w-3.5 h-3.5" /> 전화 걸기
+                </a>
+              )}
             </div>
 
+            {/* C(정보) 등급은 예약 UI를 아예 노출하지 않는다. DB의 create_booking_hold도 같이 거부한다. */}
+            {selected.tier === "C" ? (
+              <div className="glass-card p-5 text-center">
+                <Info className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm font-semibold mb-1">정보만 제공하는 업소입니다</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  이 업소는 앱에서 예약을 받지 않습니다. 이용 문의는 업소로 직접 연락해주세요.
+                </p>
+              </div>
+            ) : (
+            <>
             <div className="flex items-baseline justify-between pb-3 border-b-2 border-foreground mb-4">
-              <h3 className="text-lg lg:text-[19px] font-extrabold tracking-tight">합주실 · 예약</h3>
+              <h3 className="text-lg lg:text-[19px] font-extrabold tracking-tight">
+                합주실 · {selected.tier === "B" ? "예약 요청" : "예약"}
+              </h3>
+              {selected.tier === "B" && (
+                <span className="font-mono text-[10px] font-bold tracking-wide text-muted-foreground">사장님 승인 후 확정</span>
+              )}
             </div>
 
             {rooms.length === 0 ? (
@@ -145,7 +213,9 @@ const Studios = () => {
                             className="flex flex-col items-start px-3 py-2 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-colors active:scale-95"
                           >
                             <span className="text-xs font-semibold">{fmtSlot(slot)}</span>
-                            <span className="text-[10px] text-muted-foreground font-mono tabular-nums">{slotDuration(slot)}시간 · {fmtWon(Math.round(r.hourly_price * slotDuration(slot)))}</span>
+                            <span className="text-[10px] text-muted-foreground font-mono tabular-nums">
+                              {slotDuration(slot)}시간 · {fmtWon(Math.round(r.hourly_price * slotDuration(slot)))}{selected.tier === "B" ? " · 요청" : ""}
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -153,6 +223,8 @@ const Studios = () => {
                   </div>
                 ))}
               </div>
+            )}
+            </>
             )}
           </>
         )}
