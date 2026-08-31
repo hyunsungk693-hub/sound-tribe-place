@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { Bell, Heart, MessageSquare, BellOff, BellRing, BadgeCheck, XCircle } from "lucide-react";
+import { Bell, Heart, MessageSquare, BellOff, BellRing, BadgeCheck, XCircle, CalendarCheck, CalendarX, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { enablePushNotifications, disablePushNotifications, isPushSupported, getPushPermission } from "@/lib/push";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,20 +22,27 @@ interface Props {
   onClose: () => void;
 }
 
+// 알림 종류별 이동 경로. 예약 알림(booking_*)은 대응하는 게시물이 없어 post_id가 NULL이라
+// (20260901000022 참고) post_id만 보면 클릭해도 아무 데도 못 간다. 타입을 먼저 보고
+// 예약현황 탭이 있는 프로필로 보낸다.
+const routeOf = (n: Notification): string | null =>
+  n.type.startsWith("booking_") ? "/profile" : n.post_id ? `/post/${n.post_id}` : null;
+
 const NotificationsPanel = ({ open, onClose }: Props) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  // 알림 클릭: 읽음 처리 후 해당 게시물로 이동
+  // 알림 클릭: 읽음 처리 후 해당 화면으로 이동
   const openNotification = async (n: Notification) => {
     if (!n.is_read) {
       supabase.from("notifications").update({ is_read: true } as any).eq("id", n.id).then(() => {});
       setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)));
     }
-    if (n.post_id) {
+    const to = routeOf(n);
+    if (to) {
       onClose();
-      navigate(`/post/${n.post_id}`);
+      navigate(to);
     }
   };
 
@@ -164,17 +171,21 @@ const NotificationsPanel = ({ open, onClose }: Props) => {
                 onClick={() => openNotification(n)}
                 className={`flex items-start gap-3 p-3 rounded-xl transition-colors active:scale-[0.98] ${
                   n.is_read ? "opacity-60" : "bg-primary/5"
-                } ${n.post_id ? "cursor-pointer hover:bg-surface-hover" : ""}`}
+                } ${routeOf(n) ? "cursor-pointer hover:bg-surface-hover" : ""}`}
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                   n.type === "like" ? "bg-red-100 text-red-500"
-                    : n.type === "apply_accepted" ? "bg-green-100 text-green-600"
-                    : n.type === "apply_rejected" ? "bg-gray-200 text-gray-500"
+                    : n.type === "apply_accepted" || n.type === "booking_approved" ? "bg-green-100 text-green-600"
+                    : n.type === "apply_rejected" || n.type === "booking_rejected" ? "bg-gray-200 text-gray-500"
+                    : n.type === "booking_expired" ? "bg-amber-100 text-amber-600"
                     : "bg-blue-100 text-blue-500"
                 }`}>
                   {n.type === "like" ? <Heart className="w-3.5 h-3.5" />
                     : n.type === "apply_accepted" ? <BadgeCheck className="w-3.5 h-3.5" />
                     : n.type === "apply_rejected" ? <XCircle className="w-3.5 h-3.5" />
+                    : n.type === "booking_approved" ? <CalendarCheck className="w-3.5 h-3.5" />
+                    : n.type === "booking_rejected" ? <CalendarX className="w-3.5 h-3.5" />
+                    : n.type === "booking_expired" ? <CalendarClock className="w-3.5 h-3.5" />
                     : <MessageSquare className="w-3.5 h-3.5" />}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -183,6 +194,12 @@ const NotificationsPanel = ({ open, onClose }: Props) => {
                       <>축하합니다! 지원에 <span className="font-semibold text-green-600">합격</span>했습니다 🎉</>
                     ) : n.type === "apply_rejected" ? (
                       <>아쉽지만 이번 지원은 <span className="font-semibold">불합격</span>했습니다</>
+                    ) : n.type === "booking_approved" ? (
+                      <><span className="font-semibold">{n.actor_name}</span>님이 예약 요청을 <span className="font-semibold text-green-600">승인</span>했습니다 🎉</>
+                    ) : n.type === "booking_rejected" ? (
+                      <>아쉽지만 <span className="font-semibold">{n.actor_name}</span>님이 예약 요청을 <span className="font-semibold">거절</span>했습니다</>
+                    ) : n.type === "booking_expired" ? (
+                      <><span className="font-semibold">{n.actor_name}</span>님의 응답이 없어 예약 요청이 <span className="font-semibold">자동 취소</span>되었습니다</>
                     ) : n.type === "like" || n.type === "comment" ? (
                       <>
                         <span className="font-semibold">{n.actor_name}</span>

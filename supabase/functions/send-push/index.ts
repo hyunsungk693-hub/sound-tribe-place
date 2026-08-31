@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userErr } = await userClient.auth.getUser();
     if (userErr || !user) return json({ error: "Unauthorized" }, 401);
 
-    const { type, userId, postId, jobId, status } = await req.json();
+    const { type, userId, postId, jobId, bookingId, status } = await req.json();
     if (!UUID_RE.test(String(userId))) return json({ error: "invalid userId" }, 400);
     if (userId === user.id) return json({ ok: true, skipped: "self" }); // 본인 알림 생략
 
@@ -89,6 +89,25 @@ Deno.serve(async (req) => {
       const label = status === "accepted" ? "🎉 합격" : status === "rejected" ? "지원 결과" : "지원 상태 변경";
       title = label;
       body = `"${String(job.title || "").slice(0, 60)}" 지원 결과가 도착했습니다`;
+      url = "/profile";
+    } else if (type === "booking_result") {
+      // B등급(요청예약)의 승인·거절 결과. caller가 그 예약이 걸린 합주실의 업소 주인이어야 하고,
+      // userId는 그 예약을 넣은 요청자여야 한다.
+      // 자동 만료(24시간 무응답)는 pg_cron이 처리하는 일이라 여기로 오지 않는다 —
+      // 호출자가 사람이 아니어서 위의 사용자 JWT 검증을 통과할 수 없다. 그쪽은 인앱 알림만 뜬다.
+      if (!UUID_RE.test(String(bookingId))) return json({ error: "invalid bookingId" }, 400);
+      if (status !== "approved" && status !== "rejected") return json({ error: "invalid status" }, 400);
+      const { data: bk } = await supabase.from("bookings").select("user_id, room_id").eq("id", bookingId).maybeSingle();
+      if (!bk || bk.user_id !== userId) return json({ error: "Forbidden" }, 403);
+      const { data: room } = await supabase.from("rooms").select("name, studio_id").eq("id", bk.room_id).maybeSingle();
+      if (!room) return json({ error: "Forbidden" }, 403);
+      const { data: studio } = await supabase.from("studios").select("name, owner_id").eq("id", room.studio_id).maybeSingle();
+      if (!studio || studio.owner_id !== user.id) return json({ error: "Forbidden" }, 403);
+      const where = `${String(studio.name || "")} ${String(room.name || "")}`.trim().slice(0, 60);
+      title = status === "approved" ? "🎉 예약 요청이 승인됐습니다" : "예약 요청 결과";
+      body = status === "approved"
+        ? `"${where}" 예약이 확정되었습니다`
+        : `"${where}" 예약 요청이 거절되었습니다`;
       url = "/profile";
     } else {
       return json({ error: "invalid type" }, 400);
