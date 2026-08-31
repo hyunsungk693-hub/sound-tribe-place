@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronRight, Edit3, Shield, HelpCircle, LogOut, Trash2, Calendar, MapPin, Users, Clock, History, IdCard, Star, CalendarHeart, Flag, CalendarX2, Mail } from "lucide-react";
+import { ChevronRight, Edit3, Shield, HelpCircle, LogOut, Trash2, Calendar, MapPin, Users, Clock, History, IdCard, Star, CalendarHeart, Flag, CalendarX2 } from "lucide-react";
 import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,11 +38,6 @@ const menuItems = [
 ] as const;
 
 type MenuKey = (typeof menuItems)[number]["key"];
-
-// 문의 메일 주소. 앱이 이미 선언해 둔 주소(supabase/functions/send-push의 VAPID_SUBJECT)를
-// 기본값으로 쓰고, 운영용 주소가 따로 생기면 VITE_SUPPORT_EMAIL로 덮어쓴다.
-const SUPPORT_EMAIL =
-  (import.meta.env.VITE_SUPPORT_EMAIL as string | undefined) || "admin@instrut.app";
 
 const activityTabs = ["내 게시물", "최근 본"];
 
@@ -1229,7 +1224,11 @@ const ProfilePage = () => {
       </Dialog>
 
       {/* 고객센터 — 접수 백엔드가 없으므로 새 문의 폼을 만들지 않는다.
-          이미 동작하는 처리 경로로 보내고, 나머지는 메일로 넘긴다. */}
+          메일 주소도 적지 않는다: admin@instrut.app은 받는 사람이 없는 가상 계정이라
+          보낸 사람만 답을 기다리게 된다. 관리자에게 앱 내 메시지를 보내는 길도 없다 —
+          user_roles의 SELECT 정책이 본인 행과 관리자에게만 열려 있어(20260506040704 마이그레이션)
+          일반 사용자는 관리자 user_id를 알아낼 수 없고, 이를 알려주는 RPC나 뷰도 없다.
+          그래서 지금 실제로 닿는 경로만 남기고, 나머지는 없다고 정직하게 적는다. */}
       <Dialog open={menuSheet === "support"} onOpenChange={(o) => { if (!o) setMenuSheet(null); }}>
         <DialogContent>
           <DialogHeader>
@@ -1260,18 +1259,21 @@ const ProfilePage = () => {
               </p>
             </div>
             <div className="rounded-lg border border-border p-3">
-              <p className="font-semibold">그 밖의 문의 · 계정 및 데이터 삭제 요청</p>
+              <p className="font-semibold">내가 올린 것을 지우고 싶을 때</p>
               <p className="text-xs text-muted-foreground mt-1">
-                아래 버튼으로 메일을 보내주세요. 확인을 위해 본문에 들어가는 계정 식별자는 지우지 말아주세요.
+                프로필에 적은 내용은 이 화면의 &lsquo;프로필 수정&rsquo;에서 언제든 고치거나 비울 수 있습니다.
+                올린 게시물은 &lsquo;내 게시물&rsquo;에서 삭제하고, 넣은 지원은 &lsquo;나의 INSTRUT &rsaquo; 지원현황&rsquo;에서 취소하면
+                그 즉시 다른 사람에게도 보이지 않습니다.
               </p>
-              <a
-                href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("[INSTRUT] 문의")}&body=${encodeURIComponent(
-                  `\n\n---\n계정 식별자: ${user?.id ?? "(확인 불가)"}\n`,
-                )}`}
-                className="mt-2.5 h-10 w-full rounded-lg bg-action text-action-foreground text-sm font-semibold flex items-center justify-center gap-1.5 hover:bg-action-hover transition-colors"
-              >
-                <Mail className="w-4 h-4" /> {SUPPORT_EMAIL}
-              </a>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <p className="font-semibold">그 밖의 문의 · 계정 삭제 요청</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                아직 운영자에게 문의를 접수할 창구가 없습니다. 받는 사람이 없는 주소를 적어두면
+                답을 기다리게만 되므로, 준비될 때까지는 적지 않았습니다. 창구가 열리면 이 화면에 먼저 안내하겠습니다.
+                그때까지 계정 자체를 지우는 것은 앱에서 처리할 수 없습니다. 위 방법으로 프로필과 게시물을 비워두면
+                다른 사람에게 보이는 내용은 남지 않습니다.
+              </p>
             </div>
           </div>
           <DialogFooter>
