@@ -256,16 +256,18 @@ const Rooms = () => {
         </h2>
       </div>
 
-      {/* 모바일은 리스트(썸네일 + 정보 한 줄), lg 이상은 카드 그리드.
+      {/* 모바일은 카드형 리스트(썸네일 + 정보), lg 이상은 카드 그리드.
+          모바일 카드는 사진이 안쪽에 들어가고(p-3), lg에서는 사진이 카드 폭을
+          꽉 채우므로 패딩을 뺀다(lg:p-0 + 본문 lg:p-4).
           사진이 없어도 썸네일 자리를 비우지 않고 플레이스홀더를 둔다 — 있는 곳과
           없는 곳이 섞이면 줄 높이가 제각각이 되어 목록이 들쭉날쭉해 보인다. */}
-      <div className="flex flex-col divide-y divide-border lg:divide-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
+      <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:items-start">
         {loadingRooms ? [...Array(4)].map((_, i) => <RoomCardSkeleton key={i} />) : null}
         {!loadingRooms && allItems.map((room, i) => (
           <div
             key={room.id || `sample-${i}`}
             onClick={() => openDetail(room)}
-            className="flex gap-5 py-3.5 cursor-pointer active:scale-[0.99] transition-transform lg:block lg:gap-0 lg:py-0 lg:glass-card lg:overflow-hidden lg:hover:border-primary lg:transition-colors lg:duration-200 lg:active:scale-[0.98]"
+            className="glass-card overflow-hidden p-3 flex gap-5 cursor-pointer hover:border-primary transition-colors duration-200 active:scale-[0.98] lg:block lg:p-0 lg:gap-0"
             style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${i * 0.04}s both` }}
           >
             {room.image_url ? (
