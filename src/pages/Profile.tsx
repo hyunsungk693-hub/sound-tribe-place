@@ -446,10 +446,9 @@ const ProfilePage = () => {
                       {cancellable && (
                         <button
                           onClick={(e) => { e.stopPropagation(); setCancelAppTarget(a); }}
-                          className="p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                          title="지원 취소"
+                          className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-semibold text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3 h-3" /> 지원 취소
                         </button>
                       )}
                     </div>

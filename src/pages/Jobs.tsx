@@ -61,6 +61,8 @@ type JobItem = {
   schedule: string;
   /** 지원 자격 — 'pro'면 인증된 프로만 지원할 수 있다 */
   applicantLevel: "any" | "pro";
+  /** 모집 인원 — 기존 공고는 밝힌 적이 없으므로 null */
+  headcount: number | null;
   image_url: string | null;
   lat: number | null;
   lng: number | null;
@@ -96,6 +98,10 @@ const Jobs = () => {
   const [editPosition, setEditPosition] = useState("");
   const [editSchedule, setEditSchedule] = useState("");
   const [editApplicantLevel, setEditApplicantLevel] = useState<"any" | "pro">("any");
+  const [editHeadcount, setEditHeadcount] = useState("");
+  /** 지원 취소 확인 대상 */
+  const [cancelApplyTarget, setCancelApplyTarget] = useState<JobItem | null>(null);
+  const [cancellingApply, setCancellingApply] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
 
   // Application state
@@ -122,6 +128,36 @@ const Jobs = () => {
   const requestDiscardApply = () => {
     if (applyMessage.trim()) setConfirmDiscardOpen(true);
     else discardApply();
+  };
+
+  // 지원 취소: 지원서 행을 지운다. 합격·불합격 처리된 뒤에는 상대의 판단이 얽혀 있으므로
+  // 버튼 자체를 노출하지 않는다(검토중일 때만 취소).
+  const cancelApply = async () => {
+    const target = cancelApplyTarget;
+    if (!target?.id || !user) return;
+    setCancellingApply(true);
+    const { error } = await supabase
+      .from("job_applications" as any)
+      .delete()
+      .eq("job_id", target.id)
+      .eq("user_id", user.id);
+    setCancellingApply(false);
+    setCancelApplyTarget(null);
+    if (error) {
+      toast.error("지원 취소에 실패했습니다");
+      return;
+    }
+    toast.success("지원이 취소되었습니다");
+    setAppliedJobIds((prev) => {
+      const next = new Set(prev);
+      next.delete(target.id!);
+      return next;
+    });
+    setAppliedStatusByJob((prev) => {
+      const next = { ...prev };
+      delete next[target.id!];
+      return next;
+    });
   };
 
   // 모집 마감: 공고가 목록에서 빠지고 이후에는 작성자와 합격자만 열람할 수 있다.
@@ -432,6 +468,7 @@ const Jobs = () => {
       position: j.position || "",
       schedule: j.schedule || "",
       applicantLevel: j.applicant_level === "pro" ? ("pro" as const) : ("any" as const),
+      headcount: typeof j.headcount === "number" ? j.headcount : null,
       image_url: j.image_url || null,
       lat: j.lat ?? null,
       lng: j.lng ?? null,
@@ -451,6 +488,7 @@ const Jobs = () => {
     setEditPosition(selectedJob.position);
     setEditSchedule(selectedJob.schedule);
     setEditApplicantLevel(selectedJob.applicantLevel);
+    setEditHeadcount(selectedJob.headcount != null ? String(selectedJob.headcount) : "");
     setEditing(true);
   };
 
@@ -466,6 +504,7 @@ const Jobs = () => {
       position: editPosition || null,
       schedule: editSchedule || null,
       applicant_level: editApplicantLevel,
+      headcount: editHeadcount.trim() ? parseInt(editHeadcount, 10) : null,
     } as any).eq("id", selectedJob.id).eq("user_id", user.id);
     setSavingEdit(false);
     if (error) { toast.error("수정에 실패했습니다"); return; }
@@ -577,8 +616,13 @@ const Jobs = () => {
                 <p className="text-[12.5px] text-muted-foreground">{job.venue}</p>
               </div>
             </div>
-            {(job.position || job.schedule || job.applicantLevel === "pro") && (
+            {(job.position || job.schedule || job.applicantLevel === "pro" || job.headcount != null) && (
               <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                {job.headcount != null && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-secondary text-secondary-foreground">
+                    👥 {job.headcount}명 모집
+                  </span>
+                )}
                 {job.applicantLevel === "pro" && (
                   <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/12 text-primary">
                     PRO ONLY
@@ -720,6 +764,10 @@ const Jobs = () => {
                     <input value={editSchedule} onChange={(e) => setEditSchedule(e.target.value)} placeholder="예: 주말 오후, 협의 가능" className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
                   <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">모집 인원</label>
+                    <input type="number" inputMode="numeric" min={1} max={99} value={editHeadcount} onChange={(e) => setEditHeadcount(e.target.value)} placeholder="예: 2" className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+                  </div>
+                  <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">지원 자격</label>
                     <select
                       className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
@@ -765,6 +813,9 @@ const Jobs = () => {
                     {selectedJob.position && (
                       <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary">🎯 {selectedJob.position}</span>
                     )}
+                    {selectedJob.headcount != null && (
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-secondary text-secondary-foreground">👥 {selectedJob.headcount}명 모집</span>
+                    )}
                     {selectedJob.applicantLevel === "pro" && (
                       <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-primary/12 text-primary">PRO ONLY · 인증된 프로만 지원</span>
                     )}
@@ -796,7 +847,8 @@ const Jobs = () => {
                   {/* 액션 영역: 작성자 정보가 있고 본인 글이 아닐 때만 노출 (샘플/본인 글은 숨김) */}
                   {!!selectedJob.user_id && selectedJob.user_id !== user?.id && (
                     /* 상세 내용이 길면 지원 CTA가 접힘선 아래로 밀리므로 패널 하단에 고정한다 */
-                    <div className="mt-5 flex gap-2 sticky bottom-0 z-10 -mx-5 px-5 pt-3 pb-1 bg-background/95 backdrop-blur-sm border-t border-border/40">
+                    <div className="mt-5 sticky bottom-0 z-10 -mx-5 px-5 pt-3 pb-1 bg-background/95 backdrop-blur-sm border-t border-border/40">
+                      <div className="flex gap-2">
                       <button
                         onClick={() => {
                           if (!user) { toast.error("로그인이 필요합니다"); navigate("/auth"); return; }
@@ -828,6 +880,18 @@ const Jobs = () => {
                           </button>
                         );
                       })()}
+                      </div>
+                      {/* 검토중인 지원만 취소할 수 있다 — 합격·불합격 뒤에는 메시지로 상의할 일 */}
+                      {!!selectedJob.id
+                        && appliedJobIds.has(selectedJob.id)
+                        && (appliedStatusByJob[selectedJob.id] || "applied") === "applied" && (
+                        <button
+                          onClick={() => setCancelApplyTarget(selectedJob)}
+                          className="w-full pt-2.5 pb-1 text-xs font-medium text-muted-foreground underline underline-offset-4 hover:text-destructive transition-colors"
+                        >
+                          지원 취소
+                        </button>
+                      )}
                     </div>
                   )}
 
@@ -839,6 +903,22 @@ const Jobs = () => {
                       >
                         모집 마감하기
                       </button>
+                      {selectedJob.headcount != null && (() => {
+                        // 모집 인원 대비 합격 현황 — 공고주가 몇 명을 더 뽑아야 하는지
+                        const accepted = jobApplicants.filter((a) => a.status === "accepted").length;
+                        const left = Math.max(0, selectedJob.headcount - accepted);
+                        return (
+                          <div className="flex items-baseline justify-between gap-2 mb-4 px-3 py-2.5 rounded-lg bg-secondary/60">
+                            <span className="text-xs font-semibold">모집 현황</span>
+                            <span className="font-mono text-[12px] font-semibold tabular-nums">
+                              합격 {accepted} / {selectedJob.headcount}명
+                              <span className={`ml-2 ${left === 0 ? "text-signal" : "text-muted-foreground"}`}>
+                                {left === 0 ? "정원 충족" : `${left}명 남음`}
+                              </span>
+                            </span>
+                          </div>
+                        );
+                      })()}
                       <div className="flex items-baseline justify-between gap-2 pb-2.5 border-b-2 border-foreground mb-3">
                         <h3 className="text-base font-extrabold tracking-tight">받은 지원</h3>
                         <span className="font-mono text-[12px] font-semibold text-muted-foreground tabular-nums">
@@ -1048,6 +1128,27 @@ const Jobs = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>나중에</AlertDialogCancel>
             <AlertDialogAction onClick={() => navigate("/profile")}>프로필로 이동</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 지원 취소 확인 — 취소하면 지원 이력이 사라지고 다시 지원할 수 있다 */}
+      <AlertDialog open={!!cancelApplyTarget} onOpenChange={(o) => { if (!o) setCancelApplyTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>지원을 취소할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {cancelApplyTarget?.title}
+              <span className="block mt-1">
+                작성한 지원 메시지가 함께 삭제되고 공고주의 지원자 목록에서도 사라집니다. 취소 후 다시 지원할 수 있습니다.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancellingApply}>돌아가기</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); cancelApply(); }} disabled={cancellingApply}>
+              {cancellingApply ? "취소 중..." : "지원 취소"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -30,7 +30,10 @@ export interface Field {
   key: string;
   label: string;
   placeholder: string;
-  type?: "text" | "textarea" | "select" | "location" | "place" | "checkbox" | "datetime";
+  type?: "text" | "textarea" | "select" | "location" | "place" | "checkbox" | "datetime" | "number";
+  /** number 전용 범위 — DB CHECK와 같은 값을 쓴다 */
+  min?: number;
+  max?: number;
   options?: string[];
   required?: boolean;
   /** 다른 필드 값에 따라 조건부로 노출 (예: 카테고리가 "종교"일 때만) */
@@ -147,6 +150,10 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
       // 하위 유형은 해당 카테고리가 선택된 경우에만 저장 (DB CHECK와 일치)
       if (values.category === "종교" && values.subcategory) postData.subcategory = values.subcategory;
       if (values.position) postData.position = values.position;
+      if (values.headcount) {
+        const n = parseInt(values.headcount, 10);
+        if (Number.isFinite(n)) postData.headcount = n;
+      }
       if (values.applicant_level) {
         postData.applicant_level = values.applicant_level === APPLICANT_LEVEL_PRO ? "pro" : "any";
       }
@@ -206,7 +213,18 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
                   {field.required && <span className="text-destructive ml-0.5">*</span>}
                 </label>
               )}
-              {field.type === "checkbox" ? (
+              {field.type === "number" ? (
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={field.min ?? 1}
+                  max={field.max ?? 99}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                  placeholder={field.placeholder}
+                  value={values[field.key] || ""}
+                  onChange={(e) => setValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                />
+              ) : field.type === "checkbox" ? (
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
