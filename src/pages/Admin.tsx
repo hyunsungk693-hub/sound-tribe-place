@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/hooks/useAdmin";
 import BottomNav from "@/components/BottomNav";
 import TopNav from "@/components/TopNav";
+import CredentialsReview from "@/components/CredentialsReview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,6 +65,7 @@ const Admin = () => {
   const [form, setForm] = useState<typeof empty>(empty);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [pendingCreds, setPendingCreds] = useState(0);
 
   const fetchPlaces = async () => {
     const { data } = await supabase.from("places").select("*").order("created_at", { ascending: false });
@@ -71,6 +73,16 @@ const Admin = () => {
   };
 
   useEffect(() => { if (isAdmin) fetchPlaces(); }, [isAdmin]);
+
+  // 탭을 열지 않아도 대기 건수는 보여야 한다 (Tabs는 비활성 탭을 언마운트한다).
+  useEffect(() => {
+    if (!isAdmin) return;
+    supabase
+      .from("profile_credentials" as any)
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .then(({ count }) => setPendingCreds(count || 0));
+  }, [isAdmin]);
 
   if (loading) return <div className="min-h-app flex items-center justify-center bg-background"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   if (!isAdmin) return <Navigate to="/" replace />;
@@ -147,14 +159,26 @@ const Admin = () => {
       </header>
 
       <Tabs defaultValue="places" className="p-4">
-        <TabsList className="grid w-full grid-cols-3 mb-4">
+        <TabsList className="grid w-full grid-cols-4 mb-4">
           <TabsTrigger value="metrics">지표</TabsTrigger>
+          <TabsTrigger value="credentials" className="gap-1">
+            증빙 인증
+            {pendingCreds > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold tabular-nums">
+                {pendingCreds}
+              </span>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="places">장소 마커</TabsTrigger>
           <TabsTrigger value="admins">관리자 권한</TabsTrigger>
         </TabsList>
 
         <TabsContent value="metrics" className="mt-0">
           <MetricsPanel />
+        </TabsContent>
+
+        <TabsContent value="credentials" className="mt-0">
+          <CredentialsReview onPendingCount={setPendingCreds} />
         </TabsContent>
 
         <TabsContent value="places" className="space-y-6 mt-0">
