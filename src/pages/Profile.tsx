@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import ProfileEditModal from "@/components/ProfileEditModal";
 import ProCredentialNotice from "@/components/ProCredentialNotice";
 import RatingDialog from "@/components/RatingDialog";
-import { GradeBadge, ResponseBadge, TrustBadges, formatResponseHours } from "@/components/ProfileCard";
+import { GradeBadge, ResponseBadge, TrustBadges, GRADE_LABEL } from "@/components/ProfileCard";
 import { getRecentViews, RecentView } from "@/lib/recentViews";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -424,9 +424,7 @@ const ProfilePage = () => {
         {(() => {
           if (!myStats) return null;
           const hasRate = myStats.response_rate != null || myStats.rehire_rate != null || myStats.positive_rate != null;
-          // 응답 중앙값은 시간 단위라 VU 게이지(0~1)에 못 올린다. 숫자 칸에 넣는다.
-          const medianLabel = formatResponseHours(myStats.median_response_h);
-          const hasCount = myStats.sessions_count > 0 || myStats.partners_count > 0 || !!medianLabel;
+          const hasCount = myStats.sessions_count > 0 || myStats.partners_count > 0 || !!myStats.grade;
           if (!hasRate && !hasCount) return null;
           return (
             <div className="glass-card p-5" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.06s both" }}>
@@ -481,10 +479,10 @@ const ProfilePage = () => {
                       <p className="mono-label mt-1.5">함께한 음악인</p>
                     </div>
                   )}
-                  {medianLabel && (
+                  {myStats.grade && (
                     <div>
-                      <p className="font-mono text-2xl font-extrabold tabular-nums leading-none">{medianLabel}</p>
-                      <p className="mono-label mt-1.5">응답까지 (중앙값)</p>
+                      <p className="text-2xl font-extrabold leading-none">{GRADE_LABEL[myStats.grade] ?? myStats.grade}</p>
+                      <p className="mono-label mt-1.5">신뢰등급</p>
                     </div>
                   )}
                 </div>

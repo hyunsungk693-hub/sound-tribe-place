@@ -21,6 +21,8 @@ export interface ProfileCardData {
   video_url?: string | null;
   purpose?: string | null; // 'hobby' | 'pro'
   available_times?: string[] | null;
+  /** 마지막 접속 시각 — "활동 중" 배지 판정용 (20260901000025) */
+  last_seen_at?: string | null;
   /** 정형 슬롯(20260901000020). available_times는 그 이전에 쓰던 자유 텍스트다 */
   available_slots?: string[] | null;
   handle?: string | null;
@@ -46,6 +48,15 @@ export interface ProfileStats {
  * 등급 배지 — 신뢰·주의만 배지를 달고 안정은 아무것도 표시하지 않는다.
  * 산정 전(평가 5건 미만)은 "새로 시작하는 음악인"으로 표기한다.
  */
+/** 지표 타일용 등급 이름. 배지(GRADE_BADGE)는 신뢰·주의만 달지만
+ *  타일은 "지금 내가 어디쯤인지"를 알려야 하므로 네 등급을 다 쓴다. */
+export const GRADE_LABEL: Record<string, string> = {
+  trust: "신뢰",
+  stable: "안정",
+  caution: "주의",
+  unrated: "산정 전",
+};
+
 const GRADE_BADGE = {
   trust: { label: "신뢰", icon: ShieldCheck, cls: "bg-signal/15 text-signal" },
   caution: { label: "주의", icon: AlertTriangle, cls: "bg-amber/20 text-amber" },
@@ -101,11 +112,17 @@ export const ResponseBadge = ({ rate, size = "sm" }: { rate?: number | null; siz
  * 카드에는 붙는 배지가 정작 나에게만 안 보이는 상태였다. 규칙을 두 벌로
  * 만들지 않도록 판정을 이쪽으로 빼서 양쪽이 같은 함수를 부르게 한다.
  */
+/**
+ * "활동 중"으로 볼 시간 창. 하트비트 주기(2분)의 두 배 남짓으로 잡아,
+ * 갱신 한 번을 놓쳐도 접속 중인 사람의 배지가 깜빡이지 않게 한다.
+ */
+const ONLINE_WINDOW_MS = 5 * 60 * 1000;
+
 export const TrustBadges = ({
   profile,
   stats,
 }: {
-  profile: Pick<ProfileCardData, "credential_verified" | "updated_at"> | null;
+  profile: Pick<ProfileCardData, "credential_verified" | "last_seen_at"> | null;
   stats?: ProfileStats | null;
 }) => {
   const badges: { icon: typeof Zap; label: string }[] = [];
@@ -119,8 +136,12 @@ export const TrustBadges = ({
   if (stats && (stats.no_show_count ?? 0) === 0 && (stats.sessions_count ?? 0) > 0) {
     badges.push({ icon: ShieldCheck, label: "노쇼 0" });
   }
-  // "활동 중"은 프로필 갱신 7일 이내를 근사치로 사용 (전 활동 스캔은 목록 비용 과다)
-  if (profile?.updated_at && Date.now() - new Date(profile.updated_at).getTime() < 7 * 24 * 3600 * 1000) {
+  // "활동 중"은 실제 접속 중일 때만 붙인다. 예전에는 profiles.updated_at이
+  // 7일 이내인지로 판정했는데, 그건 "최근에 프로필을 수정했다"는 뜻이지
+  // 접속 여부가 아니다. 한 달 전에 닉네임 한 번 바꾼 사람이 일주일간
+  // 활동 중으로 보였고, 매일 들어오지만 프로필을 안 고치는 사람은 영영 없었다.
+  // last_seen_at은 앱이 열려 있는 동안 2분마다 갱신된다(useLastSeen).
+  if (profile?.last_seen_at && Date.now() - new Date(profile.last_seen_at).getTime() < ONLINE_WINDOW_MS) {
     badges.push({ icon: CircleDot, label: "활동 중" });
   }
   const shown = badges.slice(0, 3);
@@ -298,9 +319,11 @@ const ProfileCard = ({ profile, variant = "compact", stats, className = "", onBe
   const trustItems: { label: string; value: string; sub?: string }[] = [];
   if (effStats) {
     if (effStats.response_rate != null) trustItems.push({ label: "응답률", value: `${Math.round(effStats.response_rate * 100)}%` });
-    // 응답률이 "답을 주긴 하는가"라면 중앙값은 "얼마나 기다려야 하는가"다. 짝으로 붙인다.
-    const median = formatResponseHours(effStats.median_response_h);
-    if (median) trustItems.push({ label: "응답까지", value: median, sub: "중앙값" });
+    // 중앙값("얼마나 기다려야 하는가")보다 등급이 먼저 궁금하다. 배지는 신뢰·주의일
+    // 때만 붙어서 안정·산정 전인 사람은 자기 위치를 알 길이 없었다.
+    if (effStats.grade) {
+      trustItems.push({ label: "신뢰등급", value: GRADE_LABEL[effStats.grade] ?? effStats.grade });
+    }
     if (effStats.sessions_count != null && effStats.sessions_count > 0) trustItems.push({ label: "합주", value: `${effStats.sessions_count}회` });
     if (effStats.partners_count != null && effStats.partners_count > 0) trustItems.push({ label: "함께한 음악인", value: `${effStats.partners_count}명` });
     if (effStats.rehire_rate != null) trustItems.push({ label: "재합주율", value: `${Math.round(effStats.rehire_rate * 100)}%` });
