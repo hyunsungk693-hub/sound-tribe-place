@@ -6,6 +6,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import BottomNav from "@/components/BottomNav";
 import TopNav from "@/components/TopNav";
 import CredentialsReview from "@/components/CredentialsReview";
+import ReportsReview from "@/components/ReportsReview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,6 +67,7 @@ const Admin = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [pendingCreds, setPendingCreds] = useState(0);
+  const [pendingReports, setPendingReports] = useState(0);
 
   const fetchPlaces = async () => {
     const { data } = await supabase.from("places").select("*").order("created_at", { ascending: false });
@@ -82,6 +84,11 @@ const Admin = () => {
       .select("id", { count: "exact", head: true })
       .eq("status", "pending")
       .then(({ count }) => setPendingCreds(count || 0));
+    supabase
+      .from("rating_reports" as any)
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .then(({ count }) => setPendingReports(count || 0));
   }, [isAdmin]);
 
   if (loading) return <div className="min-h-app flex items-center justify-center bg-background"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
@@ -159,13 +166,21 @@ const Admin = () => {
       </header>
 
       <Tabs defaultValue="places" className="p-4">
-        <TabsList className="grid w-full grid-cols-4 mb-4">
+        <TabsList className="grid w-full grid-cols-5 mb-4">
           <TabsTrigger value="metrics">지표</TabsTrigger>
           <TabsTrigger value="credentials" className="gap-1">
             증빙 인증
             {pendingCreds > 0 && (
               <span className="px-1.5 py-0.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold tabular-nums">
                 {pendingCreds}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="reports" className="gap-1">
+            평가 신고
+            {pendingReports > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold tabular-nums">
+                {pendingReports}
               </span>
             )}
           </TabsTrigger>
@@ -179,6 +194,10 @@ const Admin = () => {
 
         <TabsContent value="credentials" className="mt-0">
           <CredentialsReview onPendingCount={setPendingCreds} />
+        </TabsContent>
+
+        <TabsContent value="reports" className="mt-0">
+          <ReportsReview onPendingCount={setPendingReports} />
         </TabsContent>
 
         <TabsContent value="places" className="space-y-6 mt-0">
