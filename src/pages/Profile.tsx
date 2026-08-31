@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import ProfileEditModal from "@/components/ProfileEditModal";
+import ProCredentialNotice from "@/components/ProCredentialNotice";
 import RatingDialog from "@/components/RatingDialog";
 import { GradeBadge, ResponseBadge, TrustBadges, formatResponseHours } from "@/components/ProfileCard";
 import { getRecentViews, RecentView } from "@/lib/recentViews";
@@ -89,6 +90,9 @@ const ProfilePage = () => {
   const [myStats, setMyStats] = useState<any | null>(null);
   const [recentViews] = useState<RecentView[]>(() => getRecentViews());
   const [editOpen, setEditOpen] = useState(false);
+  // 편집 모달에서 증빙을 제출하면 저장 없이도 상태가 달라진다. 모달을 닫을 때
+  // 값을 올려 증빙 안내 카드가 제출 이력을 다시 읽게 한다.
+  const [credRefresh, setCredRefresh] = useState(0);
   const [cancelTarget, setCancelTarget] = useState<any | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
@@ -402,6 +406,19 @@ const ProfilePage = () => {
             </button>
           </div>
         </div>
+
+        {/* 증빙 미인증 프로 안내 (작업 8 이전 가입자) — 프로필 비공개·구인글 작성·지원이
+            모두 막힌 상태를 본인 화면에서 알 길이 없었다. 조건을 만족할 때만 그려진다. */}
+        {profile && user && (
+          <ProCredentialNotice
+            userId={user.id}
+            purpose={profile.purpose}
+            credentialVerified={profile.credential_verified}
+            refreshKey={credRefresh}
+            onSubmitCredential={() => setEditOpen(true)}
+            onSwitchedToHobby={() => setProfile((p) => (p ? { ...p, purpose: "hobby" } : p))}
+          />
+        )}
 
         {/* 신뢰 지표 — VU 게이지 */}
         {(() => {
@@ -873,8 +890,11 @@ const ProfilePage = () => {
         <ProfileEditModal
           userId={user.id}
           profile={profile}
-          onClose={() => setEditOpen(false)}
-          onSaved={(updated) => setProfile(updated)}
+          onClose={() => { setEditOpen(false); setCredRefresh((k) => k + 1); }}
+          // 모달이 돌려주는 값에는 credential_verified·updated_at이 없다. 통째로
+          // 갈아끼우면 인증된 프로가 저장만 해도 인증 배지와 판정이 사라져
+          // 아래 증빙 안내 카드가 잘못 뜬다. 받은 필드만 덮어쓴다.
+          onSaved={(updated) => setProfile((p) => ({ ...(p || ({} as Profile)), ...updated }))}
         />
       )}
 
