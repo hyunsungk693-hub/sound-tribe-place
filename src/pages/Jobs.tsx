@@ -15,8 +15,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { JOB_CATEGORIES, JOB_CATEGORY_RELIGION, JOB_RELIGION_SUBCATEGORIES } from "@/components/CreatePostDialog";
 
-const categories = ["전체", "공연", "녹음", "레슨", "행사", "종교", "기타"];
+// 목적 목록은 작성 폼과 같은 정의를 쓴다 — 목록을 따로 적어두면 어긋나 저장이 DB CHECK에 걸린다
+const categories = ["전체", ...JOB_CATEGORIES];
 // 포지션·카테고리 모두 제외 필터 — 선택 시 미반영 공고는 목록에서 숨긴다
 const POSITIONS = ["전체", "보컬", "기타", "베이스", "드럼", "건반", "관악", "현악", "그 외"];
 
@@ -41,6 +43,12 @@ const urgentLabel = (isUrgent: boolean, deadlineAt: string | null) => {
   const days = Math.ceil(left / 86400000);
   return days <= 0 ? "D-DAY" : `D-${days}`;
 };
+
+/** 마감 일시 표기 — D-n 배지만으로는 몇 시에 닫히는지 알 수 없어 상세에서 함께 보여준다 */
+const deadlineText = (deadlineAt: string | null) =>
+  deadlineAt
+    ? new Date(deadlineAt).toLocaleString("ko-KR", { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })
+    : null;
 
 
 
@@ -93,6 +101,8 @@ const Jobs = () => {
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
   const [editCategory, setEditCategory] = useState("");
+  /** 종교 목적에서만 값을 갖는 하위 유형 — 다른 목적이면 빈 값으로 두고 NULL로 저장한다 */
+  const [editSubcategory, setEditSubcategory] = useState("");
   const [editVenue, setEditVenue] = useState("");
   const [editPay, setEditPay] = useState("");
   const [editPosition, setEditPosition] = useState("");
@@ -483,6 +493,7 @@ const Jobs = () => {
     setEditTitle(selectedJob.title);
     setEditContent(selectedJob.content);
     setEditCategory(selectedJob.tag);
+    setEditSubcategory(selectedJob.subcategory);
     setEditVenue(selectedJob.venue);
     setEditPay(selectedJob.pay);
     setEditPosition(selectedJob.position);
@@ -494,11 +505,18 @@ const Jobs = () => {
 
   const handleSaveEdit = async () => {
     if (!selectedJob?.id || !user) return;
+    // 종교 목적은 하위 유형이 있어야 한다 (작성 폼의 필수 규칙 · DB의 posts_subcategory_check와 동일)
+    if (editCategory === JOB_CATEGORY_RELIGION && !editSubcategory) {
+      toast.error("종교 활동 유형을 선택해주세요");
+      return;
+    }
     setSavingEdit(true);
     const { error } = await supabase.from("posts").update({
       title: editTitle,
       content: editContent,
       category: editCategory,
+      // 하위 유형은 종교 목적에서만 값을 가질 수 있으므로 다른 목적으로 바꾸면 NULL로 지운다
+      subcategory: editCategory === JOB_CATEGORY_RELIGION ? editSubcategory : null,
       venue: editVenue,
       pay: editPay,
       position: editPosition || null,
@@ -507,7 +525,8 @@ const Jobs = () => {
       headcount: editHeadcount.trim() ? parseInt(editHeadcount, 10) : null,
     } as any).eq("id", selectedJob.id).eq("user_id", user.id);
     setSavingEdit(false);
-    if (error) { toast.error("수정에 실패했습니다"); return; }
+    // 실패 사유(예: DB CHECK 위반)를 감추면 무엇을 고쳐야 할지 알 수 없어 그대로 보여준다
+    if (error) { toast.error("수정에 실패했습니다: " + error.message); return; }
     toast.success("게시물이 수정되었습니다");
     setEditing(false);
     setSelectedJob(null);
@@ -736,12 +755,34 @@ const Jobs = () => {
                 <div className="space-y-3">
                   <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">카테고리</label>
-                    <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm" value={editCategory} onChange={(e) => setEditCategory(e.target.value)}>
-                      {["공연", "녹음", "레슨", "행사", "기타"].map((opt) => (
+                    <select
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                      value={editCategory}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        setEditCategory(next);
+                        // 종교가 아닌 목적으로 바꾸면 하위 유형은 남길 수 없다 (저장 시 NULL)
+                        if (next !== JOB_CATEGORY_RELIGION) setEditSubcategory("");
+                      }}
+                    >
+                      {JOB_CATEGORIES.map((opt) => (
                         <option key={opt} value={opt}>{opt}</option>
                       ))}
                     </select>
                   </div>
+                  {editCategory === JOB_CATEGORY_RELIGION && (
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                        종교 활동 유형<span className="text-destructive ml-0.5">*</span>
+                      </label>
+                      <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm" value={editSubcategory} onChange={(e) => setEditSubcategory(e.target.value)}>
+                        <option value="">선택해주세요</option>
+                        {JOB_RELIGION_SUBCATEGORIES.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">제목</label>
                     <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
@@ -807,6 +848,13 @@ const Jobs = () => {
                   )}
                   <h2 className="text-lg font-extrabold tracking-tight mb-2">{selectedJob.title}</h2>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground mb-3">
+                    {/* 지원 여부를 정하는 화면이므로 목록 카드와 같은 긴급도를 여기서도 보여준다 */}
+                    {urgentLabel(selectedJob.isUrgent, selectedJob.deadlineAt) && (
+                      <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-amber/15 text-amber">
+                        {urgentLabel(selectedJob.isUrgent, selectedJob.deadlineAt)}
+                      </span>
+                    )}
+                    {selectedJob.deadlineAt && <span>⏰ {deadlineText(selectedJob.deadlineAt)} 마감</span>}
                     {selectedJob.subcategory && (
                       <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-secondary text-secondary-foreground">{selectedJob.subcategory}</span>
                     )}

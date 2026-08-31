@@ -4,22 +4,29 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import CreatePostDialog, { Field, APPLICANT_LEVEL_ANY, APPLICANT_LEVEL_PRO } from "./CreatePostDialog";
+import CreatePostDialog, {
+  Field,
+  APPLICANT_LEVEL_ANY,
+  APPLICANT_LEVEL_PRO,
+  JOB_CATEGORIES,
+  JOB_CATEGORY_RELIGION,
+  JOB_RELIGION_SUBCATEGORIES,
+} from "./CreatePostDialog";
 
 type PostType = "job" | "room" | "shop" | "community";
 
 const jobFields: Field[] = [
   { key: "title", label: "제목", placeholder: "예: 밴드 기타리스트 모집", required: true },
   { key: "content", label: "상세 내용", placeholder: "구인 상세 내용을 작성해주세요", type: "textarea" as const, required: true },
-  { key: "category", label: "활동 목적", placeholder: "", type: "select" as const, options: ["공연", "녹음", "레슨", "행사", "종교", "기타"], required: true },
+  { key: "category", label: "활동 목적", placeholder: "", type: "select" as const, options: JOB_CATEGORIES, required: true },
   {
     key: "subcategory",
     label: "종교 활동 유형",
     placeholder: "",
     type: "select" as const,
-    options: ["교회 반주자", "찬양팀 세션"],
+    options: JOB_RELIGION_SUBCATEGORIES,
     required: true,
-    showIf: (v) => v.category === "종교",
+    showIf: (v) => v.category === JOB_CATEGORY_RELIGION,
   },
   { key: "position", label: "모집 포지션", placeholder: "", type: "select" as const, options: ["보컬", "기타", "베이스", "드럼", "건반", "관악", "현악", "그 외"], required: true },
   { key: "schedule", label: "합주 요일/시간", placeholder: "예: 주말 오후, 협의 가능" },

@@ -19,6 +19,17 @@ const URGENT_MAX_DAYS = 3;
 export const APPLICANT_LEVEL_ANY = "누구나 지원 가능";
 export const APPLICANT_LEVEL_PRO = "인증된 프로만";
 
+/**
+ * 구인글 활동 목적(posts.category)과 종교 목적의 하위 유형(posts.subcategory).
+ * 마이그레이션 20260901000001의 CHECK(posts_job_category_check / posts_subcategory_check)와
+ * 같은 값이어야 한다. 작성 폼(CreatePostFab)과 수정 폼(Jobs)이 각자 목록을 적어두면
+ * 한쪽만 늘어났을 때 저장이 CHECK에 걸리므로, 여기서만 정의해 양쪽이 가져다 쓴다.
+ */
+export const JOB_CATEGORY_RELIGION = "종교";
+export const JOB_CATEGORIES = ["공연", "녹음", "레슨", "행사", JOB_CATEGORY_RELIGION, "기타"];
+/** 하위 유형은 종교 목적에서만 값을 가질 수 있다 (posts_subcategory_check) */
+export const JOB_RELIGION_SUBCATEGORIES = ["교회 반주자", "찬양팀 세션"];
+
 /** datetime-local 입력용 로컬 시각 문자열 (YYYY-MM-DDTHH:mm) */
 const localDateTime = (daysFromNow: number) => {
   const d = new Date(Date.now() + daysFromNow * 86400000);
@@ -148,7 +159,7 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
       if (imageUrl) postData.image_url = imageUrl;
       if (values.category) postData.category = values.category;
       // 하위 유형은 해당 카테고리가 선택된 경우에만 저장 (DB CHECK와 일치)
-      if (values.category === "종교" && values.subcategory) postData.subcategory = values.subcategory;
+      if (values.category === JOB_CATEGORY_RELIGION && values.subcategory) postData.subcategory = values.subcategory;
       if (values.position) postData.position = values.position;
       if (values.headcount) {
         const n = parseInt(values.headcount, 10);
