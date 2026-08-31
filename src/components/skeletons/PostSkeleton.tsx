@@ -35,7 +35,7 @@ export const JobCardSkeleton = () => (
 // 연습실·악기사 목록은 모바일에서 리스트(썸네일 + 정보), lg 이상에서 카드 그리드다.
 // 스켈레톤도 같은 모양이어야 로딩이 끝나는 순간 레이아웃이 튀지 않는다.
 export const RoomCardSkeleton = () => (
-  <div className="flex gap-4 py-3.5 lg:block lg:gap-0 lg:py-0 lg:glass-card lg:p-4 lg:space-y-3">
+  <div className="flex gap-5 py-3.5 lg:block lg:gap-0 lg:py-0 lg:glass-card lg:p-4 lg:space-y-3">
     <Skeleton className="w-20 h-20 shrink-0 rounded-lg lg:w-full lg:h-36" />
     <div className="min-w-0 flex-1 space-y-2 lg:space-y-3">
       <Skeleton className="h-4 w-1/2" />
