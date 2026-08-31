@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS public.room_reservation_cancellations (
   reservation_id uuid NOT NULL,
   room_id        uuid NOT NULL,          -- public.posts(post_type='room')의 id
   user_id        uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  -- 누가 취소했는지. 예약자 본인일 수도, 방 주인일 수도 있다
+  cancelled_by    uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   -- 어느 시간대가 다시 비었는지가 주인에게 가장 중요한 정보라 함께 복사해 둔다.
   start_at       timestamptz NOT NULL,
   end_at         timestamptz NOT NULL,
@@ -93,16 +95,20 @@ BEGIN
     RAISE EXCEPTION '예약을 찾을 수 없습니다';
   END IF;
 
-  -- SECURITY DEFINER라 RLS를 그냥 통과한다. 소유자 확인을 여기서 직접 한다.
+  -- SECURITY DEFINER라 RLS를 그냥 통과한다. 권한 확인을 여기서 직접 한다.
   -- 비로그인(auth.uid() IS NULL)이면 <> 비교가 NULL이 되어 통과해버리므로
   -- IS DISTINCT FROM 을 쓴다.
-  IF r.user_id IS DISTINCT FROM auth.uid() THEN
-    RAISE EXCEPTION '본인 예약만 취소할 수 있습니다';
+  --
+  -- 예약자 본인 외에 방 주인도 취소할 수 있다 — 20260901000018에서 화면 조건과
+  -- DELETE 정책을 함께 열었으므로, 그 경로도 사유를 남기게 하려면 여기서 받아야 한다.
+  IF r.user_id IS DISTINCT FROM auth.uid()
+     AND NOT public.owns_room_post(r.room_id, auth.uid()) THEN
+    RAISE EXCEPTION '본인 예약이거나 내 연습실의 예약만 취소할 수 있습니다';
   END IF;
 
   INSERT INTO public.room_reservation_cancellations
-    (reservation_id, room_id, user_id, start_at, end_at, reason)
-  VALUES (r.id, r.room_id, r.user_id, r.start_at, r.end_at, clean_reason);
+    (reservation_id, room_id, user_id, cancelled_by, start_at, end_at, reason)
+  VALUES (r.id, r.room_id, r.user_id, auth.uid(), r.start_at, r.end_at, clean_reason);
 
   DELETE FROM public.room_reservations WHERE id = r.id;
 END;

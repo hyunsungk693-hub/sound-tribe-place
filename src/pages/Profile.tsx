@@ -322,7 +322,7 @@ const ProfilePage = () => {
       .from("bookings")
       .select("*, rooms(name, studios(name, address)), door_pins(pin)")
       .eq("user_id", user.id)
-      .in("status", ["held", "confirmed", "completed", "no_show"])
+      .in("status", ["requested", "held", "confirmed", "completed", "no_show"])
       .order("created_at", { ascending: false });
     setMyBookings((data as any[]) || []);
   };

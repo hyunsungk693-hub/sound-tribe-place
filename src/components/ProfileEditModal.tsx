@@ -2,7 +2,6 @@ import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { X, Camera, Search, Plus, Link as LinkIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import TimeSlotPicker from "@/components/TimeSlotPicker";
-import { formatSlots } from "@/lib/timeSlots";
 import { toast } from "sonner";
 
 interface ProfileData {
@@ -220,10 +219,10 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
       video_url: trimmedVideo || null,
       purpose: purpose || null,
       available_slots: availableSlots,
-      // 자유 텍스트 available_times는 아직 ProfileCard가 읽는다. 정형 슬롯에서
-      // 만든 라벨을 함께 적어 두 값이 어긋나지 않게 한다. ProfileCard가
-      // available_slots를 직접 읽게 되면 이 줄은 지운다.
-      available_times: availableSlots.length ? [formatSlots(availableSlots)] : [],
+      // 예전 자유 텍스트는 한 번이라도 저장하면 비운다. ProfileCard가 슬롯을
+      // 우선 읽되 슬롯이 없을 때만 옛 값을 보여주므로, 남겨두면 슬롯을 전부
+      // 해제한 사람에게 지운 줄 알았던 문구가 되살아난다.
+      available_times: [],
       handle: trimmedHandle || null,
     };
 

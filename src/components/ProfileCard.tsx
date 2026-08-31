@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { groupSlots } from "@/lib/timeSlots";
 import { safeVideoUrl } from "@/lib/safeUrl";
 import { useNavigate } from "react-router-dom";
 import { MapPin, Music, Award, PlayCircle, Sparkles, Clock, Instagram, Zap, ShieldCheck, CircleDot, AlertTriangle, BadgeCheck } from "lucide-react";
@@ -20,6 +21,8 @@ export interface ProfileCardData {
   video_url?: string | null;
   purpose?: string | null; // 'hobby' | 'pro'
   available_times?: string[] | null;
+  /** 정형 슬롯(20260901000020). available_times는 그 이전에 쓰던 자유 텍스트다 */
+  available_slots?: string[] | null;
   handle?: string | null;
   credential_verified?: boolean | null;
   updated_at?: string | null;
@@ -421,16 +424,24 @@ const ProfileCard = ({ profile, variant = "compact", stats, className = "", onBe
         </div>
       )}
 
-      {(profile.available_times?.length || 0) > 0 && (
+      {/* 정형 슬롯이 있으면 그것을 요일별로 묶어 보여주고, 아직 프로필을 다시
+          저장하지 않은 기존 사용자는 예전 자유 텍스트를 그대로 보여준다. */}
+      {(groupSlots(profile.available_slots).length > 0 || (profile.available_times?.length || 0) > 0) && (
         <div className="mt-3">
           <div className="flex items-center gap-2 mb-2">
             <Clock className="w-3.5 h-3.5 text-primary" />
             <span className="text-xs font-semibold">합주 가능 시간</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {profile.available_times!.map((t) => (
-              <span key={t} className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">{t}</span>
-            ))}
+            {groupSlots(profile.available_slots).length > 0
+              ? groupSlots(profile.available_slots).map((g) => (
+                  <span key={g.day} className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">
+                    {g.day} {g.periods}
+                  </span>
+                ))
+              : profile.available_times!.map((t) => (
+                  <span key={t} className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">{t}</span>
+                ))}
           </div>
         </div>
       )}

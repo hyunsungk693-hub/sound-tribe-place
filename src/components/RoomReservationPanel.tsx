@@ -3,6 +3,8 @@ import { Calendar, Clock, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Reservation {
   id: string;
@@ -137,15 +139,30 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
     fetchReservations();
   };
 
+  const [cancelTarget, setCancelTarget] = useState<{ id: string; mine: boolean } | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+
   // 방 주인(isHost)은 자기 방의 남의 예약도 정리할 수 있다.
   // DELETE 정책도 20260901000018에서 함께 열었다 — 화면 조건만 고치면 RLS에 막힌다.
   const isHost = !!ownerId && user?.id === ownerId;
 
-  const handleCancel = async (id: string, mine: boolean) => {
-    if (!confirm(mine ? "예약을 취소하시겠습니까?" : "이 예약을 취소하시겠습니까? 예약자에게 별도 안내가 가지 않습니다.")) return;
-    const { error } = await supabase.from("room_reservations" as any).delete().eq("id", id);
-    if (error) { toast.error("취소 실패"); return; }
+  // 취소는 사유를 함께 남긴다(20260901000019). raw delete로 지우면 상대는
+  // 왜 취소됐는지 알 방법이 없다 — 방 주인이 남의 예약을 정리할 때 특히 그렇다.
+  const submitCancel = async () => {
+    if (!cancelTarget) return;
+    const reason = cancelReason.trim();
+    if (!reason) { toast.error("취소 사유를 입력해주세요"); return; }
+    setCancelling(true);
+    const { error } = await supabase.rpc("cancel_room_reservation" as any, {
+      p_reservation_id: cancelTarget.id,
+      p_reason: reason,
+    } as any);
+    setCancelling(false);
+    if (error) { toast.error("취소에 실패했습니다"); return; }
     toast.success("예약이 취소되었습니다");
+    setCancelTarget(null);
+    setCancelReason("");
     fetchReservations();
   };
 
@@ -230,7 +247,7 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
                 <li key={r.id} className={`flex items-center justify-between text-xs px-3 py-2 rounded-lg ${mine ? "bg-primary/10 text-primary" : "bg-secondary text-secondary-foreground"}`}>
                   <span className="font-medium">{fmtTime(r.start_at)} - {fmtTime(r.end_at)} {mine && "(내 예약)"}</span>
                   {(mine || isHost) && (
-                    <button onClick={() => handleCancel(r.id, mine)} className="p-1 rounded hover:bg-destructive/10 text-destructive">
+                    <button onClick={() => { setCancelTarget({ id: r.id, mine }); setCancelReason(""); }} className="p-1 rounded hover:bg-destructive/10 text-destructive">
                       <Trash2 className="w-3 h-3" />
                     </button>
                   )}
@@ -240,7 +257,43 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
           </ul>
         )}
       </div>
-    </div>
+    
+      <Dialog open={!!cancelTarget} onOpenChange={(o) => { if (!o) setCancelTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>예약 취소</DialogTitle>
+            <DialogDescription>
+              {cancelTarget?.mine
+                ? "취소 사유는 연습실 주인에게 전달됩니다."
+                : "이 예약을 취소합니다. 사유는 예약자에게 전달됩니다."}
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            rows={3}
+            maxLength={500}
+            placeholder="예: 일정이 겹쳐 부득이하게 취소합니다"
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+          />
+          <DialogFooter>
+            <button
+              onClick={() => setCancelTarget(null)}
+              disabled={cancelling}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
+            >
+              돌아가기
+            </button>
+            <button
+              onClick={submitCancel}
+              disabled={cancelling || !cancelReason.trim()}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-action text-action-foreground hover:bg-action-hover transition-colors disabled:opacity-50"
+            >
+              {cancelling ? "취소 중..." : "예약 취소"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+</div>
   );
 };
 
