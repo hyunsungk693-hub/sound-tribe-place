@@ -1,4 +1,4 @@
-import { Search, MapPin, Clock, Star, Music, ArrowLeft, Pencil, Trash2, MessageCircle, Navigation, ChevronRight } from "lucide-react";
+import { Search, MapPin, Clock, Star, Music, ArrowLeft, Pencil, Trash2, MessageCircle, Navigation, ChevronRight, Phone } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import PageShell from "@/components/PageShell";
@@ -31,6 +31,7 @@ type RoomItem = {
   rating: number;
   instruments: string[];
   hours: string;
+  phone: string;
   content: string;
   image_url: string | null;
   lat: number | null;
@@ -63,6 +64,7 @@ const Rooms = () => {
   const [editArea, setEditArea] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editHours, setEditHours] = useState("");
+  const [editPhone, setEditPhone] = useState("");
   const [editInstruments, setEditInstruments] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
@@ -141,6 +143,7 @@ const Rooms = () => {
       rating: 0,
       instruments: r.instruments || [],
       hours: r.hours || "",
+      phone: r.phone || "",
       content: r.content || "",
       image_url: r.image_url || null,
       lat: r.lat ?? null,
@@ -172,6 +175,7 @@ const Rooms = () => {
     setEditArea(selectedRoom.area);
     setEditPrice(selectedRoom.price);
     setEditHours(selectedRoom.hours);
+    setEditPhone(selectedRoom.phone);
     setEditInstruments(selectedRoom.instruments.join(", "));
     setEditing(true);
   };
@@ -185,8 +189,9 @@ const Rooms = () => {
       area: editArea,
       price: editPrice,
       hours: editHours,
+      phone: editPhone.trim() || null,
       instruments: editInstruments.split(",").map((s) => s.trim()).filter(Boolean),
-    }).eq("id", selectedRoom.id).eq("user_id", user.id);
+    } as any).eq("id", selectedRoom.id).eq("user_id", user.id);
     setSavingEdit(false);
     if (error) { toast.error("수정에 실패했습니다"); return; }
     toast.success("게시물이 수정되었습니다");
@@ -363,6 +368,12 @@ const Rooms = () => {
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">운영시간</label>
                     <input value={editHours} onChange={(e) => setEditHours(e.target.value)} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
+                  {mode === "shop" && (
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1 block">전화번호</label>
+                      <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="예: 02-123-4567" inputMode="tel" className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+                    </div>
+                  )}
                   <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">{mode === "room" ? "보유 장비 (쉼표 구분)" : "취급 악기 (쉼표 구분)"}</label>
                     <input value={editInstruments} onChange={(e) => setEditInstruments(e.target.value)} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
@@ -389,6 +400,7 @@ const Rooms = () => {
                   <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
                     {selectedRoom.area && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{selectedRoom.area}</span>}
                     {selectedRoom.hours && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{selectedRoom.hours}</span>}
+                    {selectedRoom.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{selectedRoom.phone}</span>}
                   </div>
                   {selectedRoom.instruments.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-3">
@@ -426,6 +438,14 @@ const Rooms = () => {
                         </a>
                       )}
                     </div>
+                  )}
+                  {selectedRoom.phone && (
+                    <a
+                      href={`tel:${selectedRoom.phone.replace(/[^0-9+]/g, "")}`}
+                      className="mt-3 w-full h-11 rounded-xl bg-action text-action-foreground text-sm font-semibold hover:bg-action-hover active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                    >
+                      <Phone className="w-4 h-4" /> 전화 걸기 · {selectedRoom.phone}
+                    </a>
                   )}
                   {selectedRoom.user_id !== user?.id && (
                     <button

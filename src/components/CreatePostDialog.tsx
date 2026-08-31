@@ -12,6 +12,13 @@ import PlaceSearchInput from "@/components/PlaceSearchInput";
 /** 급구 허용 기간 — DB 트리거(enforce_urgent_deadline)와 같은 값을 쓴다 */
 const URGENT_MAX_DAYS = 3;
 
+/**
+ * 지원 자격 선택지. select는 라벨을 그대로 값으로 쓰므로 저장 직전에 DB 값으로 바꾼다
+ * (posts.applicant_level CHECK: any | pro). 라벨을 여기서만 정의해 폼과 어긋나지 않게 한다.
+ */
+export const APPLICANT_LEVEL_ANY = "누구나 지원 가능";
+export const APPLICANT_LEVEL_PRO = "인증된 프로만";
+
 /** datetime-local 입력용 로컬 시각 문자열 (YYYY-MM-DDTHH:mm) */
 const localDateTime = (daysFromNow: number) => {
   const d = new Date(Date.now() + daysFromNow * 86400000);
@@ -140,6 +147,10 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
       // 하위 유형은 해당 카테고리가 선택된 경우에만 저장 (DB CHECK와 일치)
       if (values.category === "종교" && values.subcategory) postData.subcategory = values.subcategory;
       if (values.position) postData.position = values.position;
+      if (values.applicant_level) {
+        postData.applicant_level = values.applicant_level === APPLICANT_LEVEL_PRO ? "pro" : "any";
+      }
+      if (values.phone) postData.phone = values.phone.trim();
       if (values.schedule) postData.schedule = values.schedule;
       if (values.is_urgent === "true") postData.is_urgent = true;
       if (values.deadline_at) postData.deadline_at = new Date(values.deadline_at).toISOString();

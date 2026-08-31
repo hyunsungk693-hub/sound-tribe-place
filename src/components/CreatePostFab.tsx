@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import CreatePostDialog, { Field } from "./CreatePostDialog";
+import CreatePostDialog, { Field, APPLICANT_LEVEL_ANY, APPLICANT_LEVEL_PRO } from "./CreatePostDialog";
 
 type PostType = "job" | "room" | "shop" | "community";
 
@@ -23,6 +23,14 @@ const jobFields: Field[] = [
   },
   { key: "position", label: "모집 포지션", placeholder: "", type: "select" as const, options: ["보컬", "기타", "베이스", "드럼", "건반", "관악", "현악", "그 외"], required: true },
   { key: "schedule", label: "합주 요일/시간", placeholder: "예: 주말 오후, 협의 가능" },
+  {
+    key: "applicant_level",
+    label: "지원 자격",
+    placeholder: "",
+    type: "select" as const,
+    options: [APPLICANT_LEVEL_ANY, APPLICANT_LEVEL_PRO],
+    required: true,
+  },
   { key: "is_urgent", label: "급구", placeholder: "급구로 등록 (마감까지 3일 이하만 가능)", type: "checkbox" as const },
   { key: "deadline_at", label: "마감일시 (오늘부터 3일 이내)", placeholder: "", type: "datetime" as const, required: true, showIf: (v) => v.is_urgent === "true" },
   { key: "venue", label: "장소", placeholder: "장소를 검색해 선택하세요 (예: 홍대 라이브클럽)", type: "place" as const },
@@ -44,6 +52,7 @@ const shopFields: Field[] = [
   { key: "title", label: "악기사 이름", placeholder: "예: 뮤직랜드 홍대점" },
   { key: "content", label: "소개", placeholder: "취급 품목과 매장 소개를 작성해주세요", type: "textarea" as const },
   { key: "area", label: "위치/주소", placeholder: "장소를 검색해 선택하세요 (예: 서울 마포구 와우산로)", type: "place" as const },
+  { key: "phone", label: "전화번호", placeholder: "예: 02-123-4567" },
   { key: "hours", label: "운영시간", placeholder: "예: 11:00 - 21:00" },
   { key: "instruments", label: "취급 악기 (쉼표 구분)", placeholder: "예: 기타, 베이스, 이펙터" },
   { key: "author_name", label: "작성자명", placeholder: "닉네임" },

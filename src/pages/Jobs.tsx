@@ -59,6 +59,8 @@ type JobItem = {
   subcategory: string;
   position: string;
   schedule: string;
+  /** 지원 자격 — 'pro'면 인증된 프로만 지원할 수 있다 */
+  applicantLevel: "any" | "pro";
   image_url: string | null;
   lat: number | null;
   lng: number | null;
@@ -93,6 +95,7 @@ const Jobs = () => {
   const [editPay, setEditPay] = useState("");
   const [editPosition, setEditPosition] = useState("");
   const [editSchedule, setEditSchedule] = useState("");
+  const [editApplicantLevel, setEditApplicantLevel] = useState<"any" | "pro">("any");
   const [savingEdit, setSavingEdit] = useState(false);
 
   // Application state
@@ -104,6 +107,7 @@ const Jobs = () => {
   const [authorStats, setAuthorStats] = useState<any>(undefined);
   const [videoGateOpen, setVideoGateOpen] = useState(false);
   const [proGateOpen, setProGateOpen] = useState(false);
+  const [proOnlyGateOpen, setProOnlyGateOpen] = useState(false);
   const [applying, setApplying] = useState(false);
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
@@ -369,6 +373,11 @@ const Jobs = () => {
       setProGateOpen(true);
       return;
     }
+    // 프로 전용 공고 — RLS(can_apply_to)도 막지만 먼저 안내한다
+    if (job.applicantLevel === "pro" && !((me as any)?.purpose === "pro" && (me as any)?.credential_verified)) {
+      setProOnlyGateOpen(true);
+      return;
+    }
     setApplyTarget(job);
     setApplyMessage(`"${job.title}" 공고에 지원합니다. 잘 부탁드립니다!`);
   };
@@ -422,6 +431,7 @@ const Jobs = () => {
       subcategory: j.subcategory || "",
       position: j.position || "",
       schedule: j.schedule || "",
+      applicantLevel: j.applicant_level === "pro" ? ("pro" as const) : ("any" as const),
       image_url: j.image_url || null,
       lat: j.lat ?? null,
       lng: j.lng ?? null,
@@ -440,6 +450,7 @@ const Jobs = () => {
     setEditPay(selectedJob.pay);
     setEditPosition(selectedJob.position);
     setEditSchedule(selectedJob.schedule);
+    setEditApplicantLevel(selectedJob.applicantLevel);
     setEditing(true);
   };
 
@@ -454,6 +465,7 @@ const Jobs = () => {
       pay: editPay,
       position: editPosition || null,
       schedule: editSchedule || null,
+      applicant_level: editApplicantLevel,
     } as any).eq("id", selectedJob.id).eq("user_id", user.id);
     setSavingEdit(false);
     if (error) { toast.error("수정에 실패했습니다"); return; }
@@ -565,8 +577,13 @@ const Jobs = () => {
                 <p className="text-[12.5px] text-muted-foreground">{job.venue}</p>
               </div>
             </div>
-            {(job.position || job.schedule) && (
+            {(job.position || job.schedule || job.applicantLevel === "pro") && (
               <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                {job.applicantLevel === "pro" && (
+                  <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/12 text-primary">
+                    PRO ONLY
+                  </span>
+                )}
                 {urgentLabel(job.isUrgent, job.deadlineAt) && (
                   <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber/15 text-amber">
                     {urgentLabel(job.isUrgent, job.deadlineAt)}
@@ -703,6 +720,17 @@ const Jobs = () => {
                     <input value={editSchedule} onChange={(e) => setEditSchedule(e.target.value)} placeholder="예: 주말 오후, 협의 가능" className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
                   <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">지원 자격</label>
+                    <select
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                      value={editApplicantLevel}
+                      onChange={(e) => setEditApplicantLevel(e.target.value === "pro" ? "pro" : "any")}
+                    >
+                      <option value="any">누구나 지원 가능</option>
+                      <option value="pro">인증된 프로만</option>
+                    </select>
+                  </div>
+                  <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">급여/페이</label>
                     <input value={editPay} onChange={(e) => setEditPay(e.target.value)} className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
@@ -736,6 +764,9 @@ const Jobs = () => {
                     )}
                     {selectedJob.position && (
                       <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary">🎯 {selectedJob.position}</span>
+                    )}
+                    {selectedJob.applicantLevel === "pro" && (
+                      <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-primary/12 text-primary">PRO ONLY · 인증된 프로만 지원</span>
                     )}
                     {selectedJob.schedule && <span>🕐 {selectedJob.schedule}</span>}
                     {selectedJob.venue && <span>📍 {selectedJob.venue}</span>}
@@ -1016,6 +1047,23 @@ const Jobs = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>나중에</AlertDialogCancel>
+            <AlertDialogAction onClick={() => navigate("/profile")}>프로필로 이동</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 프로 전용 공고 게이트 — 작성자가 지원 자격을 "인증된 프로만"으로 걸어둔 공고 */}
+      <AlertDialog open={proOnlyGateOpen} onOpenChange={setProOnlyGateOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>인증된 프로만 지원할 수 있는 공고입니다</AlertDialogTitle>
+            <AlertDialogDescription>
+              작성자가 지원 자격을 "인증된 프로만"으로 지정했습니다.
+              프로필에서 활동 목적을 프로로 바꾸고 졸업장·합격증·입상내역 중 1건을 인증하면 지원할 수 있습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>닫기</AlertDialogCancel>
             <AlertDialogAction onClick={() => navigate("/profile")}>프로필로 이동</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
