@@ -568,12 +568,20 @@ const ProfilePage = () => {
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {([["약속 지킴", r.kept_promise], ["실력 일치", r.skill_matched], ["또 하고 싶음", r.would_again]] as [string, boolean][]).map(([label, ok]) => (
+                  {/* 후기 항목은 예/아니오/무응답 3상태다(20260901000016). 미선택을 false로
+                      그리면 상대가 하지 않은 "아니오" 답을 만들어내게 되므로 따로 표시한다. */}
+                  {([["약속 지킴", r.kept_promise], ["실력 일치", r.skill_matched], ["또 하고 싶음", r.would_again]] as [string, boolean | null][]).map(([label, ans]) => (
                     <span
                       key={label}
-                      className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${ok ? "bg-signal/15 text-signal" : "bg-muted text-muted-foreground"}`}
+                      className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                        ans === true
+                          ? "bg-signal/15 text-signal"
+                          : ans === false
+                            ? "bg-negative text-negative-foreground"
+                            : "bg-muted text-muted-foreground/70"
+                      }`}
                     >
-                      {ok ? "\u2713" : "\u2717"} {label}
+                      {ans === true ? "\u2713" : ans === false ? "\u2717" : "\u2013"} {label}
                     </span>
                   ))}
                 </div>

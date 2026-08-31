@@ -29,6 +29,10 @@ export default {
           shops: "hsl(var(--ch-shops))",
           community: "hsl(var(--ch-community))",
         },
+        negative: {
+          DEFAULT: "hsl(var(--negative))",
+          foreground: "hsl(var(--negative-foreground))",
+        },
         action: {
           DEFAULT: "hsl(var(--action))",
           foreground: "hsl(var(--action-foreground))",

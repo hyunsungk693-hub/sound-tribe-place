@@ -126,7 +126,7 @@ const RatingDialog = ({ open, onClose, rateeId, rateeName, jobApplicationId, onR
                           v === ans
                             ? ans
                               ? "bg-action text-action-foreground"
-                              : "bg-destructive/10 text-destructive"
+                              : "bg-negative text-negative-foreground"
                             : "bg-secondary text-muted-foreground hover:bg-surface-hover"
                         }`}
                       >
