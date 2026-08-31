@@ -60,6 +60,35 @@ const GradeBadge = ({ grade, size = "sm" }: { grade?: string | null; size?: "sm"
   );
 };
 
+/**
+ * 응답 등급 — 공고주가 받은 지원에 24시간 안에 답한 비율(user_stats.response_rate)을
+ * A/B/C로 끊는다. 지원을 넣을지 정하는 순간 "이 사람이 답을 주긴 하는가"가
+ * 가장 궁금한 정보라 이름 옆에 붙인다.
+ *
+ * response_rate는 모수 3건 미만이면 refresh_user_stats가 NULL로 두므로,
+ * 표본이 적은 사람에게 섣부른 등급이 붙지 않는다.
+ */
+const responseGrade = (rate?: number | null) => {
+  if (rate == null) return null;
+  if (rate >= 0.9) return { label: "응답 A", cls: "bg-signal/15 text-signal" };
+  if (rate >= 0.7) return { label: "응답 B", cls: "bg-secondary text-secondary-foreground" };
+  return { label: "응답 C", cls: "bg-amber/20 text-amber" };
+};
+
+const ResponseBadge = ({ rate, size = "sm" }: { rate?: number | null; size?: "sm" | "md" }) => {
+  const meta = responseGrade(rate);
+  if (!meta) return null;
+  const box = size === "md" ? "text-[10px] px-2 py-0.5" : "text-[9px] px-1.5 py-0.5";
+  return (
+    <span
+      className={`font-mono font-bold rounded-full shrink-0 ${box} ${meta.cls}`}
+      title={`지원에 24시간 내 응답한 비율 ${Math.round((rate as number) * 100)}%`}
+    >
+      {meta.label}
+    </span>
+  );
+};
+
 interface Props {
   profile: ProfileCardData | null;
   variant?: "compact" | "full";
@@ -242,6 +271,7 @@ const ProfileCard = ({ profile, variant = "compact", stats, className = "", onBe
             {purpose && (
               <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">{purpose}</span>
             )}
+            <ResponseBadge rate={effStats?.response_rate} />
             <GradeBadge grade={effStats?.grade} />
           </div>
           {(mainInstrument || profile.location) && (
@@ -277,6 +307,7 @@ const ProfileCard = ({ profile, variant = "compact", stats, className = "", onBe
             {purpose && (
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">{purpose}</span>
             )}
+            <ResponseBadge rate={effStats?.response_rate} size="md" />
             <GradeBadge grade={effStats?.grade} size="md" />
             {isNew && (
               <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
