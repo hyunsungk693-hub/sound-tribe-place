@@ -265,7 +265,7 @@ const Rooms = () => {
           <div
             key={room.id || `sample-${i}`}
             onClick={() => openDetail(room)}
-            className="flex gap-3 py-3 cursor-pointer active:scale-[0.99] transition-transform lg:block lg:gap-0 lg:py-0 lg:glass-card lg:overflow-hidden lg:hover:border-primary lg:transition-colors lg:duration-200 lg:active:scale-[0.98]"
+            className="flex gap-4 py-3.5 cursor-pointer active:scale-[0.99] transition-transform lg:block lg:gap-0 lg:py-0 lg:glass-card lg:overflow-hidden lg:hover:border-primary lg:transition-colors lg:duration-200 lg:active:scale-[0.98]"
             style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${i * 0.04}s both` }}
           >
             {room.image_url ? (
