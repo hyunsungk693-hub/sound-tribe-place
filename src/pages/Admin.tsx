@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Trash2, Pencil, Plus, X, UserPlus, Shield } from "lucide-react";
+import { Trash2, Pencil, Plus, X, UserPlus, Shield, AlertTriangle } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import {
@@ -65,6 +65,8 @@ const Admin = () => {
   const [places, setPlaces] = useState<Place[]>([]);
   const [form, setForm] = useState<typeof empty>(empty);
   const [editingId, setEditingId] = useState<string | null>(null);
+  // 지도 기능이 스코프에서 빠져 상시 업무가 아니다. 등록 폼은 기본으로 접어둔다.
+  const [formOpen, setFormOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [pendingCreds, setPendingCreds] = useState(0);
   const [pendingReports, setPendingReports] = useState(0);
@@ -95,9 +97,13 @@ const Admin = () => {
   if (!isAdmin) return <Navigate to="/" replace />;
 
   const resetForm = () => { setForm(empty); setEditingId(null); };
+  // 폼을 접을 때는 입력값도 함께 비운다.
+  const closeForm = () => { resetForm(); setFormOpen(false); };
+  const openCreateForm = () => { resetForm(); setFormOpen(true); };
 
   const handleEdit = (p: Place) => {
     setEditingId(p.id);
+    setFormOpen(true); // 수정은 이 폼을 쓰므로 접혀 있으면 반드시 펼친다.
     setForm({
       type: p.type,
       name: p.name,
@@ -151,7 +157,7 @@ const Admin = () => {
     setSubmitting(false);
     if (error) return toast.error(editingId ? "수정 실패" : "등록 실패");
     toast.success(editingId ? "수정되었습니다" : "등록되었습니다");
-    resetForm();
+    closeForm();
     fetchPlaces();
   };
 
@@ -165,7 +171,7 @@ const Admin = () => {
         <h1 className="text-lg font-bold">관리자</h1>
       </header>
 
-      <Tabs defaultValue="places" className="p-4">
+      <Tabs defaultValue="metrics" className="p-4">
         <TabsList className="grid w-full grid-cols-5 mb-4">
           <TabsTrigger value="metrics">지표</TabsTrigger>
           <TabsTrigger value="credentials" className="gap-1">
@@ -184,8 +190,14 @@ const Admin = () => {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="places">장소 마커</TabsTrigger>
           <TabsTrigger value="admins">관리자 권한</TabsTrigger>
+          {/* 지도가 없어 상시 운영 업무가 아니다. 맨 뒤로 밀고 라벨도 지도용 데이터임이 드러나게 둔다. */}
+          <TabsTrigger
+            value="places"
+            className="text-muted-foreground/70 data-[state=active]:text-foreground"
+          >
+            지도 데이터
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="metrics" className="mt-0">
@@ -200,13 +212,33 @@ const Admin = () => {
           <ReportsReview onPendingCount={setPendingReports} />
         </TabsContent>
 
-        <TabsContent value="places" className="space-y-6 mt-0">
+        <TabsContent value="places" className="space-y-4 mt-0">
+        {/* 지도 기능이 스코프에서 빠진 상태다. 입력한 값이 앱에 안 나온다는 사실을 가장 먼저 알린다. */}
+        <div className="rounded-lg border border-amber/30 bg-amber/10 p-3.5">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-amber">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            등록해도 지금은 앱 어디에도 표시되지 않습니다
+          </p>
+          <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+            지도 기능이 현재 스코프에서 빠져 있어, 여기서 등록한 장소는 사용자 화면에 노출되지 않습니다.
+            나중에 지도를 도입할 때 쓰려고 데이터만 미리 쌓아두는 곳입니다.
+          </p>
+        </div>
+
+        {!formOpen && (
+          <Button variant="outline" className="w-full" onClick={openCreateForm}>
+            <Plus className="w-4 h-4 mr-2" />
+            새 장소 등록
+          </Button>
+        )}
+
+        {formOpen && (
         <Card className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold">{editingId ? "장소 수정" : "새 장소 등록"}</h2>
-            {editingId && (
-              <Button variant="ghost" size="sm" onClick={resetForm}><X className="w-4 h-4" /></Button>
-            )}
+            <Button variant="ghost" size="sm" onClick={closeForm} aria-label="등록 폼 접기">
+              <X className="w-4 h-4" />
+            </Button>
           </div>
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
@@ -258,9 +290,10 @@ const Admin = () => {
             </Button>
           </form>
         </Card>
+        )}
 
         <div className="space-y-2">
-          <h2 className="font-semibold">등록된 장소 ({places.length})</h2>
+          <h2 className="text-sm font-semibold text-muted-foreground">쌓아둔 장소 ({places.length})</h2>
           {places.length === 0 && <p className="text-sm text-muted-foreground">아직 등록된 장소가 없습니다.</p>}
           {places.map((p) => (
             <Card key={p.id} className="p-3">
