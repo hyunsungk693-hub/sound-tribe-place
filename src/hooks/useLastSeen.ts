@@ -38,11 +38,16 @@ export const useLastSeen = () => {
       const now = Date.now();
       if (now - lastWriteRef.current < HEARTBEAT_MS) return;
       lastWriteRef.current = now;
+      // 숨김을 켠 사용자는 기록 자체를 남기지 않는다 — 화면에서 배지만 가리면
+      // 값은 계속 쌓여서 API를 직접 부르는 사람에게는 그대로 보인다.
+      // 조건을 UPDATE에 넣어 한 번의 왕복으로 끝낸다. 따로 읽어 캐시하면
+      // 세션 중에 설정을 바꿔도 다음 새로고침까지 반영되지 않는다.
       // 실패해도 조용히 넘어간다 — 배지 하나 때문에 화면에 오류를 띄울 일이 아니다.
       await supabase
         .from("profiles")
-        .update({ last_seen_at: new Date().toISOString() } as never)
-        .eq("user_id", user.id);
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq("user_id", user.id)
+        .eq("hide_presence", false);
     };
 
     beat();

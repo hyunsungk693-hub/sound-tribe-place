@@ -2,6 +2,8 @@
 // dak.gg 카드처럼 단독 저장·공유용. satori+resvg 인프라는 og-profile과 공유한다.
 import { fetchKoreanFont, loadRenderers } from "./og-profile.mjs";
 
+/** src/components/ProfileCard.tsx의 GRADE_LABEL과 같은 값이어야 한다 */
+const GRADE_LABEL = { trust: "신뢰", stable: "안정", caution: "주의", unrated: "산정 전" };
 const SUPABASE_URL =
   process.env.VITE_SUPABASE_URL || "https://syxodrmnukybnnlgttuw.supabase.co";
 const SUPABASE_ANON =
@@ -29,7 +31,7 @@ export async function fetchCardData(handle) {
   const profile = Array.isArray(rows) && rows[0] ? rows[0] : null;
   if (!profile) return null;
   const stats = await sb(
-    `user_stats?user_id=eq.${profile.user_id}&select=response_rate,median_response_h,sessions_count,no_show_count&limit=1`,
+    `user_stats?user_id=eq.${profile.user_id}&select=response_rate,sessions_count,no_show_count,grade&limit=1`,
   );
   return { profile, stats: Array.isArray(stats) && stats[0] ? stats[0] : null };
 }
@@ -106,9 +108,9 @@ export async function renderProfileCard({ profile, stats }) {
 
   const allText =
     `${name}${handle}${purpose || ""}${instruments.join("")}${genres.join("")}` +
-    `${loc || ""}${times || ""}${badges.join("")}악기장르지역가능 시간응답률응답 중앙값시간` +
+    `${loc || ""}${times || ""}${badges.join("")}악기장르지역가능 시간응답률신뢰등급신뢰안정주의산정 전` +
     `새로 시작하는 음악인연주영상♪ instrut${siteUrl}${initial}${videoDisplay}${videoPlatform}링크` +
-    (showRate ? `${Math.round(stats.response_rate * 100)}%${stats.median_response_h ?? ""}h` : "");
+    (showRate ? `${Math.round(stats.response_rate * 100)}%` : "");
 
   const [bold, regular] = await Promise.all([
     fetchKoreanFont(allText, 700),
@@ -128,18 +130,21 @@ export async function renderProfileCard({ profile, stats }) {
         ],
       },
     });
-    if (stats.median_response_h != null) {
-      trustChildren.push({
-        type: "div",
-        props: {
-          style: { display: "flex", flexDirection: "column", alignItems: "center", flex: 1 },
-          children: [
-            { type: "div", props: { style: { display: "flex", fontSize: 40, fontWeight: 700, color: BRAND_DEEP }, children: `${stats.median_response_h}h` } },
-            { type: "div", props: { style: { display: "flex", fontSize: 18, color: SOFT }, children: "응답 중앙값" } },
-          ],
-        },
-      });
-    }
+  }
+  // 등급은 응답률과 무관하게 산정되므로 showRate 밖에 둔다.
+  // 배지는 신뢰·주의일 때만 붙지만 카드 타일은 네 등급을 다 보여준다 —
+  // 안정이거나 산정 전인 사람도 자기 위치를 알아야 한다.
+  if (stats && stats.grade) {
+    trustChildren.push({
+      type: "div",
+      props: {
+        style: { display: "flex", flexDirection: "column", alignItems: "center", flex: 1 },
+        children: [
+          { type: "div", props: { style: { display: "flex", fontSize: 40, fontWeight: 700, color: BRAND_DEEP }, children: GRADE_LABEL[stats.grade] || stats.grade } },
+          { type: "div", props: { style: { display: "flex", fontSize: 18, color: SOFT }, children: "신뢰등급" } },
+        ],
+      },
+    });
   }
 
   const svg = await satori(

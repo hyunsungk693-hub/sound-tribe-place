@@ -599,8 +599,10 @@ export type Database = {
           display_name: string | null
           genres: string[] | null
           handle: string | null
+          hide_presence: boolean
           id: string
           instruments: string[] | null
+          last_seen_at: string | null
           location: string | null
           purpose: string | null
           updated_at: string
@@ -617,8 +619,10 @@ export type Database = {
           display_name?: string | null
           genres?: string[] | null
           handle?: string | null
+          hide_presence?: boolean
           id?: string
           instruments?: string[] | null
+          last_seen_at?: string | null
           location?: string | null
           purpose?: string | null
           updated_at?: string
@@ -635,8 +639,10 @@ export type Database = {
           display_name?: string | null
           genres?: string[] | null
           handle?: string | null
+          hide_presence?: boolean
           id?: string
           instruments?: string[] | null
+          last_seen_at?: string | null
           location?: string | null
           purpose?: string | null
           updated_at?: string
@@ -718,39 +724,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      reviews: {
-        Row: {
-          content: string
-          created_at: string
-          id: string
-          place_id: number
-          place_type: string
-          rating: number
-          user_id: string
-          user_name: string
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          id?: string
-          place_id: number
-          place_type: string
-          rating: number
-          user_id: string
-          user_name?: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          id?: string
-          place_id?: number
-          place_type?: string
-          rating?: number
-          user_id?: string
-          user_name?: string
-        }
-        Relationships: []
       }
       room_reservation_cancellations: {
         Row: {
@@ -1068,6 +1041,7 @@ export type Database = {
         }[]
       }
       get_hook_totals: { Args: never; Returns: Json }
+      get_support_admin_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

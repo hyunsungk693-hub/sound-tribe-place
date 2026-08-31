@@ -15,6 +15,7 @@ interface ProfileData {
   purpose?: string | null;
   available_times?: string[] | null;
   available_slots?: string[] | null;
+  hide_presence?: boolean | null;
   handle?: string | null;
 }
 
@@ -67,6 +68,7 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
   const [uploadingCred, setUploadingCred] = useState(false);
   const credInputRef = useRef<HTMLInputElement>(null);
   const [availableSlots, setAvailableSlots] = useState<string[]>(profile.available_slots || []);
+  const [hidePresence, setHidePresence] = useState(!!profile.hide_presence);
   const [handle, setHandle] = useState(profile.handle || "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -218,6 +220,10 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
       avatar_url: avatarUrl || null,
       video_url: trimmedVideo || null,
       purpose: purpose || null,
+      hide_presence: hidePresence,
+      // 숨김을 켜는 순간 남아 있던 기록을 함께 비운다. 안 그러면 방금까지 찍힌
+      // 값 때문에 최대 5분간 "활동 중"이 유지된다.
+      ...(hidePresence ? { last_seen_at: null } : {}),
       available_slots: availableSlots,
       // 예전 자유 텍스트는 한 번이라도 저장하면 비운다. ProfileCard가 슬롯을
       // 우선 읽되 슬롯이 없을 때만 옛 값을 보여주므로, 남겨두면 슬롯을 전부
@@ -449,6 +455,25 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
           <div>
             <label className="text-xs font-semibold mb-1.5 block">합주 가능 요일/시간</label>
             <TimeSlotPicker value={availableSlots} onChange={setAvailableSlots} />
+          </div>
+
+          {/* 접속 상태 공개 여부 */}
+          <div className="rounded-lg border border-border p-3.5">
+            <label className="flex items-start gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={hidePresence}
+                onChange={(e) => setHidePresence(e.target.checked)}
+                className="w-4 h-4 mt-0.5 accent-primary shrink-0"
+              />
+              <span className="min-w-0">
+                <span className="block text-xs font-semibold">접속 상태 숨기기</span>
+                <span className="block text-[11px] text-muted-foreground mt-1">
+                  내 프로필에 "활동 중" 배지가 뜨지 않습니다. 화면에서 가리는 것이 아니라
+                  접속 기록 자체를 남기지 않습니다.
+                </span>
+              </span>
+            </label>
           </div>
 
           {/* 핸들 */}
