@@ -98,6 +98,8 @@ const ProfilePage = () => {
   const [roomCancels, setRoomCancels] = useState<any[]>([]);
   // 설정 메뉴에서 연 안내 시트
   const [menuSheet, setMenuSheet] = useState<MenuKey | null>(null);
+  // 고객센터 문의를 받을 관리자 id. null이면 창구가 없다는 뜻이라 버튼을 감춘다.
+  const [supportAdminId, setSupportAdminId] = useState<string | null>(null);
 
   const fetchReservations = async () => {
     if (!user) return;
@@ -309,6 +311,19 @@ const ProfilePage = () => {
       .maybeSingle()
       .then(({ data }: any) => setMyStats(data || null));
   }, [user]);
+
+  // 고객센터를 열 때만 문의받을 관리자 id를 물어본다.
+  // user_roles는 일반 사용자에게 닫혀 있어 RPC(get_support_admin_id)로만 알 수 있고,
+  // 관리자가 없으면 NULL이 온다 — 그때는 버튼 없이 안내 문구만 남는다.
+  useEffect(() => {
+    if (menuSheet !== "support" || !user) return;
+    let alive = true;
+    (supabase as any).rpc("get_support_admin_id").then(({ data, error }: any) => {
+      if (!alive) return;
+      setSupportAdminId(error ? null : ((data as string | null) ?? null));
+    });
+    return () => { alive = false; };
+  }, [menuSheet, user]);
 
   // 제휴 연습실 유료 예약 (bookings) + 배정 PIN
   const fetchPaidBookings = async () => {
@@ -1223,12 +1238,12 @@ const ProfilePage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* 고객센터 — 접수 백엔드가 없으므로 새 문의 폼을 만들지 않는다.
-          메일 주소도 적지 않는다: admin@instrut.app은 받는 사람이 없는 가상 계정이라
-          보낸 사람만 답을 기다리게 된다. 관리자에게 앱 내 메시지를 보내는 길도 없다 —
-          user_roles의 SELECT 정책이 본인 행과 관리자에게만 열려 있어(20260506040704 마이그레이션)
-          일반 사용자는 관리자 user_id를 알아낼 수 없고, 이를 알려주는 RPC나 뷰도 없다.
-          그래서 지금 실제로 닿는 경로만 남기고, 나머지는 없다고 정직하게 적는다. */}
+      {/* 고객센터 — 새 문의 폼이나 메일 주소는 여전히 만들지 않는다. 접수 백엔드도,
+          받는 사람이 있는 메일 계정도 없기 때문이다. 대신 이미 사람이 읽는 창구인
+          앱 내 메시지로 보낸다: get_support_admin_id RPC(20260901000023 마이그레이션)가
+          문의를 받을 관리자 한 명의 id만 돌려주고, 그 id로 /messages?to= 대화를 연다.
+          관리자가 없으면 RPC가 NULL을 주므로 버튼 없이 "창구가 없다"는 안내만 남는다 —
+          동작하지 않는 버튼은 두지 않는다. */}
       <Dialog open={menuSheet === "support"} onOpenChange={(o) => { if (!o) setMenuSheet(null); }}>
         <DialogContent>
           <DialogHeader>
@@ -1268,12 +1283,32 @@ const ProfilePage = () => {
             </div>
             <div className="rounded-lg border border-border p-3">
               <p className="font-semibold">그 밖의 문의 · 계정 삭제 요청</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                아직 운영자에게 문의를 접수할 창구가 없습니다. 받는 사람이 없는 주소를 적어두면
-                답을 기다리게만 되므로, 준비될 때까지는 적지 않았습니다. 창구가 열리면 이 화면에 먼저 안내하겠습니다.
-                그때까지 계정 자체를 지우는 것은 앱에서 처리할 수 없습니다. 위 방법으로 프로필과 게시물을 비워두면
-                다른 사람에게 보이는 내용은 남지 않습니다.
-              </p>
+              {supportAdminId && supportAdminId !== user?.id ? (
+                <>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    위에서 해결되지 않는 문의는 운영자에게 직접 메시지로 보내주세요.
+                    계정 삭제 요청도 이 대화로 받습니다 — 앱에서 바로 지우는 기능은 아직 없어
+                    운영자가 확인 후 처리합니다. 답변은 &lsquo;메시지&rsquo;에 같은 대화로 옵니다.
+                  </p>
+                  <button
+                    onClick={() => { setMenuSheet(null); navigate(`/messages?to=${supportAdminId}`); }}
+                    className="mt-3 w-full h-11 rounded-xl bg-action text-action-foreground text-sm font-semibold hover:bg-action-hover active:scale-[0.98] transition-all"
+                  >
+                    관리자에게 문의하기
+                  </button>
+                </>
+              ) : supportAdminId ? (
+                <p className="text-xs text-muted-foreground mt-1">
+                  회원님이 문의를 받는 관리자입니다. 다른 사용자가 보낸 문의는 &lsquo;메시지&rsquo;로 들어옵니다.
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1">
+                  아직 운영자에게 문의를 접수할 창구가 없습니다. 받는 사람이 없는 주소를 적어두면
+                  답을 기다리게만 되므로, 준비될 때까지는 적지 않았습니다. 창구가 열리면 이 화면에 먼저 안내하겠습니다.
+                  그때까지 계정 자체를 지우는 것은 앱에서 처리할 수 없습니다. 위 방법으로 프로필과 게시물을 비워두면
+                  다른 사람에게 보이는 내용은 남지 않습니다.
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>
