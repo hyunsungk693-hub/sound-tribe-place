@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, CreditCard, KeyRound, MapPin, Clock, CheckCircle2, Hourglass, Info } from "lucide-react";
+import { X, CreditCard, KeyRound, MapPin, Clock, CheckCircle2, Hourglass, Info, AlarmClock } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,6 +19,10 @@ type Props = {
 
 type Phase = "review" | "paying" | "confirmed" | "requested";
 
+// 요청예약(B)의 승인 마감. DB의 create_booking_hold·expire_stale_holds와 같은 규칙이라
+// 여기서 계산한 시각이 실제 자동 취소 시각과 일치한다 (20260901000021).
+const REQUEST_TTL_MS = 24 * 60 * 60 * 1000;
+
 // 슬롯 선택 후 흐름. 등급에 따라 갈라진다.
 //   A 즉시예약: hold → 모의결제 → 확정
 //   B 요청예약: hold 없이 '예약 요청'으로 남기고 사장님 승인을 기다린다
@@ -33,9 +37,12 @@ const BookingFlow = ({ studio, room, slot, originApplicationId, onClose, onBooke
   const [paid, setPaid] = useState(false);
   const [busy, setBusy] = useState(false);
   const [remain, setRemain] = useState(300); // hold 5분 TTL 카운트다운
+  const [deadline, setDeadline] = useState<Date | null>(null); // 요청예약 자동 취소 시각
 
   const isRequest = studio.tier === "B"; // 승인이 필요한 요청예약
   const isInfoOnly = studio.tier === "C";
+  // 합주 시작이 24시간보다 먼저 오면 마감이 그쪽으로 당겨진다. 안내 문구도 그때는 달라야 한다.
+  const cutByStart = deadline != null && deadline.getTime() === new Date(slot.start_at).getTime();
   const hours = slotDuration(slot);
   const amount = Math.round(room.hourly_price * hours);
   const fmt = (iso: string) =>
@@ -68,6 +75,7 @@ const BookingFlow = ({ studio, room, slot, originApplicationId, onClose, onBooke
       setBookingId(id);
       // B는 이 시점에 이미 'requested'로 저장돼 있다. 결제 단계 없이 대기 화면으로 넘어간다.
       if (isRequest) {
+        setDeadline(new Date(Math.min(Date.now() + REQUEST_TTL_MS, new Date(slot.start_at).getTime())));
         setPhase("requested");
         onBooked?.();
       } else {
@@ -162,6 +170,9 @@ const BookingFlow = ({ studio, room, slot, originApplicationId, onClose, onBooke
                     <>
                       요청을 보내면 사장님이 확인 후 승인합니다. 승인 전까지는 확정이 아니며,
                       해당 시간대는 검토 동안 다른 사람에게 열리지 않습니다.
+                      <span className="block mt-1 font-semibold text-amber">
+                        24시간 안에 승인되지 않으면 요청은 자동 취소됩니다.
+                      </span>
                     </>
                   ) : (
                     <>
@@ -222,6 +233,22 @@ const BookingFlow = ({ studio, room, slot, originApplicationId, onClose, onBooke
                 아직 <span className="font-semibold text-foreground">확정이 아닙니다.</span> 사장님이 승인하면 예약이 확정됩니다.
                 결제와 출입 PIN 안내는 승인 이후 별도로 진행됩니다.
               </p>
+
+              {/* 요청이 방치되면 무기한 기다리는 게 아니라 자동 취소된다. 언제인지까지 못박아 둔다. */}
+              {deadline && (
+                <div className="rounded-lg bg-negative text-negative-foreground p-3">
+                  <p className="flex items-center gap-1.5 text-xs font-bold">
+                    <AlarmClock className="w-3.5 h-3.5 shrink-0" />
+                    {cutByStart ? "합주 시작 전까지 승인되지 않으면 자동 취소됩니다" : "24시간 안에 승인되지 않으면 자동 취소됩니다"}
+                  </p>
+                  <p className="text-[11px] mt-1 leading-relaxed">
+                    마감 <span className="font-semibold tabular-nums">{fmt(deadline.toISOString())}</span>
+                    {cutByStart
+                      ? " — 합주 시작이 24시간보다 먼저라 그때까지만 기다립니다."
+                      : " — 그때까지 답이 없으면 요청은 취소되고 시간대가 다시 열립니다."}
+                  </p>
+                </div>
+              )}
             </div>
 
             <button

@@ -61,6 +61,13 @@ const Partner = () => {
 
   useEffect(() => { if (active) loadStudioDetail(active); }, [active, loadStudioDetail]);
 
+  // 승인 대기 요청의 "남은 시간"이 화면을 열어둔 채 멈춰 있으면 안 된다. 1분마다 현재 시각을 다시 잡는다.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
   if (loading) return <div className="min-h-app flex items-center justify-center bg-background"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   if (!user) return <Navigate to="/auth" replace />;
 
@@ -154,6 +161,21 @@ const Partner = () => {
   };
 
   const roomName = (id: string) => rooms.find((r) => r.id === id)?.name || "삭제된 방";
+
+  // 요청 예약이 자동 취소되기까지 남은 시간. 마감 시각은 DB가 hold_expires_at에 넣어둔다
+  // (요청 시각 + 24시간, 합주 시작이 더 빠르면 그때 — 20260901000021).
+  // 값이 비어 있는 옛 요청은 같은 규칙을 접수 시각 기준으로 계산해 빈칸을 만들지 않는다.
+  const requestRemain = (b: Booking) => {
+    const due = b.hold_expires_at
+      ? new Date(b.hold_expires_at).getTime()
+      : new Date(b.created_at).getTime() + 24 * 60 * 60 * 1000;
+    const left = due - now;
+    const at = new Date(due).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    if (left <= 0) return { label: "만료됨", urgent: true, at };
+    const h = Math.floor(left / 3600000);
+    // 3시간 밑으로 떨어지면 분 단위로 바꾸고 강조한다 — 이때부터는 방치가 곧 취소다.
+    return { label: h >= 1 ? `${h}시간 남음` : `${Math.floor(left / 60000)}분 남음`, urgent: left <= 3 * 3600000, at };
+  };
   const statusLabel: Record<string, string> = { held: "결제대기", requested: "승인대기", confirmed: "확정", cancelled: "취소", completed: "완료", no_show: "노쇼" };
 
   return (
@@ -290,16 +312,34 @@ const Partner = () => {
                   </span>
                 )}
               </h2>
+              {/* 남은 시간 배지만 있으면 무엇이 줄어드는지 모른다. 규칙을 한 번 적어둔다. */}
+              {bookings.some((b) => b.status === "requested") && (
+                <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
+                  요청은 접수 후 24시간(합주 시작이 더 빠르면 그때)까지만 유효합니다.
+                  그 안에 승인하지 않으면 자동 취소되고 시간대가 다시 열립니다.
+                </p>
+              )}
               {bookings.length === 0 && <p className="text-xs text-muted-foreground py-2">예약이 없습니다.</p>}
-              {bookings.map((b) => (
+              {bookings.map((b) => {
+                const remain = b.status === "requested" ? requestRemain(b) : null;
+                return (
                 <div key={b.id} className="flex items-center justify-between py-3 border-b border-border last:border-0 gap-2">
                   <div className="min-w-0">
                     <p className="text-[13px] font-semibold tracking-tight truncate">{roomName(b.room_id)} · <span className="font-mono tabular-nums">{fmtWon(b.amount)}</span></p>
-                    <p className="text-[11px] text-muted-foreground font-mono tabular-nums mt-0.5 flex items-center gap-1.5">
+                    <p className="text-[11px] text-muted-foreground font-mono tabular-nums mt-0.5 flex items-center gap-1.5 flex-wrap">
                       {new Date(b.created_at).toLocaleDateString("ko-KR")} · {statusLabel[b.status] || b.status}
                       {/* 결제 연동 전이라 확정이어도 돈은 들어오지 않았다. 현장 정산 대상임을 여기서 알린다. */}
                       {!b.paid && b.status !== "cancelled" && (
                         <span className="px-1.5 py-0.5 rounded bg-amber/15 text-amber font-bold">미결제</span>
+                      )}
+                      {/* 방치하면 슬롯이 잠기는 게 아니라 요청이 취소된다. 언제인지를 사장님에게도 보여준다. */}
+                      {remain && (
+                        <span
+                          title={`${remain.at} 자동 취소`}
+                          className={`px-1.5 py-0.5 rounded font-bold ${remain.urgent ? "bg-negative text-negative-foreground" : "bg-secondary text-muted-foreground"}`}
+                        >
+                          {remain.label}
+                        </span>
                       )}
                     </p>
                   </div>
@@ -316,7 +356,8 @@ const Partner = () => {
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
            </div>
           </div>

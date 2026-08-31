@@ -186,6 +186,15 @@ const Studios = () => {
               )}
             </div>
 
+            {/* 시간대를 누르면 곧장 확정되는 게 아니라 요청이 들어간다. 그 요청이 언제 사라지는지까지 같이 알린다. */}
+            {selected.tier === "B" && (
+              <p className="text-[11.5px] text-muted-foreground leading-relaxed -mt-2 mb-4">
+                시간대를 고르면 예약 <span className="font-semibold text-foreground">요청</span>이 접수됩니다 ·
+                <span className="font-semibold text-amber"> 24시간 안에 승인되지 않으면 자동 취소</span>
+                {" "}(합주 시작이 더 빠르면 그때)
+              </p>
+            )}
+
             {rooms.length === 0 ? (
               <p className="text-center py-10 text-sm text-muted-foreground">등록된 합주실이 없습니다.</p>
             ) : (
