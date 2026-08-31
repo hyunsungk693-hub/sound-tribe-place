@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronRight, Edit3, Shield, HelpCircle, LogOut, Trash2, Calendar, MapPin, Users, Clock, History, IdCard, Star, CalendarHeart, Flag } from "lucide-react";
+import { ChevronRight, Edit3, Shield, HelpCircle, LogOut, Trash2, Calendar, MapPin, Users, Clock, History, IdCard, Star, CalendarHeart, Flag, CalendarX2, Mail } from "lucide-react";
 import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import ProfileEditModal from "@/components/ProfileEditModal";
 import RatingDialog from "@/components/RatingDialog";
+import { GradeBadge, ResponseBadge, TrustBadges, formatResponseHours } from "@/components/ProfileCard";
 import { getRecentViews, RecentView } from "@/lib/recentViews";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -24,12 +25,24 @@ interface Profile {
   purpose?: string | null;
   available_times?: string[] | null;
   handle?: string | null;
+  // 배지 판정에 필요한 값들 (남이 보는 카드와 같은 규칙으로 본인 화면에도 배지를 단다)
+  credential_verified?: boolean | null;
+  updated_at?: string | null;
 }
 
+// 설정 메뉴. key로 어떤 안내 시트를 열지 정한다 — App.tsx에 라우트를 더할 수 없으므로
+// 별도 페이지 대신 이 파일 안의 다이얼로그로 띄운다.
 const menuItems = [
-  { icon: Shield, label: "개인정보 보호" },
-  { icon: HelpCircle, label: "고객센터" },
-];
+  { key: "privacy", icon: Shield, label: "개인정보 보호" },
+  { key: "support", icon: HelpCircle, label: "고객센터" },
+] as const;
+
+type MenuKey = (typeof menuItems)[number]["key"];
+
+// 문의 메일 주소. 앱이 이미 선언해 둔 주소(supabase/functions/send-push의 VAPID_SUBJECT)를
+// 기본값으로 쓰고, 운영용 주소가 따로 생기면 VITE_SUPPORT_EMAIL로 덮어쓴다.
+const SUPPORT_EMAIL =
+  (import.meta.env.VITE_SUPPORT_EMAIL as string | undefined) || "admin@instrut.app";
 
 const activityTabs = ["내 게시물", "최근 본"];
 
@@ -86,6 +99,10 @@ const ProfilePage = () => {
   const [cancelling, setCancelling] = useState(false);
   const [detailTarget, setDetailTarget] = useState<any | null>(null);
   const [paidDetail, setPaidDetail] = useState<any | null>(null);
+  // 내가 올린 연습실에 들어온 예약 취소 (사유 포함)
+  const [roomCancels, setRoomCancels] = useState<any[]>([]);
+  // 설정 메뉴에서 연 안내 시트
+  const [menuSheet, setMenuSheet] = useState<MenuKey | null>(null);
 
   const fetchReservations = async () => {
     if (!user) return;
@@ -116,6 +133,45 @@ const ProfilePage = () => {
     }));
   };
 
+  // 내 연습실 게시물에 들어온 취소 기록. 사유는 RLS상 취소한 본인·방 주인·관리자만 읽는다
+  // (20260901000019). 방 주인이 사유를 확인할 화면이 여기밖에 없어서 프로필에 둔다.
+  const fetchRoomCancellations = async () => {
+    if (!user) return;
+    const { data: myRooms } = await supabase
+      .from("posts")
+      .select("id,title,venue")
+      .eq("user_id", user.id)
+      .eq("post_type", "room");
+    const rooms = (myRooms as any[]) || [];
+    if (rooms.length === 0) { setRoomCancels([]); return; }
+    const roomById: Record<string, any> = {};
+    rooms.forEach((r) => { roomById[r.id] = r; });
+
+    const { data } = await supabase
+      .from("room_reservation_cancellations" as any)
+      .select("*")
+      .in("room_id", Object.keys(roomById))
+      .order("created_at", { ascending: false })
+      .limit(20);
+    const list = (data as any[]) || [];
+
+    // 취소한 사람 이름은 profiles에서 한 번에 (fetchMyRatings와 같은 방식)
+    const userIds = Array.from(new Set(list.map((c) => c.user_id)));
+    const nameById: Record<string, string> = {};
+    if (userIds.length > 0) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id, display_name")
+        .in("user_id", userIds);
+      (profs || []).forEach((pr: any) => { nameById[pr.user_id] = pr.display_name || "익명"; });
+    }
+    setRoomCancels(list.map((c) => ({
+      ...c,
+      room_title: roomById[c.room_id]?.title || roomById[c.room_id]?.venue || "연습실",
+      cancellerName: nameById[c.user_id] || "익명",
+    })));
+  };
+
   const confirmCancel = async () => {
     if (!cancelTarget) return;
     if (!cancelReason.trim()) {
@@ -123,10 +179,15 @@ const ProfilePage = () => {
       return;
     }
     setCancelling(true);
-    const { error } = await supabase.from("room_reservations" as any).delete().eq("id", cancelTarget.id);
+    // 예약 행 삭제와 사유 기록이 갈라지지 않도록 RPC 하나로 처리한다(20260901000019).
+    // 예전처럼 delete()만 하면 입력받은 사유가 그대로 버려진다.
+    const { error } = await (supabase as any).rpc("cancel_room_reservation", {
+      p_reservation_id: cancelTarget.id,
+      p_reason: cancelReason.trim(),
+    });
     setCancelling(false);
-    if (error) { toast.error("취소 실패"); return; }
-    toast.success(`예약이 취소되었습니다 (사유: ${cancelReason.trim()})`);
+    if (error) { toast.error(error.message || "취소 실패"); return; }
+    toast.success("예약이 취소되었습니다. 취소 사유는 연습실 주인에게 전달됩니다.");
     setCancelTarget(null);
     setCancelReason("");
     await fetchReservations();
@@ -241,11 +302,14 @@ const ProfilePage = () => {
     fetchApplications();
 
     fetchPaidBookings();
+    fetchRoomCancellations();
 
-    // 신뢰 지표(D3): 내 프로필에도 응답률·재합주율 등을 노출
+    // 신뢰 지표(D3): 내 프로필에도 응답률·재합주율 등을 노출.
+    // grade / no_show_count는 배지 판정에, 나머지는 아래 신뢰 지표 카드에 그대로 쓴다
+    // (조회만 하고 안 쓰는 컬럼이 없도록 화면에 필요한 것만 가져온다).
     (supabase as any)
       .from("user_stats")
-      .select("response_rate, median_response_h, sessions_count, partners_count, rehire_rate, no_show_count")
+      .select("response_rate, median_response_h, sessions_count, partners_count, rehire_rate, no_show_count, grade, positive_rate, review_count")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }: any) => setMyStats(data || null));
@@ -280,7 +344,7 @@ const ProfilePage = () => {
       <div className="space-y-4 lg:sticky lg:top-24">
         {/* 정체성 */}
         <div className="glass-card p-5" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) both" }}>
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center gap-4">
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt="avatar" className="w-16 h-16 rounded-lg object-cover" />
             ) : (
@@ -289,18 +353,27 @@ const ProfilePage = () => {
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-extrabold tracking-tight truncate">{displayName}</h2>
+              {/* 남이 보는 내 카드에는 붙는 등급·응답 배지가 정작 본인 화면에만 없었다.
+                  ProfileCard와 같은 컴포넌트를 불러 쓰면 판정 규칙이 두 벌이 되지 않는다. */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-xl font-extrabold tracking-tight truncate">{displayName}</h2>
+                <ResponseBadge rate={myStats?.response_rate} size="md" />
+                <GradeBadge grade={myStats?.grade} size="md" />
+              </div>
               <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 truncate">
                 <MapPin className="w-3 h-3 shrink-0" />{profile?.location || "위치를 설정해주세요"}
               </p>
             </div>
           </div>
 
+          {/* 인증 완료 · 빠른 응답 · 노쇼 0 배지와 주의 등급 회복 안내 */}
+          <TrustBadges profile={profile} stats={myStats} />
+
           {profile?.bio && (
-            <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{profile.bio}</p>
+            <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{profile.bio}</p>
           )}
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 mt-4">
             <button
               onClick={() => {
                 const h = (profile as any)?.handle;
@@ -323,8 +396,10 @@ const ProfilePage = () => {
         {/* 신뢰 지표 — VU 게이지 */}
         {(() => {
           if (!myStats) return null;
-          const hasRate = myStats.response_rate != null || myStats.rehire_rate != null;
-          const hasCount = myStats.sessions_count > 0 || myStats.partners_count > 0;
+          const hasRate = myStats.response_rate != null || myStats.rehire_rate != null || myStats.positive_rate != null;
+          // 응답 중앙값은 시간 단위라 VU 게이지(0~1)에 못 올린다. 숫자 칸에 넣는다.
+          const medianLabel = formatResponseHours(myStats.median_response_h);
+          const hasCount = myStats.sessions_count > 0 || myStats.partners_count > 0 || !!medianLabel;
           if (!hasRate && !hasCount) return null;
           return (
             <div className="glass-card p-5" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.06s both" }}>
@@ -349,6 +424,20 @@ const ProfilePage = () => {
                       <VuMeter level={myStats.rehire_rate} />
                     </div>
                   )}
+                  {/* 20260901000016에서 "답한 칸만 분모"로 바뀐 값이다.
+                      후기 건수를 함께 적지 않으면 몇 건짜리 비율인지 알 수 없다. */}
+                  {myStats.positive_rate != null && (
+                    <div>
+                      <div className="flex justify-between items-baseline mb-1.5">
+                        <span className="mono-label">후기 긍정률</span>
+                        <span className="font-mono font-bold text-sm tabular-nums">{Math.round(myStats.positive_rate * 100)}%</span>
+                      </div>
+                      <VuMeter level={myStats.positive_rate} />
+                      <p className="text-[10px] text-muted-foreground mt-1.5">
+                        후기 {myStats.review_count ?? 0}건 중 답한 항목만 셈
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
               {hasCount && (
@@ -363,6 +452,12 @@ const ProfilePage = () => {
                     <div>
                       <p className="font-mono text-2xl font-extrabold tabular-nums leading-none">{myStats.partners_count}<span className="text-xs text-muted-foreground font-sans ml-0.5">명</span></p>
                       <p className="mono-label mt-1.5">함께한 음악인</p>
+                    </div>
+                  )}
+                  {medianLabel && (
+                    <div>
+                      <p className="font-mono text-2xl font-extrabold tabular-nums leading-none">{medianLabel}</p>
+                      <p className="mono-label mt-1.5">응답까지 (중앙값)</p>
                     </div>
                   )}
                 </div>
@@ -603,6 +698,41 @@ const ProfilePage = () => {
         </div>
       )}
 
+      {/* 내 연습실에 들어온 취소 — 사유를 읽을 수 있는 유일한 화면 */}
+      {roomCancels.length > 0 && (
+        <div className="glass-card overflow-hidden" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.107s both" }}>
+          <div className="px-5 pt-5 pb-3">
+            <h3 className="text-lg font-extrabold tracking-tight">내 연습실 예약 취소 ({roomCancels.length})</h3>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              내가 올린 연습실의 예약이 취소되면 사유가 여기에 남습니다. 해당 시간대는 다시 예약할 수 있습니다.
+            </p>
+          </div>
+          <div className="p-3 pt-0 space-y-2 max-h-[300px] overflow-y-auto">
+            {roomCancels.map((c) => {
+              const s = new Date(c.start_at);
+              const e = new Date(c.end_at);
+              const fmtT = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+              return (
+                <div key={c.id} className="p-3 rounded-xl bg-secondary/50">
+                  <div className="flex items-center gap-2">
+                    <CalendarX2 className="w-3 h-3 shrink-0 text-muted-foreground" />
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-negative text-negative-foreground shrink-0">취소</span>
+                    <span className="text-xs font-semibold truncate">{c.room_title}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground shrink-0 ml-auto">
+                      {new Date(c.created_at).toLocaleDateString("ko-KR")}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    {s.toLocaleDateString("ko-KR", { month: "long", day: "numeric" })} {fmtT(s)} - {fmtT(e)} · {c.cancellerName}
+                  </p>
+                  <p className="text-sm mt-1.5 leading-relaxed whitespace-pre-wrap break-words">{c.reason}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* My Activity */}
       <div className="glass-card overflow-hidden" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.11s both" }}>
         <div className="flex border-b border-border/40">
@@ -690,9 +820,10 @@ const ProfilePage = () => {
 
       {/* Menu */}
       <div className="glass-card overflow-hidden" style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) 0.16s both" }}>
-        {menuItems.map(({ icon: Icon, label }, i, arr) => (
+        {menuItems.map(({ key, icon: Icon, label }, i, arr) => (
           <button
             key={label}
+            onClick={() => setMenuSheet(key)}
             className={`w-full flex items-center gap-3 px-5 py-4 hover:bg-surface-hover transition-colors active:scale-[0.99] text-left ${
               i < arr.length - 1 ? "border-b border-border" : ""
             }`}
@@ -759,7 +890,11 @@ const ProfilePage = () => {
               onChange={(e) => setCancelReason(e.target.value)}
               placeholder="취소 사유를 입력해주세요"
               rows={3}
+              maxLength={500}
             />
+            <p className="text-[11px] text-muted-foreground">
+              입력한 사유는 이 연습실을 올린 사람에게 전달됩니다.
+            </p>
           </div>
           <DialogFooter>
             <button
@@ -1017,6 +1152,134 @@ const ProfilePage = () => {
               className="mt-6 self-center px-4 py-3 text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
             >
               취소
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 개인정보 보호 — 지금 코드가 실제로 하는 일만 적는다.
+          앞으로의 계획이나 관행적인 약관 문구를 넣으면 그 자체가 거짓말이 된다. */}
+      <Dialog open={menuSheet === "privacy"} onOpenChange={(o) => { if (!o) setMenuSheet(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>개인정보 보호</DialogTitle>
+            <DialogDescription>
+              INSTRUT이 실제로 저장하고 보여주는 것만 적었습니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[55dvh] overflow-y-auto pr-1 space-y-4 text-sm leading-relaxed">
+            <section>
+              <p className="mono-label mb-1.5">누구나 볼 수 있는 것</p>
+              <p className="text-muted-foreground">
+                프로필에 직접 적은 이름·지역·악기·장르·소개·합주 가능 시간과 연주영상 링크,
+                그리고 작성한 게시물은 다른 이용자에게 공개됩니다. 핸들(@)을 설정하면
+                로그인 없이 열람할 수 있는 소개 카드 주소가 만들어집니다.
+                프로필을 &lsquo;프로&rsquo;로 두고 증빙 인증을 받지 않으면 프로필은 본인과 관리자에게만 보입니다.
+              </p>
+            </section>
+            <section>
+              <p className="mono-label mb-1.5">본인과 관리자만 보는 것</p>
+              <p className="text-muted-foreground">
+                증빙 서류는 공개되지 않는 저장소에 올라가 본인과 관리자만 열 수 있습니다.
+                검증이 끝나면 30일 뒤 원본을 자동으로 파기하고 인증 종류·검증 일시·통과 여부만 남깁니다.
+                다른 이용자에게는 어떤 서류로 인증했는지는 보이지 않고 &lsquo;인증 완료&rsquo; 배지만 보입니다.
+              </p>
+            </section>
+            <section>
+              <p className="mono-label mb-1.5">당사자만 보는 것</p>
+              <p className="text-muted-foreground">
+                구인 지원 내역과 지원서에 쓴 내용은 본인과 그 공고를 올린 사람만 볼 수 있습니다.
+                메시지와 메시지에 붙인 파일은 대화 상대만 열 수 있습니다.
+                예약 취소 사유는 취소한 본인과 그 연습실을 올린 사람만 봅니다.
+              </p>
+            </section>
+            <section>
+              <p className="mono-label mb-1.5">사용 지표</p>
+              <p className="text-muted-foreground">
+                어떤 화면을 보고 언제 떠나는지, 그리고 가입 · 글 작성 · 지원 · 대화 시작
+                네 가지 동작을 PostHog로 집계합니다. 글 작성 시 함께 보내는 값은 게시물 유형뿐이며,
+                게시물 내용 · 메시지 본문 · 이메일은 보내지 않습니다.
+              </p>
+            </section>
+            <section>
+              <p className="mono-label mb-1.5">이 기기에만 남는 것</p>
+              <p className="text-muted-foreground">
+                &lsquo;최근 본&rsquo; 목록은 서버로 보내지 않고 이 브라우저에만 최대 20개까지 저장됩니다.
+                브라우저 데이터를 지우면 함께 사라집니다.
+              </p>
+            </section>
+            <section>
+              <p className="mono-label mb-1.5">평가와 등급</p>
+              <p className="text-muted-foreground">
+                합주 후기(약속 지킴 · 실력 일치 · 또 하고 싶음)는 집계되어 신뢰 등급과 지표로 표시됩니다.
+                내가 받은 후기는 이 화면의 &lsquo;받은 평가&rsquo;에서 확인할 수 있고,
+                사실과 다르면 신고해 등급 산정에서 빼도록 요청할 수 있습니다.
+              </p>
+            </section>
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => setMenuSheet(null)}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
+            >
+              닫기
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 고객센터 — 접수 백엔드가 없으므로 새 문의 폼을 만들지 않는다.
+          이미 동작하는 처리 경로로 보내고, 나머지는 메일로 넘긴다. */}
+      <Dialog open={menuSheet === "support"} onOpenChange={(o) => { if (!o) setMenuSheet(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>고객센터</DialogTitle>
+            <DialogDescription>
+              앱 안에서 바로 처리되는 것부터 확인해보세요.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[55dvh] overflow-y-auto pr-1 space-y-3 text-sm leading-relaxed">
+            <div className="rounded-lg border border-border p-3">
+              <p className="font-semibold">받은 평가가 사실과 다를 때</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                이 화면의 &lsquo;받은 평가&rsquo;에서 해당 평가를 신고하세요.
+                접수되는 즉시 그 평가는 확인 전까지 등급 산정에서 빠집니다.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <p className="font-semibold">예약을 취소해야 할 때</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                &lsquo;나의 INSTRUT &rsaquo; 예약현황&rsquo;에서 취소하면 사유가 연습실 주인에게 전달됩니다.
+                제휴 예약은 이용 24시간 전 100%, 12시간 전 50% 환불이며 이후에는 환불되지 않습니다.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <p className="font-semibold">공고를 올린 사람 · 연습실 주인에게 물어볼 때</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                게시물이나 프로필에서 &lsquo;메시지 보내기&rsquo;로 직접 연락할 수 있습니다.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <p className="font-semibold">그 밖의 문의 · 계정 및 데이터 삭제 요청</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                아래 버튼으로 메일을 보내주세요. 확인을 위해 본문에 들어가는 계정 식별자는 지우지 말아주세요.
+              </p>
+              <a
+                href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("[INSTRUT] 문의")}&body=${encodeURIComponent(
+                  `\n\n---\n계정 식별자: ${user?.id ?? "(확인 불가)"}\n`,
+                )}`}
+                className="mt-2.5 h-10 w-full rounded-lg bg-action text-action-foreground text-sm font-semibold flex items-center justify-center gap-1.5 hover:bg-action-hover transition-colors"
+              >
+                <Mail className="w-4 h-4" /> {SUPPORT_EMAIL}
+              </a>
+            </div>
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => setMenuSheet(null)}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
+            >
+              닫기
             </button>
           </DialogFooter>
         </DialogContent>

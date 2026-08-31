@@ -48,7 +48,7 @@ const GRADE_BADGE = {
   caution: { label: "주의", icon: AlertTriangle, cls: "bg-amber/20 text-amber" },
 } as const;
 
-const GradeBadge = ({ grade, size = "sm" }: { grade?: string | null; size?: "sm" | "md" }) => {
+export const GradeBadge = ({ grade, size = "sm" }: { grade?: string | null; size?: "sm" | "md" }) => {
   const meta = grade === "trust" || grade === "caution" ? GRADE_BADGE[grade] : null;
   if (!meta) return null;
   const Icon = meta.icon;
@@ -75,7 +75,7 @@ const responseGrade = (rate?: number | null) => {
   return { label: "응답 C", cls: "bg-amber/20 text-amber" };
 };
 
-const ResponseBadge = ({ rate, size = "sm" }: { rate?: number | null; size?: "sm" | "md" }) => {
+export const ResponseBadge = ({ rate, size = "sm" }: { rate?: number | null; size?: "sm" | "md" }) => {
   const meta = responseGrade(rate);
   if (!meta) return null;
   const box = size === "md" ? "text-[10px] px-2 py-0.5" : "text-[9px] px-1.5 py-0.5";
@@ -88,6 +88,72 @@ const ResponseBadge = ({ rate, size = "sm" }: { rate?: number | null; size?: "sm
     </span>
   );
 };
+
+/**
+ * D4 배지 묶음 — 주의 등급 회복 안내 + 획득한 배지만, 최대 3개.
+ * 우선순위 = 인증 완료 > 빠른 응답 > 노쇼 0 > 활동 중 (§3.2 D4)
+ *
+ * 카드 안에 두면 본인 프로필 화면(/profile)에서는 쓸 수 없다. 그 화면은
+ * 카드를 쓰지 않고 별도 마크업으로 아바타·이름만 그리기 때문에, 남이 보는 내
+ * 카드에는 붙는 배지가 정작 나에게만 안 보이는 상태였다. 규칙을 두 벌로
+ * 만들지 않도록 판정을 이쪽으로 빼서 양쪽이 같은 함수를 부르게 한다.
+ */
+export const TrustBadges = ({
+  profile,
+  stats,
+}: {
+  profile: Pick<ProfileCardData, "credential_verified" | "updated_at"> | null;
+  stats?: ProfileStats | null;
+}) => {
+  const badges: { icon: typeof Zap; label: string }[] = [];
+  // 증빙 인증 완료 (작업 8) — 종류는 공개하지 않고 "인증 완료" 여부만 노출
+  if (profile?.credential_verified) {
+    badges.push({ icon: BadgeCheck, label: "인증 완료" });
+  }
+  if (stats?.response_rate != null && stats.response_rate >= 0.8) {
+    badges.push({ icon: Zap, label: "빠른 응답" });
+  }
+  if (stats && (stats.no_show_count ?? 0) === 0 && (stats.sessions_count ?? 0) > 0) {
+    badges.push({ icon: ShieldCheck, label: "노쇼 0" });
+  }
+  // "활동 중"은 프로필 갱신 7일 이내를 근사치로 사용 (전 활동 스캔은 목록 비용 과다)
+  if (profile?.updated_at && Date.now() - new Date(profile.updated_at).getTime() < 7 * 24 * 3600 * 1000) {
+    badges.push({ icon: CircleDot, label: "활동 중" });
+  }
+  const shown = badges.slice(0, 3);
+  const caution = stats?.grade === "caution";
+  if (!caution && shown.length === 0) return null;
+
+  return (
+    <>
+      {/* 주의 등급에는 회복 조건을 함께 알린다 */}
+      {caution && (
+        <p className="mt-2.5 text-[11px] text-muted-foreground">노쇼 없이 3건 완료 시 해제됩니다</p>
+      )}
+      {shown.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          {shown.map(({ icon: Icon, label }) => (
+            <span key={label} className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary">
+              <Icon className="w-3 h-3" /> {label}
+            </span>
+          ))}
+        </div>
+      )}
+    </>
+  );
+};
+
+/**
+ * user_stats.median_response_h(지원에 답하기까지 걸린 시간의 중앙값)를 읽을 수 있는 문구로.
+ * 숫자를 그대로 쓰면 "0.28시간"·"51시간"처럼 감이 안 오는 값이 나오므로 단위를 바꿔 끊는다.
+ */
+export function formatResponseHours(h?: number | null): string | null {
+  const n = Number(h);
+  if (h == null || !Number.isFinite(n) || n < 0) return null;
+  if (n < 1) return `${Math.max(1, Math.round(n * 60))}분`;
+  if (n < 24) return `${n < 10 ? String(Number(n.toFixed(1))) : Math.round(n)}시간`;
+  return `${Math.round(n / 24)}일`;
+}
 
 interface Props {
   profile: ProfileCardData | null;
@@ -225,32 +291,28 @@ const ProfileCard = ({ profile, variant = "compact", stats, className = "", onBe
   };
 
   // 신뢰 영역: 값이 하나라도 있어야 렌더 (없으면 통째로 숨김 — D6)
-  const trustItems: { label: string; value: string }[] = [];
+  // sub는 그 숫자를 어떤 모수로 읽어야 하는지 (라벨만으로는 오해가 생기는 항목에만).
+  const trustItems: { label: string; value: string; sub?: string }[] = [];
   if (effStats) {
     if (effStats.response_rate != null) trustItems.push({ label: "응답률", value: `${Math.round(effStats.response_rate * 100)}%` });
+    // 응답률이 "답을 주긴 하는가"라면 중앙값은 "얼마나 기다려야 하는가"다. 짝으로 붙인다.
+    const median = formatResponseHours(effStats.median_response_h);
+    if (median) trustItems.push({ label: "응답까지", value: median, sub: "중앙값" });
     if (effStats.sessions_count != null && effStats.sessions_count > 0) trustItems.push({ label: "합주", value: `${effStats.sessions_count}회` });
     if (effStats.partners_count != null && effStats.partners_count > 0) trustItems.push({ label: "함께한 음악인", value: `${effStats.partners_count}명` });
     if (effStats.rehire_rate != null) trustItems.push({ label: "재합주율", value: `${Math.round(effStats.rehire_rate * 100)}%` });
+    // positive_rate는 20260901000016에서 "답한 칸만 분모"로 바뀌었다.
+    // "후기의 몇 %가 좋았나"가 아니라 "답한 항목 중 예가 몇 %인가"이므로
+    // 모수(review_count = 산정에 쓰인 후기 수)를 함께 적어 뜻을 고정한다.
+    if (effStats.positive_rate != null) {
+      trustItems.push({
+        label: "후기 긍정률",
+        value: `${Math.round(effStats.positive_rate * 100)}%`,
+        sub: `후기 ${effStats.review_count ?? 0}건 · 답한 항목만`,
+      });
+    }
   }
   const isNew = effStats?.grade ? effStats.grade === "unrated" : trustItems.length === 0;
-
-  // D4 배지: 획득한 것만, 최대 3개. 우선순위 = 빠른 응답 > 노쇼 0 > 활동 중 (§3.2 D4)
-  const badges: { icon: typeof Zap; label: string }[] = [];
-  // 증빙 인증 완료 (작업 8) — 종류는 공개하지 않고 "인증 완료" 여부만 노출
-  if (profile.credential_verified) {
-    badges.push({ icon: BadgeCheck, label: "인증 완료" });
-  }
-  if (effStats?.response_rate != null && effStats.response_rate >= 0.8) {
-    badges.push({ icon: Zap, label: "빠른 응답" });
-  }
-  if (effStats && (effStats.no_show_count ?? 0) === 0 && (effStats.sessions_count ?? 0) > 0) {
-    badges.push({ icon: ShieldCheck, label: "노쇼 0" });
-  }
-  // "활동 중"은 프로필 갱신 7일 이내를 근사치로 사용 (전 활동 스캔은 목록 비용 과다)
-  if (profile.updated_at && Date.now() - new Date(profile.updated_at).getTime() < 7 * 24 * 3600 * 1000) {
-    badges.push({ icon: CircleDot, label: "활동 중" });
-  }
-  const shownBadges = badges.slice(0, 3);
 
   if (variant === "compact") {
     return (
@@ -326,21 +388,8 @@ const ProfileCard = ({ profile, variant = "compact", stats, className = "", onBe
         </div>
       </div>
 
-      {/* 주의 등급에는 회복 조건을 함께 알린다 */}
-      {effStats?.grade === "caution" && (
-        <p className="mt-2.5 text-[11px] text-muted-foreground">노쇼 없이 3건 완료 시 해제됩니다</p>
-      )}
-
-      {/* D4 배지 (최대 3개) */}
-      {shownBadges.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mt-3">
-          {shownBadges.map(({ icon: Icon, label }) => (
-            <span key={label} className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary">
-              <Icon className="w-3 h-3" /> {label}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* 주의 등급 회복 안내 + D4 배지 (최대 3개) */}
+      <TrustBadges profile={profile} stats={effStats} />
 
       {profile.bio && <p className="text-sm text-muted-foreground mt-3">{profile.bio}</p>}
 
@@ -400,6 +449,7 @@ const ProfileCard = ({ profile, variant = "compact", stats, className = "", onBe
             <div key={t.label} className="text-center py-1.5 rounded-lg bg-secondary/50">
               <p className="text-sm font-bold text-primary">{t.value}</p>
               <p className="text-[10px] text-muted-foreground">{t.label}</p>
+              {t.sub && <p className="text-[9px] text-muted-foreground/70 leading-tight">{t.sub}</p>}
             </div>
           ))}
         </div>
