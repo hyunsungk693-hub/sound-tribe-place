@@ -2,6 +2,25 @@
 // dak.gg 카드처럼 단독 저장·공유용. satori+resvg 인프라는 og-profile과 공유한다.
 import { fetchKoreanFont, loadRenderers } from "./og-profile.mjs";
 
+/**
+ * 합주 가능 시간 — src/lib/timeSlots.ts의 어휘를 그대로 옮긴 것.
+ * 그 파일은 TS라 이 서버 함수에서 import할 수 없어 최소한만 복제한다.
+ * 어휘가 바뀌면 양쪽을 함께 고쳐야 한다(DB CHECK는 20260901000020).
+ */
+const SLOT_DAYS = [["mon", "월"], ["tue", "화"], ["wed", "수"], ["thu", "목"], ["fri", "금"], ["sat", "토"], ["sun", "일"]];
+const SLOT_PERIODS = [["am", "오전"], ["pm", "오후"], ["eve", "저녁"], ["night", "심야"]];
+
+function formatSlotGroups(slots) {
+  if (!Array.isArray(slots) || slots.length === 0) return [];
+  const set = new Set(slots);
+  const out = [];
+  for (const [dk, dl] of SLOT_DAYS) {
+    const periods = SLOT_PERIODS.filter(([pk]) => set.has(`${dk}-${pk}`)).map(([, pl]) => pl);
+    if (periods.length) out.push(`${dl} ${periods.join("·")}`);
+  }
+  return out;
+}
+
 /** src/components/ProfileCard.tsx의 GRADE_LABEL과 같은 값이어야 한다 */
 const GRADE_LABEL = { trust: "신뢰", stable: "안정", caution: "주의", unrated: "산정 전" };
 const SUPABASE_URL =
@@ -26,7 +45,7 @@ async function sb(path) {
 
 export async function fetchCardData(handle) {
   const rows = await sb(
-    `profiles?handle=eq.${encodeURIComponent(handle)}&select=user_id,display_name,instruments,genres,location,handle,purpose,available_times,avatar_url,video_url&limit=1`,
+    `profiles?handle=eq.${encodeURIComponent(handle)}&select=user_id,display_name,instruments,genres,location,handle,purpose,available_times,available_slots,avatar_url,video_url&limit=1`,
   );
   const profile = Array.isArray(rows) && rows[0] ? rows[0] : null;
   if (!profile) return null;
@@ -90,7 +109,11 @@ export async function renderProfileCard({ profile, stats }) {
   const instruments = (profile.instruments || []).slice(0, 4);
   const genres = (profile.genres || []).slice(0, 4);
   const loc = profile.location || null;
-  const times = (profile.available_times || []).slice(0, 3).join(" · ") || null;
+  // 정형 슬롯(20260901000020)을 우선 쓰고, 아직 프로필을 다시 저장하지 않은
+  // 사용자만 예전 자유 텍스트로 되돌아간다. ProfileCard와 같은 순서다.
+  const slotGroups = formatSlotGroups(profile.available_slots);
+  const times =
+    (slotGroups.length ? slotGroups : profile.available_times || []).slice(0, 3).join(" · ") || null;
   const hasVideo = !!profile.video_url;
   // 링크 표시용: 프로토콜 제거 + 40자 말줄임, 플랫폼 라벨 감지
   const rawUrl = (profile.video_url || "").replace(/^https?:\/\//, "").replace(/^www\./, "");
