@@ -5,7 +5,7 @@ import { initAnalytics } from "./lib/analytics";
 
 initAnalytics();
 
-// PWA: Prevent service worker issues in Lovable preview/iframe
+// PWA: iframe에 임베드된 상태에서는 서비스 워커가 문제를 일으키므로 등록을 해제한다
 const isInIframe = (() => {
   try {
     return window.self !== window.top;
@@ -14,11 +14,7 @@ const isInIframe = (() => {
   }
 })();
 
-const isPreviewHost =
-  window.location.hostname.includes("id-preview--") ||
-  window.location.hostname.includes("lovableproject.com");
-
-if (isPreviewHost || isInIframe) {
+if (isInIframe) {
   navigator.serviceWorker?.getRegistrations().then((registrations) => {
     registrations.forEach((r) => r.unregister());
   });
