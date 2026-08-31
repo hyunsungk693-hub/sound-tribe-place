@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { JobCardSkeleton } from "@/components/skeletons/PostSkeleton";
 import ProfileCard, { ProfileCardData } from "@/components/ProfileCard";
 import RatingDialog from "@/components/RatingDialog";
+import TimeSlotPicker from "@/components/TimeSlotPicker";
+import { formatSlots } from "@/lib/timeSlots";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -71,6 +73,8 @@ type JobItem = {
   applicantLevel: "any" | "pro";
   /** 모집 인원 — 기존 공고는 밝힌 적이 없으므로 null */
   headcount: number | null;
+  /** 합주 가능 시간(정형 슬롯). 밝히지 않은 공고는 빈 배열 */
+  rehearsalSlots: string[];
   image_url: string | null;
   lat: number | null;
   lng: number | null;
@@ -109,6 +113,7 @@ const Jobs = () => {
   const [editSchedule, setEditSchedule] = useState("");
   const [editApplicantLevel, setEditApplicantLevel] = useState<"any" | "pro">("any");
   const [editHeadcount, setEditHeadcount] = useState("");
+  const [editRehearsalSlots, setEditRehearsalSlots] = useState<string[]>([]);
   /** 지원 취소 확인 대상 */
   const [cancelApplyTarget, setCancelApplyTarget] = useState<JobItem | null>(null);
   const [cancellingApply, setCancellingApply] = useState(false);
@@ -479,6 +484,7 @@ const Jobs = () => {
       schedule: j.schedule || "",
       applicantLevel: j.applicant_level === "pro" ? ("pro" as const) : ("any" as const),
       headcount: typeof j.headcount === "number" ? j.headcount : null,
+      rehearsalSlots: Array.isArray(j.rehearsal_slots) ? j.rehearsal_slots : [],
       image_url: j.image_url || null,
       lat: j.lat ?? null,
       lng: j.lng ?? null,
@@ -500,6 +506,7 @@ const Jobs = () => {
     setEditSchedule(selectedJob.schedule);
     setEditApplicantLevel(selectedJob.applicantLevel);
     setEditHeadcount(selectedJob.headcount != null ? String(selectedJob.headcount) : "");
+    setEditRehearsalSlots(selectedJob.rehearsalSlots);
     setEditing(true);
   };
 
@@ -523,6 +530,7 @@ const Jobs = () => {
       schedule: editSchedule || null,
       applicant_level: editApplicantLevel,
       headcount: editHeadcount.trim() ? parseInt(editHeadcount, 10) : null,
+      rehearsal_slots: editRehearsalSlots.length ? editRehearsalSlots : null,
     } as any).eq("id", selectedJob.id).eq("user_id", user.id);
     setSavingEdit(false);
     // 실패 사유(예: DB CHECK 위반)를 감추면 무엇을 고쳐야 할지 알 수 없어 그대로 보여준다
@@ -805,6 +813,10 @@ const Jobs = () => {
                     <input value={editSchedule} onChange={(e) => setEditSchedule(e.target.value)} placeholder="예: 주말 오후, 협의 가능" className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
                   <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">합주 가능 시간</label>
+                    <TimeSlotPicker value={editRehearsalSlots} onChange={setEditRehearsalSlots} />
+                  </div>
+                  <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">모집 인원</label>
                     <input type="number" inputMode="numeric" min={1} max={99} value={editHeadcount} onChange={(e) => setEditHeadcount(e.target.value)} placeholder="예: 2" className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
@@ -860,6 +872,11 @@ const Jobs = () => {
                     )}
                     {selectedJob.position && (
                       <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary">🎯 {selectedJob.position}</span>
+                    )}
+                    {selectedJob.rehearsalSlots.length > 0 && (
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-secondary text-secondary-foreground">
+                        🎵 {formatSlots(selectedJob.rehearsalSlots)}
+                      </span>
                     )}
                     {selectedJob.headcount != null && (
                       <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-secondary text-secondary-foreground">👥 {selectedJob.headcount}명 모집</span>

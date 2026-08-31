@@ -30,6 +30,7 @@ const jobFields: Field[] = [
   },
   { key: "position", label: "모집 포지션", placeholder: "", type: "select" as const, options: ["보컬", "기타", "베이스", "드럼", "건반", "관악", "현악", "그 외"], required: true },
   { key: "schedule", label: "합주 요일/시간", placeholder: "예: 주말 오후, 협의 가능" },
+  { key: "rehearsal_slots", label: "합주 가능 시간", placeholder: "", type: "slots" as const },
   { key: "headcount", label: "모집 인원", placeholder: "예: 2", type: "number" as const, min: 1, max: 99, required: true },
   {
     key: "applicant_level",

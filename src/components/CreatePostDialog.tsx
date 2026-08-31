@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import PlaceSearchInput from "@/components/PlaceSearchInput";
+import TimeSlotPicker from "@/components/TimeSlotPicker";
 
 /** 급구 허용 기간 — DB 트리거(enforce_urgent_deadline)와 같은 값을 쓴다 */
 const URGENT_MAX_DAYS = 3;
@@ -41,7 +42,7 @@ export interface Field {
   key: string;
   label: string;
   placeholder: string;
-  type?: "text" | "textarea" | "select" | "location" | "place" | "checkbox" | "datetime" | "number";
+  type?: "text" | "textarea" | "select" | "location" | "place" | "checkbox" | "datetime" | "number" | "slots";
   /** number 전용 범위 — DB CHECK와 같은 값을 쓴다 */
   min?: number;
   max?: number;
@@ -161,6 +162,12 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
       // 하위 유형은 해당 카테고리가 선택된 경우에만 저장 (DB CHECK와 일치)
       if (values.category === JOB_CATEGORY_RELIGION && values.subcategory) postData.subcategory = values.subcategory;
       if (values.position) postData.position = values.position;
+      // 합주 가능 시간 — 폼 상태가 문자열 맵이라 토큰을 쉼표로 이어 담아뒀다.
+      // 고르지 않았으면 NULL로 두어 "밝히지 않음"과 "빈 선택"을 섞지 않는다.
+      if (values.rehearsal_slots) {
+        const tokens = values.rehearsal_slots.split(",").filter(Boolean);
+        if (tokens.length) postData.rehearsal_slots = tokens;
+      }
       if (values.headcount) {
         const n = parseInt(values.headcount, 10);
         if (Number.isFinite(n)) postData.headcount = n;
@@ -224,7 +231,12 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
                   {field.required && <span className="text-destructive ml-0.5">*</span>}
                 </label>
               )}
-              {field.type === "number" ? (
+              {field.type === "slots" ? (
+                <TimeSlotPicker
+                  value={values[field.key] ? values[field.key].split(",").filter(Boolean) : []}
+                  onChange={(next) => setValues((prev) => ({ ...prev, [field.key]: next.join(",") }))}
+                />
+              ) : field.type === "number" ? (
                 <input
                   type="number"
                   inputMode="numeric"

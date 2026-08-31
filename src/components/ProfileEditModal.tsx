@@ -1,6 +1,8 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { X, Camera, Search, Plus, Link as LinkIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import TimeSlotPicker from "@/components/TimeSlotPicker";
+import { formatSlots } from "@/lib/timeSlots";
 import { toast } from "sonner";
 
 interface ProfileData {
@@ -13,6 +15,7 @@ interface ProfileData {
   video_url?: string | null;
   purpose?: string | null;
   available_times?: string[] | null;
+  available_slots?: string[] | null;
   handle?: string | null;
 }
 
@@ -64,7 +67,7 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
   const [credKind, setCredKind] = useState<"diploma" | "admission" | "award">("diploma");
   const [uploadingCred, setUploadingCred] = useState(false);
   const credInputRef = useRef<HTMLInputElement>(null);
-  const [availableTimes, setAvailableTimes] = useState((profile.available_times || []).join(", "));
+  const [availableSlots, setAvailableSlots] = useState<string[]>(profile.available_slots || []);
   const [handle, setHandle] = useState(profile.handle || "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -216,7 +219,11 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
       avatar_url: avatarUrl || null,
       video_url: trimmedVideo || null,
       purpose: purpose || null,
-      available_times: availableTimes.split(",").map((t) => t.trim()).filter(Boolean),
+      available_slots: availableSlots,
+      // 자유 텍스트 available_times는 아직 ProfileCard가 읽는다. 정형 슬롯에서
+      // 만든 라벨을 함께 적어 두 값이 어긋나지 않게 한다. ProfileCard가
+      // available_slots를 직접 읽게 되면 이 줄은 지운다.
+      available_times: availableSlots.length ? [formatSlots(availableSlots)] : [],
       handle: trimmedHandle || null,
     };
 
@@ -438,15 +445,11 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
             </div>
           )}
 
-          {/* 합주 가능 시간 */}
+          {/* 합주 가능 시간 — 정형 슬롯. 자유 입력이던 시절엔 표현이 제각각이라
+              "첫 합주 잡기"의 공통 시간 교집합이 성립하지 않았다. */}
           <div>
             <label className="text-xs font-semibold mb-1.5 block">합주 가능 요일/시간</label>
-            <input
-              value={availableTimes}
-              onChange={(e) => setAvailableTimes(e.target.value)}
-              className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-              placeholder="쉼표로 구분 — 예: 주말 오후, 평일 저녁"
-            />
+            <TimeSlotPicker value={availableSlots} onChange={setAvailableSlots} />
           </div>
 
           {/* 핸들 */}
