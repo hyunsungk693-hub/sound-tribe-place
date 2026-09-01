@@ -24,11 +24,15 @@ const categories = [
     tint: "text-ch-community", hoverBorder: "hover:border-ch-community", hoverText: "group-hover:text-ch-community" },
 ];
 
-type Banner = { title: string; desc: string; image: string; path: string };
+// 이미지만 있는 배너를 허용한다(20260901000028). 문구가 이미 그려진 제휴 이미지에
+// 제목·설명을 덧씌우면 같은 말이 두 번 나오고, 이동시킬 곳이 없는 공지 배너도 있다.
+// 그래서 title·desc·path는 전부 null일 수 있다. image만 항상 있다.
+type Banner = { title: string | null; desc: string | null; image: string; path: string | null };
 
 // 배너는 관리자가 carousel_slides 테이블에서 관리한다(20260901000027).
 // 다만 관리자가 실수로 전부 지웠거나 조회가 실패했을 때 홈 최상단이 빈 채로 남으면
 // 안 되므로, 원래 하드코딩돼 있던 3장을 그대로 폴백으로 들고 있는다.
+// (이 3장은 셋 다 채워져 있어 아래의 "값 없음" 분기를 타지 않는다)
 const fallbackBanners: Banner[] = [
   { title: "Find", desc: "믿을 수 있는 밴드·세션 멤버 찾기", image: banner1, path: "/jobs" },
   { title: "Rooms", desc: "합주할 공간이 필요하다면, 연습실 찾기", image: banner3, path: "/rooms" },
@@ -124,11 +128,14 @@ const Index = () => {
     setRecentJobs(jobRes.data || []);
     // 조회가 실패하면 data가 없다 → 빈 배열 → 아래에서 폴백 배너로 그린다.
     setSlides(
+      // title·description·link는 NULL일 수 있다. 여기서 ""로 바꾸지 않는다 —
+      // 빈 문자열도 truthy 판정만 피할 뿐, 아래 분기를 null 하나로 통일해 두는 편이
+      // 읽기 쉽다.
       ((slideRes.data as any[]) || []).map((s) => ({
-        title: s.title,
-        desc: s.description,
+        title: s.title ?? null,
+        desc: s.description ?? null,
         image: s.image_url,
-        path: s.link,
+        path: s.link ?? null,
       }))
     );
     setStudios(studioRes.data || []);
@@ -226,11 +233,14 @@ const Index = () => {
     setDragDx(0);
   };
 
-  const onBannerClick = (path: string) => {
+  const onBannerClick = (path: string | null) => {
     if (suppressClickRef.current) {
       suppressClickRef.current = false;
       return;
     }
+    // 이동 경로가 없는 배너는 눌러도 아무 일도 일어나지 않는다.
+    // navigate(undefined)를 부르면 라우터가 현재 경로로 되돌아가며 화면이 깜빡인다.
+    if (!path) return;
     navigate(path);
   };
 
@@ -280,23 +290,53 @@ const Index = () => {
             className={`flex h-full ease-out ${dragDx === 0 ? "transition-transform duration-500" : ""}`}
             style={{ transform: `translateX(calc(-${currentBanner * 100}% + ${dragDx}px))` }}
           >
-            {banners.map((banner, i) => (
-              <div key={i} onClick={() => onBannerClick(banner.path)} className="w-full h-full shrink-0 relative overflow-hidden cursor-pointer active:scale-[0.99] transition-transform">
-                <img src={banner.image} alt={banner.desc} className="w-full h-full object-cover absolute inset-0" loading="lazy" />
-                <div className="relative z-10 h-full p-6 lg:p-8 flex flex-col justify-end bg-gradient-to-t from-black/65 to-transparent">
-                  <p className="text-[11px] lg:text-xs text-white/85 font-mono uppercase tracking-widest mb-1.5">{banner.title}</p>
-                  <p className="font-extrabold text-xl lg:text-[28px] text-white leading-tight tracking-tight">{banner.desc}</p>
+            {banners.map((banner, i) => {
+              // 경로가 없으면 클릭 대상이 아니다. 핸들러를 떼는 것으로 끝내지 않고
+              // 커서와 role에서도 드러내, 눌러도 되는 배너처럼 보이지 않게 한다.
+              // (tabIndex는 주지 않는다 — 화면 밖 슬라이드에 포커스가 들어가면
+              //  overflow-hidden 컨테이너가 스크롤되어 transform 위치와 어긋난다)
+              const clickable = !!banner.path;
+              // 문구가 하나라도 있을 때만 어둡게 깔리는 그라디언트를 얹는다.
+              // 문구가 없는데 깔면 이미지만 이유 없이 어두워진다.
+              const hasText = !!(banner.title || banner.desc);
+              return (
+                <div
+                  key={i}
+                  onClick={clickable ? () => onBannerClick(banner.path) : undefined}
+                  role={clickable ? "link" : undefined}
+                  aria-label={clickable ? banner.desc || banner.title || "배너" : undefined}
+                  className={`w-full h-full shrink-0 relative overflow-hidden transition-transform ${
+                    clickable ? "cursor-pointer active:scale-[0.99]" : "cursor-default"
+                  }`}
+                >
+                  {/* 설명이 없는 배너는 장식 이미지로 취급한다. alt를 빼면(undefined)
+                      스크린리더가 파일명을 읽으므로 빈 문자열을 명시한다. */}
+                  <img src={banner.image} alt={banner.desc ?? ""} className="w-full h-full object-cover absolute inset-0" loading="lazy" />
+                  {hasText && (
+                    <div className="relative z-10 h-full p-6 lg:p-8 flex flex-col justify-end bg-gradient-to-t from-black/65 to-transparent">
+                      {banner.title && (
+                        <p className={`text-[11px] lg:text-xs text-white/85 font-mono uppercase tracking-widest ${banner.desc ? "mb-1.5" : ""}`}>
+                          {banner.title}
+                        </p>
+                      )}
+                      {banner.desc && (
+                        <p className="font-extrabold text-xl lg:text-[28px] text-white leading-tight tracking-tight">{banner.desc}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+          {/* 인디케이터에 그림자를 준다. 문구 없는 배너는 아래쪽 그라디언트를 깔지
+              않으므로, 밝은 이미지 위에서 흰 점이 그냥 사라져버린다. */}
           <div className="absolute bottom-4 right-5 flex gap-1.5">
             {banners.map((_, i) => (
               <button
                 key={i}
                 onClick={() => { stopAuto(); setCurrentBanner(i); }}
                 aria-label={`${i + 1}번 배너로 이동`}
-                className={`h-1.5 rounded-full transition-all duration-300 ${i === currentBanner ? "bg-white w-5" : "bg-white/50 w-1.5"}`}
+                className={`h-1.5 rounded-full transition-all duration-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)] ${i === currentBanner ? "bg-white w-5" : "bg-white/50 w-1.5"}`}
               />
             ))}
           </div>

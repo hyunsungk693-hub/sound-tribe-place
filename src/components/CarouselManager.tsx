@@ -8,30 +8,38 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, Eye, EyeOff, ImagePlus, Pencil, Plus, Trash2, X } from "lucide-react";
 
-// 홈 배너 캐러셀 관리 화면 (20260901000027).
+// 홈 배너 캐러셀 관리 화면 (20260901000027 · 20260901000028).
 // 배너가 코드에 박혀 있어 문구 한 줄 바꾸는 데도 재배포가 필요했다. 여기서 직접 올린다.
 //
-// 두 가지를 특히 조심한다:
+// 세 가지를 특히 조심한다:
 //   1. 이동 경로는 앱 내부 경로만 받는다. DB의 CHECK 제약과 같은 규칙을 화면에서도
 //      먼저 걸어, 저장 실패로 알기 전에 입력 단계에서 걸러준다.
 //   2. 슬라이드를 지울 때 스토리지 원본도 같이 지운다. 안 그러면 버킷에 고아 파일이
 //      계속 쌓인다.
+//   3. 제목·설명·경로는 선택 입력이다(20260901000028). 비어 있으면 빈 문자열이 아니라
+//      NULL로 보낸다 — ''까지 통과시키면 "값 없음"이 두 갈래가 되고, DB CHECK도 ''는
+//      거부한다. 제목이 없는 슬라이드는 목록에서 slide_no(#3)로 구분한다.
 
 const BUCKET = "carousel-images";
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 type Slide = {
   id: string;
-  title: string;
-  description: string;
+  // slide_no는 행마다 한 번 매겨지고 변하지 않는 관리용 번호다.
+  // 목록에서 몇 번째인지(sort_order)는 순서를 바꾸면 달라지지만 이 번호는 그대로다.
+  slide_no: number;
+  title: string | null;
+  description: string | null;
   image_url: string;
   image_path: string | null;
-  link: string;
+  link: string | null;
   sort_order: number;
   is_active: boolean;
 };
 
-const emptyForm = { title: "", description: "", link: "/" };
+// 경로도 선택 입력이므로 기본값은 "/"가 아니라 빈 값이다.
+// "/"를 미리 채워두면 이동시킬 생각이 없던 배너가 홈으로 튀게 된다.
+const emptyForm = { title: "", description: "", link: "" };
 
 // DB의 carousel_slides_link_internal과 같은 규칙.
 // "//evil.com", "/\evil.com"은 브라우저가 외부 절대 URL로 읽으므로 함께 막는다.
@@ -53,9 +61,10 @@ const CarouselManager = () => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    // types.ts는 아직 slide_no를 모른다(마이그레이션 적용 후 재생성 예정).
+    const { data, error } = await (supabase as any)
       .from("carousel_slides")
-      .select("id,title,description,image_url,image_path,link,sort_order,is_active")
+      .select("id,slide_no,title,description,image_url,image_path,link,sort_order,is_active")
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
     setLoading(false);
@@ -93,7 +102,7 @@ const CarouselManager = () => {
   };
 
   const openEdit = (s: Slide) => {
-    setForm({ title: s.title, description: s.description, link: s.link });
+    setForm({ title: s.title ?? "", description: s.description ?? "", link: s.link ?? "" });
     setEditingId(s.id);
     clearFile();
     setFormOpen(true);
@@ -129,11 +138,11 @@ const CarouselManager = () => {
     const title = form.title.trim();
     const description = form.description.trim();
     const link = form.link.trim();
-    if (!title) return toast.error("제목을 입력해주세요");
-    if (!description) return toast.error("설명을 입력해주세요");
-    if (!isInternalPath(link)) {
+    // 제목·설명·경로는 비워도 된다. 다만 경로에 무언가 적었다면 내부 경로여야 한다.
+    if (link && !isInternalPath(link)) {
       return toast.error('이동 경로는 "/jobs"처럼 앱 안의 경로만 넣을 수 있습니다');
     }
+    // 이미지는 여전히 필수다. 수정할 때는 기존 이미지가 이미 있으므로 새로 고를 때만 본다.
     if (!editingId && !file) return toast.error("배너 이미지를 선택해주세요");
 
     setSubmitting(true);
@@ -142,7 +151,13 @@ const CarouselManager = () => {
 
       if (editingId) {
         const target = slides.find((s) => s.id === editingId);
-        const patch: Record<string, unknown> = { title, description, link };
+        // 비운 칸은 NULL로 되돌린다. ""로 저장하면 DB CHECK에 걸리고,
+        // 통과하더라도 홈에서 빈 텍스트 줄이 자리를 차지한다.
+        const patch: Record<string, unknown> = {
+          title: title || null,
+          description: description || null,
+          link: link || null,
+        };
         if (uploaded) {
           patch.image_url = uploaded.url;
           patch.image_path = uploaded.path;
@@ -158,15 +173,16 @@ const CarouselManager = () => {
       } else {
         // 새 슬라이드는 항상 맨 뒤에 붙인다.
         const nextOrder = slides.length ? Math.max(...slides.map((s) => s.sort_order)) + 1 : 0;
+        // slide_no는 넘기지 않는다 — DB가 IDENTITY로 알아서 매긴다.
         const { error } = await supabase.from("carousel_slides").insert({
-          title,
-          description,
-          link,
+          title: title || null,
+          description: description || null,
+          link: link || null,
           image_url: uploaded!.url,
           image_path: uploaded!.path,
           sort_order: nextOrder,
           created_by: user?.id ?? null,
-        });
+        } as any);
         if (error) {
           // 행 저장이 실패했는데 파일만 남으면 그게 곧 고아 파일이다.
           await removeImage(uploaded!.path);
@@ -215,7 +231,10 @@ const CarouselManager = () => {
   };
 
   const remove = async (s: Slide) => {
-    if (!confirm(`"${s.description}" 슬라이드를 삭제할까요?\n이미지 원본도 함께 지워집니다.`)) return;
+    // 문구가 없는 슬라이드도 있으므로, 목록과 같은 방식으로 번호를 앞세워 가리킨다.
+    const label = s.title || s.description;
+    const named = `#${s.slide_no}${label ? ` "${label}"` : ""}`;
+    if (!confirm(`${named} 슬라이드를 삭제할까요?\n이미지 원본도 함께 지워집니다.`)) return;
     setBusyId(s.id);
     // 행을 먼저 지운다. 파일을 먼저 지우면 삭제가 중간에 끊겼을 때
     // 홈에 이미지 깨진 배너가 남는다.
@@ -240,6 +259,8 @@ const CarouselManager = () => {
         <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
           홈 최상단 캐러셀에 순서대로 나옵니다. 비활성으로 두면 목록에는 남고 홈에서만 빠집니다.
           노출 중인 슬라이드가 하나도 없으면 홈은 기본 배너 3장으로 되돌아갑니다.
+          이미지만 있으면 등록되고 제목·설명·이동 경로는 비워도 됩니다. 목록의 #번호는
+          관리용이라 홈에는 나오지 않습니다.
         </p>
       </Card>
 
@@ -295,26 +316,31 @@ const CarouselManager = () => {
               )}
             </div>
             <div>
-              <Label>제목 *</Label>
+              <Label>제목 (선택)</Label>
               <Input
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 maxLength={40}
                 placeholder="Find"
               />
-              <p className="text-[11px] text-muted-foreground mt-1">배너 위에 작게 붙는 라벨입니다.</p>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                배너 위에 작게 붙는 라벨입니다. 비우면 이미지만 나옵니다.
+              </p>
             </div>
             <div>
-              <Label>설명 *</Label>
+              <Label>설명 (선택)</Label>
               <Input
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 maxLength={120}
                 placeholder="믿을 수 있는 밴드·세션 멤버 찾기"
               />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                이미지에 문구가 이미 그려져 있다면 비워두세요.
+              </p>
             </div>
             <div>
-              <Label>이동 경로 *</Label>
+              <Label>이동 경로 (선택)</Label>
               <Input
                 value={form.link}
                 onChange={(e) => setForm({ ...form, link: e.target.value })}
@@ -323,6 +349,7 @@ const CarouselManager = () => {
               />
               <p className="text-[11px] text-muted-foreground mt-1">
                 앱 안의 경로만 넣을 수 있습니다 (예: /jobs, /rooms, /community). 외부 주소는 저장되지 않습니다.
+                비우면 배너를 눌러도 이동하지 않습니다.
               </p>
             </div>
             <Button
@@ -354,18 +381,29 @@ const CarouselManager = () => {
               />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground shrink-0">
-                    {s.title}
+                  {/* 제목이 없는 슬라이드끼리도 구분되도록 번호를 항상 앞에 붙인다.
+                      순서(i + 1)는 위/아래 버튼에 따라 바뀌지만 이 번호는 고정이다. */}
+                  <span className="font-mono text-[10px] font-bold tracking-[0.08em] text-foreground shrink-0">
+                    #{s.slide_no}
                   </span>
+                  {s.title && (
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground truncate">
+                      {s.title}
+                    </span>
+                  )}
                   {!s.is_active && (
                     <span className="px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground text-[10px] font-semibold shrink-0">
                       비활성
                     </span>
                   )}
                 </div>
-                <p className="font-semibold text-sm truncate mt-0.5">{s.description}</p>
+                <p className="font-semibold text-sm truncate mt-0.5">
+                  {s.description || (
+                    <span className="font-normal text-muted-foreground">문구 없는 이미지 배너</span>
+                  )}
+                </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                  {i + 1}번째 · {s.link}
+                  {i + 1}번째 · {s.link || "이동 없음"}
                 </p>
               </div>
               <div className="flex flex-col gap-1 shrink-0">
