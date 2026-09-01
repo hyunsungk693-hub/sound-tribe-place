@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, CalendarHeart, MapPin, Zap, Clock } from "lucide-react";
 import PageShell from "@/components/PageShell";
@@ -7,12 +7,20 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import BookingFlow from "@/components/BookingFlow";
 import { Studio, Room, Slot, fmtWon, slotDuration, suggestSlots } from "@/lib/bookings";
-import { intersectSlots, slotLabel } from "@/lib/timeSlots";
+import { intersectSlots, slotLabel, slotTokenForDate } from "@/lib/timeSlots";
 
 const db = supabase as any;
 
+// 후보를 모아 오는 개수. 공통 가능 시간 칩으로 다시 거르기 때문에 화면에 뿌릴 개수보다
+// 넉넉해야 한다 — 시간대 구간이 4개(오전·오후·저녁·심야)이고 한 번에 최대 VISIBLE_LIMIT개를
+// 보여주므로 4 × 6 = 24를 기준으로 잡았다. 더 늘려도 요청은 SUGGEST_MAX_STUDIOS로 묶여 있지만
+// 스크롤도 안 하는 후보를 위해 스튜디오를 더 뒤질 이유가 없다.
+const CANDIDATE_POOL = 24;
+// 한 화면에 보여줄 후보 수. "추천"이라 다 나열하지 않고 앞에서부터 끊는다.
+const VISIBLE_LIMIT = 6;
+
 // C1 접합부: 지원 수락(accepted) 매칭에서 첫 합주를 잡는다.
-// 양측 가능 시간 교집합 힌트 + 인근 A등급 열린 슬롯 후보 3개 → 예약(origin_application_id 기록).
+// 양측 가능 시간 교집합 힌트(누르면 그 시간대만 필터) + 인근 A등급 열린 슬롯 후보 → 예약(origin_application_id 기록).
 const FirstRehearsal = () => {
   const { applicationId } = useParams<{ applicationId: string }>();
   const navigate = useNavigate();
@@ -25,6 +33,8 @@ const FirstRehearsal = () => {
   const [areaHint, setAreaHint] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<{ studio: Studio; room: Room; slot: Slot }[]>([]);
   const [booking, setBooking] = useState<{ studio: Studio; room: Room; slot: Slot } | null>(null);
+  // 공통 가능 시간 칩으로 고른 시간대. null이면 전체 보기.
+  const [pickedTime, setPickedTime] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -57,10 +67,16 @@ const FirstRehearsal = () => {
       setCommonTimes(intersectSlots(ownerSide, slotsBy[applicantId]));
       const area = job.area || job.venue || null;
       setAreaHint(area);
-      setCandidates(await suggestSlots(area, 3));
+      setCandidates(await suggestSlots(area, CANDIDATE_POOL));
       setLoading(false);
     })();
   }, [applicationId, user]);
+
+  // 고른 시간대에 맞는 후보만. 09시 이전 슬롯은 slotTokenForDate가 null이라 어떤 칩에도 걸리지 않는다.
+  const visible = useMemo(() => {
+    const pool = pickedTime ? candidates.filter((c) => slotTokenForDate(c.slot.start_at) === pickedTime) : candidates;
+    return pool.slice(0, VISIBLE_LIMIT);
+  }, [candidates, pickedTime]);
 
   const fmtSlot = (s: Slot) => {
     const d = new Date(s.start_at);
@@ -92,9 +108,29 @@ const FirstRehearsal = () => {
             <div className="glass-card p-4 mb-4">
               <div className="flex items-center gap-1.5 text-xs font-semibold mb-2"><Clock className="w-3.5 h-3.5 text-primary" /> 두 분의 공통 가능 시간</div>
               {commonTimes.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {commonTimes.map((t) => <span key={t} className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">{slotLabel(t)}</span>)}
-                </div>
+                <>
+                  <div className="flex flex-wrap gap-1.5">
+                    {commonTimes.map((t) => {
+                      const on = t === pickedTime;
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          aria-pressed={on}
+                          onClick={() => setPickedTime(on ? null : t)}
+                          className={`text-[11px] font-medium px-2.5 py-1 rounded-full transition-colors active:scale-95 ${
+                            on ? "bg-action text-action-foreground" : "bg-primary/10 text-primary hover:bg-primary/20"
+                          }`}
+                        >
+                          {slotLabel(t)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    {pickedTime ? "다시 누르면 전체 시간대로 돌아갑니다." : "시간대를 누르면 그 시간에 예약 가능한 연습실만 보여줍니다."}
+                  </p>
+                </>
               ) : (
                 <p className="text-xs text-muted-foreground">겹치는 가능 시간 정보가 없습니다. 아래 시간대에서 협의해 선택하세요.</p>
               )}
@@ -102,15 +138,31 @@ const FirstRehearsal = () => {
             </div>
 
             {/* 후보 슬롯 */}
-            <div className="flex items-center gap-1.5 text-sm font-semibold mb-2"><Zap className="w-4 h-4 text-primary" /> 추천 연습실 슬롯</div>
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-1.5 text-sm font-semibold">
+                <Zap className="w-4 h-4 text-primary" />
+                {pickedTime ? `${slotLabel(pickedTime)} 예약 가능한 슬롯` : "추천 연습실 슬롯"}
+              </div>
+              {pickedTime && (
+                <button onClick={() => setPickedTime(null)} className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+                  전체 보기
+                </button>
+              )}
+            </div>
             {candidates.length === 0 ? (
               <div className="glass-card p-6 text-center text-sm text-muted-foreground">
                 지금 예약 가능한 제휴 연습실 슬롯이 없습니다.<br />
                 <button onClick={() => navigate("/studios")} className="mt-2 text-primary font-medium">제휴 연습실 전체 보기</button>
               </div>
+            ) : visible.length === 0 ? (
+              // 특정 시간대를 골랐을 때 후보가 하나도 안 남는 건 흔한 일이라 되돌아갈 길을 같이 준다
+              <div className="glass-card p-6 text-center text-sm text-muted-foreground">
+                이 시간대에는 예약 가능한 연습실이 없습니다.<br />
+                <button onClick={() => setPickedTime(null)} className="mt-2 text-primary font-medium">전체 시간대 보기</button>
+              </div>
             ) : (
               <div className="space-y-2">
-                {candidates.map(({ studio, room, slot }) => (
+                {visible.map(({ studio, room, slot }) => (
                   <button
                     key={slot.id}
                     onClick={() => setBooking({ studio, room, slot })}

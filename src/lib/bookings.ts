@@ -82,7 +82,16 @@ export async function listOpenSlots(roomId: string) {
   return (data || []) as Slot[];
 }
 
+// 후보를 모으며 훑는 스튜디오 수 상한.
+// 아래 루프는 스튜디오마다 listRooms 1회, 합주실마다 listOpenSlots 1회를 도는 N+1 구조라
+// limit만 올리면 요청 수가 같이 불어난다. 요청 수는 limit이 아니라 이 상한으로 묶는다.
+// 어차피 지역 우선 정렬이 인근 스튜디오를 앞으로 몰아주므로, 뒤쪽까지 더 뒤져봐야
+// "인근 추천"으로서의 값은 떨어진다.
+const SUGGEST_MAX_STUDIOS = 6;
+
 // A등급 스튜디오의 열린 슬롯 후보 (C1 첫 합주 잡기). areaHint로 지역 우선 정렬.
+// limit을 넉넉히 받는 이유: 호출부가 이 후보를 다시 시간대("토 오후")로 거르기 때문이다.
+// 3개만 모아 오면 그 3개가 전부 다른 시간대일 때 어떤 시간대를 골라도 빈 목록이 된다.
 export async function suggestSlots(areaHint?: string | null, limit = 3) {
   const { data: studios } = await db.from("studios").select("*").eq("tier", "A");
   const list = (studios || []) as Studio[];
@@ -96,7 +105,7 @@ export async function suggestSlots(areaHint?: string | null, limit = 3) {
     : list;
 
   const out: { studio: Studio; room: Room; slot: Slot }[] = [];
-  for (const studio of sorted) {
+  for (const studio of sorted.slice(0, SUGGEST_MAX_STUDIOS)) {
     const rooms = await listRooms(studio.id);
     for (const room of rooms) {
       const slots = await listOpenSlots(room.id);
