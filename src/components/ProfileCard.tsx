@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { groupSlots } from "@/lib/timeSlots";
 import { safeVideoUrl } from "@/lib/safeUrl";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Music, Award, PlayCircle, Sparkles, Clock, Instagram, Zap, ShieldCheck, CircleDot, AlertTriangle, BadgeCheck } from "lucide-react";
+import { MapPin, Music, Award, PlayCircle, Clock, Instagram, Zap, ShieldCheck, CircleDot, AlertTriangle, BadgeCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -46,7 +46,7 @@ export interface ProfileStats {
 
 /**
  * 등급 배지 — 신뢰·주의만 배지를 달고 안정은 아무것도 표시하지 않는다.
- * 산정 전(평가 5건 미만)은 "새로 시작하는 음악인"으로 표기한다.
+ * 산정 전(평가 5건 미만)은 아무 배지도 달지 않는다.
  */
 /** 지표 타일용 등급 이름. 배지(GRADE_BADGE)는 신뢰·주의만 달지만
  *  타일은 "지금 내가 어디쯤인지"를 알려야 하므로 네 등급을 다 쓴다. */
@@ -338,7 +338,6 @@ const ProfileCard = ({ profile, variant = "compact", stats, className = "", onBe
       });
     }
   }
-  const isNew = effStats?.grade ? effStats.grade === "unrated" : trustItems.length === 0;
 
   if (variant === "compact") {
     return (
@@ -397,11 +396,6 @@ const ProfileCard = ({ profile, variant = "compact", stats, className = "", onBe
             )}
             <ResponseBadge rate={effStats?.response_rate} size="md" />
             <GradeBadge grade={effStats?.grade} size="md" />
-            {isNew && (
-              <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
-                <Sparkles className="w-3 h-3" /> 새로 시작하는 음악인
-              </span>
-            )}
           </div>
           {profile.handle && (
             <p className="text-[11px] text-primary font-medium mt-0.5">@{profile.handle}</p>

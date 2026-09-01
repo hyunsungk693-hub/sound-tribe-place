@@ -138,12 +138,11 @@ export async function renderProfileCard({ profile, stats }) {
   const badges = [];
   if (showRate && Number(stats.response_rate) >= 0.8) badges.push("빠른 응답");
   if (stats && stats.no_show_count === 0 && (stats.sessions_count || 0) > 0) badges.push("노쇼 0");
-  const isNew = !showRate;
 
   const allText =
     `${name}${handle}${purpose || ""}${instruments.join("")}${genres.join("")}` +
     `${loc || ""}${times || ""}${badges.join("")}악기장르지역가능 시간응답률신뢰등급신뢰안정주의산정 전` +
-    `새로 시작하는 음악인연주영상♪ instrut${siteUrl}${initial}${videoDisplay}${videoPlatform}링크…+` +
+    `연주영상♪ instrut${siteUrl}${initial}${videoDisplay}${videoPlatform}링크…+` +
     (showRate ? `${Math.round(stats.response_rate * 100)}%` : "");
 
   const [bold, regular] = await Promise.all([
@@ -270,13 +269,7 @@ export async function renderProfileCard({ profile, stats }) {
                         ].filter(Boolean),
                       },
                     }
-                  : {
-                      type: "div",
-                      props: {
-                        style: { display: "flex", justifyContent: "center", marginTop: 8 },
-                        children: chip("새로 시작하는 음악인", "#f2f8fd", BRAND_DEEP, 24),
-                      },
-                    },
+                  : null,
               ].filter(Boolean),
             },
           },
