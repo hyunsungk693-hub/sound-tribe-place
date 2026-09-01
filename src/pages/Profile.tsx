@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronRight, Edit3, Shield, HelpCircle, LogOut, Trash2, Calendar, MapPin, Users, Clock, History, IdCard, Star, CalendarHeart, Flag, CalendarX2 } from "lucide-react";
+import { ChevronRight, Edit3, Shield, ScrollText, Handshake, HelpCircle, LogOut, Trash2, Calendar, MapPin, Users, Clock, History, IdCard, Star, CalendarHeart, Flag, CalendarX2 } from "lucide-react";
 import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,8 +33,12 @@ interface Profile {
 
 // 설정 메뉴. key로 어떤 안내 시트를 열지 정한다 — App.tsx에 라우트를 더할 수 없으므로
 // 별도 페이지 대신 이 파일 안의 다이얼로그로 띄운다.
+// 순서는 "내 것 → 규칙 → 사장님 → 사람에게 묻기". 앞의 셋을 읽고도 남는 것이 고객센터라
+// 고객센터를 맨 아래에 둔다.
 const menuItems = [
   { key: "privacy", icon: Shield, label: "개인정보 보호" },
+  { key: "terms", icon: ScrollText, label: "약관 및 정책" },
+  { key: "partner", icon: Handshake, label: "제휴 문의" },
   { key: "support", icon: HelpCircle, label: "고객센터" },
 ] as const;
 
@@ -316,11 +320,13 @@ const ProfilePage = () => {
       .then(({ data }: any) => setMyStats(data || null));
   }, [user]);
 
-  // 고객센터를 열 때만 문의받을 관리자 id를 물어본다.
-  // user_roles는 일반 사용자에게 닫혀 있어 RPC(get_support_admin_id)로만 알 수 있고,
+  // 고객센터·제휴 문의를 열 때만 문의받을 관리자 id를 물어본다. 두 창구가 같은 사람에게 간다 —
+  // get_support_admin_id가 애초에 "문의를 받는 관리자 한 명"만 돌려주기 때문에(20260901000023)
+  // 창구를 나눌 근거가 없다.
+  // user_roles는 일반 사용자에게 닫혀 있어 이 RPC로만 알 수 있고,
   // 관리자가 없으면 NULL이 온다 — 그때는 버튼 없이 안내 문구만 남는다.
   useEffect(() => {
-    if (menuSheet !== "support" || !user) return;
+    if ((menuSheet !== "support" && menuSheet !== "partner") || !user) return;
     let alive = true;
     (supabase as any).rpc("get_support_admin_id").then(({ data, error }: any) => {
       if (!alive) return;
@@ -1203,6 +1209,17 @@ const ProfilePage = () => {
                 그리고 작성한 게시물은 다른 이용자에게 공개됩니다. 핸들(@)을 설정하면
                 로그인 없이 열람할 수 있는 소개 카드 주소가 만들어집니다.
                 프로필을 &lsquo;프로&rsquo;로 두고 증빙 인증을 받지 않으면 프로필은 본인과 관리자에게만 보입니다.
+                무료 연습실 예약은 어느 시간대가 찼는지 알아야 예약이 되므로 열려 있습니다 —
+                화면에는 시간대만 보이지만 예약한 사람의 식별자도 함께 공개됩니다.
+              </p>
+            </section>
+            <section>
+              <p className="mono-label mb-1.5">접속 상태</p>
+              <p className="text-muted-foreground">
+                앱을 열어둔 동안 마지막 접속 시각이 2분 간격으로 기록되고, 그 값이 5분 이내이면
+                프로필 카드에 &lsquo;활동 중&rsquo;으로 보입니다. 시각 자체는 어디에도 표시하지 않습니다.
+                &lsquo;프로필 수정&rsquo;에서 접속 상태 숨기기를 켜면 화면에서 가리는 것이 아니라
+                기록을 남기는 일 자체를 멈추고, 켜는 순간 남아 있던 값도 함께 비웁니다.
               </p>
             </section>
             <section>
@@ -1219,6 +1236,15 @@ const ProfilePage = () => {
                 구인 지원 내역과 지원서에 쓴 내용은 본인과 그 공고를 올린 사람만 볼 수 있습니다.
                 메시지와 메시지에 붙인 파일은 대화 상대만 열 수 있습니다.
                 예약 취소 사유는 취소한 본인과 그 연습실을 올린 사람만 봅니다.
+                제휴 연습실을 예약하면 그 업소를 등록한 사장님이 예약 시간 · 금액 · 상태를 보고,
+                이용 완료나 노쇼를 표시할 수 있습니다.
+              </p>
+            </section>
+            <section>
+              <p className="mono-label mb-1.5">알림을 켰을 때</p>
+              <p className="text-muted-foreground">
+                브라우저 알림을 켜면 알림을 보낼 주소와 브라우저 정보가 저장됩니다.
+                이 값은 본인만 읽을 수 있고, 알림을 끄면 그 자리에서 지워집니다.
               </p>
             </section>
             <section>
@@ -1244,6 +1270,265 @@ const ProfilePage = () => {
                 사실과 다르면 신고해 등급 산정에서 빼도록 요청할 수 있습니다.
               </p>
             </section>
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => setMenuSheet(null)}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
+            >
+              닫기
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 약관 및 정책 — 법률 문서가 아니다.
+          책임 제한 · 손해배상 · 준거법 · 관할 · 청약철회 같은 조항을 그럴듯하게 적어두면
+          검토받은 약관으로 오인되고, 그 오인 자체가 실제 법적 위험이 된다. 그래서 여기에는
+          코드가 실제로 강제하는 규칙만 적는다 — 각 항목은 마이그레이션과 RLS 정책에서
+          확인한 것이고, 확인하지 못한 것은 쓰지 않았다.
+          정식 이용약관 · 개인정보처리방침은 따로 마련해 검토받아야 하며, 그 사실을 맨 위에 밝힌다. */}
+      <Dialog open={menuSheet === "terms"} onOpenChange={(o) => { if (!o) setMenuSheet(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>약관 및 정책</DialogTitle>
+            <DialogDescription>
+              INSTRUT이 실제로 강제하는 운영 규칙입니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[55dvh] overflow-y-auto pr-1 space-y-4 text-sm leading-relaxed">
+            <div className="rounded-lg border border-amber/40 bg-amber/5 p-3">
+              <p className="font-semibold text-amber">법률 검토를 받은 문서가 아닙니다</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                이 문서는 서비스가 코드로 강제하고 있는 운영 규칙을 정리한 것입니다.
+                이용약관도, 개인정보처리방침도 아닙니다. 책임 제한 · 손해배상 · 청약철회 · 준거법 ·
+                관할 같은 법률 조항은 여기에 들어 있지 않고, 들어 있는 척하지도 않습니다.
+                정식 약관과 개인정보처리방침은 별도로 마련해 법률 검토를 받아야 합니다.
+              </p>
+            </div>
+
+            <section>
+              <p className="mono-label mb-1.5">계정과 인증</p>
+              <ul className="text-muted-foreground space-y-1.5 list-disc pl-4">
+                <li>
+                  활동 목적을 &lsquo;프로&rsquo;로 두면 증빙 인증을 받기 전까지 프로필이 본인과 관리자에게만
+                  보이고, 게시물 작성과 지원도 막힙니다. &lsquo;취미&rsquo;에는 이 제한이 없습니다.
+                </li>
+                <li>
+                  증빙(졸업 · 재학 · 수상)은 공개되지 않는 저장소에 올라가고 관리자가 직접 확인합니다.
+                  자동 판독은 하지 않습니다.
+                </li>
+                <li>
+                  인증이 끝나면(통과든 반려든) 30일 뒤 원본을 파기하고, 인증 종류 · 검증 일시 ·
+                  검증자 · 통과 여부만 남깁니다. 다른 이용자에게는 인증 여부만 배지로 보입니다.
+                </li>
+                <li>
+                  접속 상태는 앱을 열어둔 동안 기록되고 5분 이내면 &lsquo;활동 중&rsquo;으로 보입니다.
+                  프로필 수정에서 숨기기를 켜면 기록 자체를 남기지 않습니다.
+                </li>
+              </ul>
+            </section>
+
+            <section>
+              <p className="mono-label mb-1.5">구인과 지원</p>
+              <ul className="text-muted-foreground space-y-1.5 list-disc pl-4">
+                <li>
+                  구인글에는 지원 자격을 &lsquo;누구나&rsquo; 또는 &lsquo;인증된 프로만&rsquo; 중에서 정할 수 있습니다.
+                  프로 전용 공고는 목적이 프로이고 증빙 인증을 마친 사람만 지원할 수 있습니다.
+                </li>
+                <li>
+                  급구는 마감까지 3일 이하인 공고만 등록됩니다. 마감일시가 없거나 이미 지났으면
+                  급구로 올릴 수 없습니다.
+                </li>
+                <li>
+                  모집을 마감하면 그 공고는 목록에서 빠지고, 작성자와 합격한 지원자만 볼 수 있습니다.
+                </li>
+                <li>
+                  지원서 내용은 본인과 그 공고를 올린 사람만 봅니다. 지원을 취소하면 기록이 지워지고,
+                  공고 작성자의 응답률 계산에서도 함께 빠집니다.
+                </li>
+              </ul>
+            </section>
+
+            <section>
+              <p className="mono-label mb-1.5">후기와 평판</p>
+              <ul className="text-muted-foreground space-y-1.5 list-disc pl-4">
+                <li>
+                  합주 후기는 지원이 수락되어 실제로 매칭된 상대에게만 남길 수 있습니다.
+                  같은 매칭에 한 번만 쓸 수 있고, 자기 자신에게는 쓸 수 없습니다.
+                </li>
+                <li>
+                  세 항목(약속 지킴 · 실력 일치 · 또 하고 싶음)은 각각 예 · 아니오 · 미선택이며,
+                  최소 한 항목은 답해야 저장됩니다. 답하지 않은 항목은 집계에서 분모로도 세지 않습니다.
+                </li>
+                <li>
+                  등급은 최근 20건의 후기만으로 산정합니다. 오래된 후기는 자동으로 빠지므로
+                  등급이 내려갈 수도 있습니다.
+                </li>
+                <li>
+                  <span className="text-foreground font-medium">주의</span> — &lsquo;약속 지킴&rsquo;에 아니오가
+                  3건 이상이거나, 후기 3건 이상이면서 긍정률 40% 이하일 때.{" "}
+                  <span className="text-foreground font-medium">신뢰</span> — 후기 10건 이상 +
+                  긍정률 90% 이상 + &lsquo;약속 지킴&rsquo; 아니오 0건.{" "}
+                  <span className="text-foreground font-medium">안정</span> — 후기 5건 이상.
+                  그 밖에는 <span className="text-foreground font-medium">산정 전</span>입니다.
+                </li>
+                <li>
+                  받은 후기가 사실과 다르면 그 후기를 받은 당사자가 신고할 수 있습니다.
+                  접수되는 즉시 그 후기는 등급 산정에서 빠지고, 관리자가 인정하면 계속 빠진 채로,
+                  기각하면 다시 산정에 들어갑니다.
+                </li>
+              </ul>
+            </section>
+
+            <section>
+              <p className="mono-label mb-1.5">예약과 취소</p>
+              <ul className="text-muted-foreground space-y-1.5 list-disc pl-4">
+                <li>
+                  무료 연습실 예약은 같은 방에서 시간대가 겹치면 등록되지 않습니다.
+                </li>
+                <li>
+                  무료 예약을 취소하려면 사유(1~500자)를 적어야 합니다. 사유는 취소한 본인과
+                  그 연습실을 올린 사람, 관리자만 봅니다. 예약자 본인뿐 아니라 연습실을 올린 사람도
+                  취소할 수 있고, 어느 쪽이 취소해도 사유가 남습니다.
+                </li>
+                <li>
+                  제휴 연습실은 업소 등급에 따라 예약 방식이 다릅니다 — A는 즉시 확정, B는 사장님
+                  승인 후 확정, C는 예약을 받지 않습니다. 자세한 내용은 &lsquo;제휴 문의&rsquo;에 적어두었습니다.
+                </li>
+                <li>
+                  A등급의 결제 대기는 5분, B등급의 승인 대기는 24시간(합주 시작 시각이 더 빠르면
+                  그때)이 지나면 자동으로 취소되고 시간대가 다시 열립니다. 요청의 결과 —
+                  승인 · 거절 · 자동 취소 — 는 알림으로 전달됩니다.
+                </li>
+                <li>
+                  제휴 연습실 사장님은 지난 예약에 이용 완료나 노쇼를 표시할 수 있습니다.
+                </li>
+                <li>
+                  예약 화면에 적힌 환불 기준(이용 24시간 전 100% · 12시간 전 50% · 이후 불가)은
+                  결제가 붙은 뒤에 적용될 기준입니다. 지금은 실제 결제가 이뤄지지 않으므로
+                  환불 처리도 없습니다.
+                </li>
+              </ul>
+            </section>
+
+            <p className="text-xs text-muted-foreground border-t border-border pt-3">
+              다시 한 번 — 위 내용은 코드에서 확인한 운영 규칙일 뿐, 법률 검토를 받은 약관이 아닙니다.
+              여기에 적히지 않은 사항은 &lsquo;정해져 있지 않다&rsquo;는 뜻입니다.
+            </p>
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => setMenuSheet(null)}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-surface-hover transition-colors"
+            >
+              닫기
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 제휴 문의 — 연습실 · 악기사 사장님용 창구.
+          /partner(사장님 콘솔)는 App.tsx에 라우트만 있고 앱 어디에도 링크가 없어서
+          주소를 직접 쳐야만 들어갈 수 있었다. 여기가 그 입구다.
+          관리자 메시지는 고객센터와 같은 supportAdminId를 쓴다 — 문의를 받는 관리자가
+          한 명뿐이라(20260901000023) 창구를 둘로 나눌 이유가 없다.
+          결제가 아직 없다는 사실을 숨기지 않는다. 제휴를 검토하는 사장님에게는
+          "예약은 되는데 PIN은 안 나간다"가 가장 먼저 알아야 할 조건이다. */}
+      <Dialog open={menuSheet === "partner"} onOpenChange={(o) => { if (!o) setMenuSheet(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>제휴 문의</DialogTitle>
+            <DialogDescription>
+              연습실 · 악기사를 운영하신다면 여기서 시작하세요.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[55dvh] overflow-y-auto pr-1 space-y-3 text-sm leading-relaxed">
+            <div className="rounded-lg border border-border p-3">
+              <p className="font-semibold">무엇을 제휴하나요</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                업소와 합주실, 그리고 비어 있는 시간대를 등록하면 앱의 &lsquo;제휴 연습실 예약&rsquo;에
+                노출되고 이용자가 그 시간대를 예약합니다. 업소에 매긴 등급이 곧 예약이 들어오는
+                방식이 됩니다.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <p className="font-semibold">등급이 곧 예약 방식입니다</p>
+              <div className="mt-2 space-y-2.5 text-xs text-muted-foreground">
+                <p>
+                  <span className="font-mono text-[11px] font-bold tracking-[0.06em] text-foreground">A · 즉시예약</span><br />
+                  이용자가 시간대를 고르면 그 자리가 5분간 잠기고, 그 안에 결제 단계를 마치면
+                  바로 확정됩니다. 5분을 넘기면 자동으로 취소되어 시간대가 다시 열립니다.
+                </p>
+                <p>
+                  <span className="font-mono text-[11px] font-bold tracking-[0.06em] text-foreground">B · 요청예약</span><br />
+                  고른 시간대가 &lsquo;요청&rsquo;으로 접수되고, 사장님이 승인해야 확정됩니다. 검토하는
+                  동안 그 시간대는 다른 사람에게 열리지 않습니다.
+                  <span className="text-amber font-medium"> 24시간 안에 답하지 않으면 요청은 자동 취소됩니다</span>
+                  {" "}(합주 시작 시각이 더 빠르면 그때).
+                </p>
+                <p>
+                  <span className="font-mono text-[11px] font-bold tracking-[0.06em] text-foreground">C · 정보 노출</span><br />
+                  예약을 받지 않습니다. 이름 · 주소 · 전화 · 소개와 길찾기만 노출되고, 예약 화면
+                  자체가 열리지 않습니다. 문의는 이용자가 업소로 직접 전화합니다.
+                </p>
+                <p className="pt-0.5">
+                  이 규칙은 화면 배지가 아니라 서버가 강제합니다. C등급 업소에 예약을 밀어 넣거나
+                  B등급을 승인 없이 확정하는 우회는 되지 않습니다. 등급은 등록 후에도 바꿀 수 있습니다.
+                </p>
+              </div>
+            </div>
+            <div className="rounded-lg border border-amber/40 bg-amber/5 p-3">
+              <p className="font-semibold text-amber">아직 결제가 이뤄지지 않습니다</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                결제대행(PG) 연동 전이라 예약 화면의 결제 단계에서 실제로 돈이 오가지 않습니다.
+                예약은 만들어지고 시간대도 잡히지만, 결제가 확인되지 않은 예약으로 남기 때문에
+                <span className="font-medium text-foreground"> 출입 PIN이 발급되지 않습니다</span> —
+                콘솔에 PIN을 등록해 두어도 배정되지 않습니다. 그래서 환불 기준도 아직 적용될 일이
+                없습니다. 제휴를 검토하실 때 이 점을 먼저 감안해주세요.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <p className="font-semibold">제휴를 문의하려면</p>
+              {supportAdminId && supportAdminId !== user?.id ? (
+                <>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    운영자에게 앱 내 메시지로 보내주세요. 업소 이름 · 위치 · 연락처와 원하시는 등급을
+                    함께 적어주시면 확인이 빠릅니다. 답변은 &lsquo;메시지&rsquo;에 같은 대화로 옵니다.
+                  </p>
+                  <button
+                    onClick={() => { setMenuSheet(null); navigate(`/messages?to=${supportAdminId}`); }}
+                    className="mt-3 w-full h-11 rounded-xl bg-action text-action-foreground text-sm font-semibold hover:bg-action-hover active:scale-[0.98] transition-all"
+                  >
+                    관리자에게 문의하기
+                  </button>
+                </>
+              ) : supportAdminId ? (
+                <p className="text-xs text-muted-foreground mt-1">
+                  회원님이 문의를 받는 관리자입니다. 제휴 문의도 &lsquo;메시지&rsquo;로 들어옵니다.
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1">
+                  아직 운영자에게 문의를 접수할 창구가 없습니다. 받는 사람이 없는 주소를 적어두면
+                  답을 기다리게만 되므로 적지 않았습니다. 그동안에도 아래 사장님 콘솔에서 업소를
+                  직접 등록해두실 수 있고, 창구가 열리면 이 화면에 먼저 안내하겠습니다.
+                </p>
+              )}
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <p className="font-semibold">직접 등록해보려면</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                사장님 콘솔에서 업소와 합주실, 비어 있는 시간대를 직접 등록할 수 있습니다.
+                들어온 예약 요청을 승인 · 거절하고, 이용 완료 · 노쇼를 표시하고, 출입 PIN 풀을
+                관리하는 것도 같은 화면입니다. 등록한 업소는 &lsquo;제휴 연습실 예약&rsquo;에 바로 보입니다.
+              </p>
+              <button
+                onClick={() => { setMenuSheet(null); navigate("/partner"); }}
+                className="mt-3 w-full h-11 rounded-xl border border-border text-sm font-semibold hover:bg-surface-hover active:scale-[0.98] transition-all"
+              >
+                사장님 콘솔 열기
+              </button>
+            </div>
           </div>
           <DialogFooter>
             <button
@@ -1298,6 +1583,19 @@ const ProfilePage = () => {
                 올린 게시물은 &lsquo;내 게시물&rsquo;에서 삭제하고, 넣은 지원은 &lsquo;나의 INSTRUT &rsaquo; 지원현황&rsquo;에서 취소하면
                 그 즉시 다른 사람에게도 보이지 않습니다.
               </p>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <p className="font-semibold">연습실 · 악기사를 운영하고 계실 때</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                제휴, 업소 등록, 들어온 예약 요청 처리에 관한 것은 &lsquo;제휴 문의&rsquo;에 따로
+                정리해두었습니다. 같은 운영자에게 닿지만, 필요한 안내가 먼저 있는 쪽으로 가세요.
+              </p>
+              <button
+                onClick={() => setMenuSheet("partner")}
+                className="mt-2 text-xs font-semibold text-primary underline underline-offset-4 hover:text-foreground transition-colors"
+              >
+                제휴 문의 열기
+              </button>
             </div>
             <div className="rounded-lg border border-border p-3">
               <p className="font-semibold">그 밖의 문의 · 계정 삭제 요청</p>
