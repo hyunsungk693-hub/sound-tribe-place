@@ -182,13 +182,22 @@
     min-height: 100vh;
     min-height: 100dvh;
   }
+  /* 바텀 시트 최대 높이.
+     시트는 모두 `fixed inset-0 ... flex items-end` 오버레이의 직계 자식이다.
+     flex-end 정렬은 항목이 컨테이너보다 크면 넘치는 만큼을 '위쪽'으로 밀어내고
+     그 부분은 스크롤로 닿을 수 없어 그대로 잘린다 — PC 잘림(4f8627c·c5feff6)과 같은 메커니즘이다.
+     그래서 dvh 하나로만 재지 않고, 시트를 위치시키는 당사자인 오버레이의 높이(100%)로도 함께 묶는다.
+     dvh는 주소창이 접히면 커지는 반면 fixed의 컨테이닝 블록은 작은 뷰포트에 머무는 브라우저가 있어
+     둘이 어긋나는 순간 85dvh가 오버레이보다 커지기 때문이다.
+     여기서 상단 안전영역만큼 더 빼두면 바닥에 붙은 시트의 윗변이 반드시 상태바·노치 아래에 놓여
+     헤더가 가려지지 않는다. --safe-top은 인셋이 없는 기기에서 0px이라 빈 여백도 생기지 않는다. */
   .max-h-sheet {
-    max-height: 85vh;
-    max-height: 85dvh;
+    max-height: 85vh; /* min()·dvh 미지원 브라우저 폴백 */
+    max-height: min(85dvh, calc(100% - var(--safe-top, 0px)));
   }
   .max-h-sheet-lg {
     max-height: 90vh;
-    max-height: 90dvh;
+    max-height: min(90dvh, calc(100% - var(--safe-top, 0px)));
   }
 
   /* 본문 하단 여백: 모바일은 고정 탭바 높이만큼, 데스크톱은 일반 여백 */
