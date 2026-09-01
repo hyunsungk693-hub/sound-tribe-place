@@ -375,7 +375,13 @@ const Messages = () => {
   }, [user, fetchConversations]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    // block을 생략하면 기본값이 'start'다. 그러면 브라우저가 스크롤 가능한 조상을
+    // 전부 거슬러 올라가며 bottomRef를 각자의 맨 위에 맞추려 하고, 문서(window)까지
+    // 같이 끌려 올라간다 — 대화방은 absolute inset-0 오버레이라 문서는 뒤에서
+    // 그대로 스크롤되고, 새 메시지가 올 때마다 화면이 위로 밀린 채 남는다.
+    // 'nearest'는 이미 보이는 컨테이너는 건드리지 않고 메시지 목록만 최소한으로
+    // 내리므로, 원래 의도(목록을 맨 아래로)만 정확히 수행한다.
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
