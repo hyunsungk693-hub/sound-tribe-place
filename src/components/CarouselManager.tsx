@@ -54,7 +54,7 @@ const CarouselManager = () => {
   const load = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from("carousel_slides" as any)
+      .from("carousel_slides")
       .select("id,title,description,image_url,image_path,link,sort_order,is_active")
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
@@ -148,8 +148,8 @@ const CarouselManager = () => {
           patch.image_path = uploaded.path;
         }
         const { error } = await supabase
-          .from("carousel_slides" as any)
-          .update(patch as any)
+          .from("carousel_slides")
+          .update(patch)
           .eq("id", editingId);
         if (error) throw error;
         // 새 이미지로 교체했으면 예전 원본은 버킷에서 지운다.
@@ -158,7 +158,7 @@ const CarouselManager = () => {
       } else {
         // 새 슬라이드는 항상 맨 뒤에 붙인다.
         const nextOrder = slides.length ? Math.max(...slides.map((s) => s.sort_order)) + 1 : 0;
-        const { error } = await supabase.from("carousel_slides" as any).insert({
+        const { error } = await supabase.from("carousel_slides").insert({
           title,
           description,
           link,
@@ -166,7 +166,7 @@ const CarouselManager = () => {
           image_path: uploaded!.path,
           sort_order: nextOrder,
           created_by: user?.id ?? null,
-        } as any);
+        });
         if (error) {
           // 행 저장이 실패했는데 파일만 남으면 그게 곧 고아 파일이다.
           await removeImage(uploaded!.path);
@@ -194,7 +194,7 @@ const CarouselManager = () => {
 
     const results = await Promise.all(
       next.map((s, i) =>
-        supabase.from("carousel_slides" as any).update({ sort_order: i } as any).eq("id", s.id)
+        supabase.from("carousel_slides").update({ sort_order: i }).eq("id", s.id)
       )
     );
     if (results.some((r) => r.error)) {
@@ -206,8 +206,8 @@ const CarouselManager = () => {
   const toggleActive = async (s: Slide) => {
     setBusyId(s.id);
     const { error } = await supabase
-      .from("carousel_slides" as any)
-      .update({ is_active: !s.is_active } as any)
+      .from("carousel_slides")
+      .update({ is_active: !s.is_active })
       .eq("id", s.id);
     setBusyId(null);
     if (error) return toast.error("상태를 바꾸지 못했습니다");
@@ -219,7 +219,7 @@ const CarouselManager = () => {
     setBusyId(s.id);
     // 행을 먼저 지운다. 파일을 먼저 지우면 삭제가 중간에 끊겼을 때
     // 홈에 이미지 깨진 배너가 남는다.
-    const { error } = await supabase.from("carousel_slides" as any).delete().eq("id", s.id);
+    const { error } = await supabase.from("carousel_slides").delete().eq("id", s.id);
     if (error) {
       setBusyId(null);
       return toast.error("삭제에 실패했습니다");

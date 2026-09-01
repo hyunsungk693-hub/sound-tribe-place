@@ -110,6 +110,48 @@ export type Database = {
           },
         ]
       }
+      carousel_slides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          image_path: string | null
+          image_url: string
+          is_active: boolean
+          link: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description: string
+          id?: string
+          image_path?: string | null
+          image_url: string
+          is_active?: boolean
+          link: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          image_path?: string | null
+          image_url?: string
+          is_active?: boolean
+          link?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
