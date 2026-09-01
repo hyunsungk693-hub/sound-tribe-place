@@ -24,7 +24,12 @@ const categories = [
     tint: "text-ch-community", hoverBorder: "hover:border-ch-community", hoverText: "group-hover:text-ch-community" },
 ];
 
-const adBanners = [
+type Banner = { title: string; desc: string; image: string; path: string };
+
+// 배너는 관리자가 carousel_slides 테이블에서 관리한다(20260901000027).
+// 다만 관리자가 실수로 전부 지웠거나 조회가 실패했을 때 홈 최상단이 빈 채로 남으면
+// 안 되므로, 원래 하드코딩돼 있던 3장을 그대로 폴백으로 들고 있는다.
+const fallbackBanners: Banner[] = [
   { title: "Find", desc: "믿을 수 있는 밴드·세션 멤버 찾기", image: banner1, path: "/jobs" },
   { title: "Rooms", desc: "합주할 공간이 필요하다면, 연습실 찾기", image: banner3, path: "/rooms" },
   { title: "Community", desc: "음악인들과 자유롭게 이야기 나누기", image: banner4, path: "/community" },
@@ -67,6 +72,8 @@ const Index = () => {
   const swipedRef = useRef(false);
   const dragRef = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const suppressClickRef = useRef(false);
+  const [slides, setSlides] = useState<Banner[]>([]);
+  const bannerCountRef = useRef(fallbackBanners.length);
   const [recentJobs, setRecentJobs] = useState<any[]>([]);
   const [popularPosts, setPopularPosts] = useState<any[]>([]);
   const [studios, setStudios] = useState<any[]>([]);
@@ -79,7 +86,7 @@ const Index = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [jobRes, commRes, studioRes, jobCountRes, commCountRes, studioCountRes] = await Promise.all([
+    const [jobRes, commRes, studioRes, jobCountRes, commCountRes, studioCountRes, slideRes] = await Promise.all([
       // 급구 우선 → 그중 마감 임박순 → 급구가 부족하면 최근순으로 채운다.
       // 단일 쿼리 다중 정렬이므로 급구가 0건이어도 최근 글로 채워져 섹션이 비지 않는다.
       supabase
@@ -105,8 +112,25 @@ const Index = () => {
       supabase.from("posts").select("id", { count: "exact", head: true }).eq("post_type", "job").eq("status", "open"),
       supabase.from("posts").select("id", { count: "exact", head: true }).eq("post_type", "community"),
       (supabase as any).from("studios").select("id", { count: "exact", head: true }),
+      // 배너도 같은 묶음에서 받는다. 나중에 따로 받아오면 스켈레톤이 걷힌 뒤에
+      // 배너만 한 번 더 바뀌면서 화면이 튄다.
+      (supabase as any)
+        .from("carousel_slides")
+        .select("id,title,description,image_url,link")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true }),
     ]);
     setRecentJobs(jobRes.data || []);
+    // 조회가 실패하면 data가 없다 → 빈 배열 → 아래에서 폴백 배너로 그린다.
+    setSlides(
+      ((slideRes.data as any[]) || []).map((s) => ({
+        title: s.title,
+        desc: s.description,
+        image: s.image_url,
+        path: s.link,
+      }))
+    );
     setStudios(studioRes.data || []);
     setOpenJobCount(jobCountRes.count ?? (jobRes.data?.length ?? 0));
     setCommunityCount(commCountRes.count ?? null);
@@ -132,17 +156,29 @@ const Index = () => {
     }
   }, []);
 
+  // 관리자가 등록한 슬라이드가 한 장이라도 있으면 그걸, 없으면 기본 배너를 쓴다.
+  // 어느 쪽이든 최소 1장이라 배너 자리가 비는 경우는 없다.
+  const banners = slides.length > 0 ? slides : fallbackBanners;
+
   useEffect(() => {
     fetchData();
     if (swipedRef.current) return;
+    // 자동 전환 타이머는 한 번만 만들고 개수는 ref로 읽는다.
+    // 배너 개수가 나중에 바뀌므로 여기서 값을 캡처하면 옛날 개수로 계속 돈다.
     autoTimerRef.current = setInterval(() => {
-      setCurrentBanner((prev) => (prev + 1) % adBanners.length);
+      setCurrentBanner((prev) => (prev + 1) % Math.max(1, bannerCountRef.current));
     }, 4000);
     return () => {
       if (autoTimerRef.current) clearInterval(autoTimerRef.current);
       autoTimerRef.current = null;
     };
   }, []);
+
+  // 슬라이드가 로드되며 개수가 줄면(폴백 3장 → DB 2장) 현재 인덱스가 범위를 벗어난다.
+  useEffect(() => {
+    bannerCountRef.current = banners.length;
+    setCurrentBanner((prev) => (prev >= banners.length ? 0 : prev));
+  }, [banners.length]);
 
   // 배너 드래그: 터치·마우스 공통(Pointer Events). 40px 이상 끌면 한 장 넘긴다.
   const SWIPE_THRESHOLD = 40;
@@ -179,11 +215,9 @@ const Index = () => {
     if (!d || !d.moved) return; // 움직임이 없으면 탭 → onClick이 처리
     const dx = e.clientX - d.x;
     if (Math.abs(dx) >= SWIPE_THRESHOLD) {
-      setCurrentBanner((prev) =>
-        dx < 0
-          ? (prev + 1) % adBanners.length
-          : (prev - 1 + adBanners.length) % adBanners.length
-      );
+      // 개수는 이 렌더의 banners에서 읽는다(고정 3장이 아니다).
+      const n = banners.length;
+      setCurrentBanner((prev) => (dx < 0 ? (prev + 1) % n : (prev - 1 + n) % n));
     }
   };
 
@@ -246,7 +280,7 @@ const Index = () => {
             className={`flex h-full ease-out ${dragDx === 0 ? "transition-transform duration-500" : ""}`}
             style={{ transform: `translateX(calc(-${currentBanner * 100}% + ${dragDx}px))` }}
           >
-            {adBanners.map((banner, i) => (
+            {banners.map((banner, i) => (
               <div key={i} onClick={() => onBannerClick(banner.path)} className="w-full h-full shrink-0 relative overflow-hidden cursor-pointer active:scale-[0.99] transition-transform">
                 <img src={banner.image} alt={banner.desc} className="w-full h-full object-cover absolute inset-0" loading="lazy" />
                 <div className="relative z-10 h-full p-6 lg:p-8 flex flex-col justify-end bg-gradient-to-t from-black/65 to-transparent">
@@ -257,7 +291,7 @@ const Index = () => {
             ))}
           </div>
           <div className="absolute bottom-4 right-5 flex gap-1.5">
-            {adBanners.map((_, i) => (
+            {banners.map((_, i) => (
               <button
                 key={i}
                 onClick={() => { stopAuto(); setCurrentBanner(i); }}

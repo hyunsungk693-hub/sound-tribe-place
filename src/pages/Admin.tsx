@@ -7,6 +7,7 @@ import BottomNav from "@/components/BottomNav";
 import TopNav from "@/components/TopNav";
 import CredentialsReview from "@/components/CredentialsReview";
 import ReportsReview from "@/components/ReportsReview";
+import CarouselManager from "@/components/CarouselManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -172,7 +173,8 @@ const Admin = () => {
       </header>
 
       <Tabs defaultValue="metrics" className="p-4">
-        <TabsList className="grid w-full grid-cols-5 mb-4">
+        {/* 탭이 6개가 되면서 한 줄에 다 넣으면 라벨이 서로 밀려 잘린다. 3열 2행으로 접는다. */}
+        <TabsList className="grid w-full grid-cols-3 h-auto gap-1 mb-4">
           <TabsTrigger value="metrics">지표</TabsTrigger>
           <TabsTrigger value="credentials" className="gap-1">
             증빙 인증
@@ -190,6 +192,7 @@ const Admin = () => {
               </span>
             )}
           </TabsTrigger>
+          <TabsTrigger value="carousel">캐러셀</TabsTrigger>
           <TabsTrigger value="admins">관리자 권한</TabsTrigger>
           {/* 지도가 없어 상시 운영 업무가 아니다. 맨 뒤로 밀고 라벨도 지도용 데이터임이 드러나게 둔다. */}
           <TabsTrigger
@@ -210,6 +213,10 @@ const Admin = () => {
 
         <TabsContent value="reports" className="mt-0">
           <ReportsReview onPendingCount={setPendingReports} />
+        </TabsContent>
+
+        <TabsContent value="carousel" className="mt-0">
+          <CarouselManager />
         </TabsContent>
 
         <TabsContent value="places" className="space-y-4 mt-0">
