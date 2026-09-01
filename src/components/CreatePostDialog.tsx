@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useState, useRef } from "react";
 import { X, ImagePlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -207,6 +208,9 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
   };
 
   // 작성 버튼은 CreatePostFab(우측 하단 플로팅)이 전담한다
+  // 시트가 열려 있는 동안 뒤 문서 스크롤을 잠근다 (조기 반환보다 앞에 있어야 훅 순서가 안 깨진다)
+  useBodyScrollLock(open);
+
   if (!open) return null;
 
   return (

@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
@@ -124,6 +125,8 @@ const NotificationsPanel = ({ open, onClose }: Props) => {
     }
     setPushBusy(false);
   };
+
+  useBodyScrollLock(open);
 
   if (!open) return null;
 

@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useState } from "react";
 import { Plus, X, Briefcase, Music2, Store, Users } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -87,6 +88,8 @@ const CreatePostFab = () => {
   const navigate = useNavigate();
   const [chooserOpen, setChooserOpen] = useState(false);
   const [selected, setSelected] = useState<PostType | null>(null);
+
+  useBodyScrollLock(chooserOpen);
 
   if (!user) return null;
   const hideOn = ["/messages", "/profile", "/auth", "/admin"];

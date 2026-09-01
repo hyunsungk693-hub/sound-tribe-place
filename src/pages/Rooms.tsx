@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { Search, MapPin, Clock, Music, ArrowLeft, Pencil, Trash2, MessageCircle, Navigation, ChevronRight, Phone } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -149,6 +150,10 @@ const Rooms = () => {
     })),
   ];
   // 검색·정렬은 서버에서 끝난다
+
+  // 상세 시트가 열려 있는 동안 뒤 목록이 스크롤되지 않게 잠근다.
+  // 시트 안 입력칸에 포커스가 가면 iOS가 키보드를 띄우며 뒤 문서를 끌어올린다.
+  useBodyScrollLock(!!selectedRoom);
 
   const openDetail = (item: RoomItem) => {
     setSelectedRoom(item);

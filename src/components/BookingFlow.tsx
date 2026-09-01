@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useState, useEffect } from "react";
 import { X, CreditCard, KeyRound, MapPin, Clock, CheckCircle2, Hourglass, Info, AlarmClock } from "lucide-react";
 import { toast } from "sonner";
@@ -64,7 +65,9 @@ const BookingFlow = ({ studio, room, slot, originApplicationId, onClose, onBooke
         return r - 1;
       });
     }, 1000);
-    return () => clearInterval(t);
+    useBodyScrollLock(true);
+
+  return () => clearInterval(t);
   }, [phase]);
 
   const startHold = async () => {

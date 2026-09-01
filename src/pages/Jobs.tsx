@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { Search, ArrowUpDown, ArrowLeft, Pencil, Trash2, MessageCircle, Check, Navigation, Star, CalendarHeart } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -493,6 +494,9 @@ const Jobs = () => {
 
   // 필터·검색·정렬은 서버에서 끝나므로 여기서 다시 거르지 않는다
   const filtered = allJobs;
+
+  // 상세 시트·영상 게이트가 열려 있는 동안 뒤 목록 스크롤을 잠근다.
+  useBodyScrollLock(!!selectedJob || videoGateOpen);
 
   const startEditing = () => {
     if (!selectedJob) return;

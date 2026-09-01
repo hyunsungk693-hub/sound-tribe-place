@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { X, Camera, Search, Plus, Link as LinkIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -252,6 +253,9 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
   };
 
   const initials = (displayName || "U").charAt(0).toUpperCase();
+
+  // 부모가 조건부로 마운트하므로 열려 있는 동안만 이 컴포넌트가 산다
+  useBodyScrollLock(true);
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center" onClick={onClose}>
