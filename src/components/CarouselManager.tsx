@@ -61,8 +61,7 @@ const CarouselManager = () => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    // types.ts는 아직 slide_no를 모른다(마이그레이션 적용 후 재생성 예정).
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("carousel_slides")
       .select("id,slide_no,title,description,image_url,image_path,link,sort_order,is_active")
       .order("sort_order", { ascending: true })
@@ -182,7 +181,7 @@ const CarouselManager = () => {
           image_path: uploaded!.path,
           sort_order: nextOrder,
           created_by: user?.id ?? null,
-        } as any);
+        });
         if (error) {
           // 행 저장이 실패했는데 파일만 남으면 그게 곧 고아 파일이다.
           await removeImage(uploaded!.path);

@@ -114,40 +114,43 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
-          description: string
+          description: string | null
           id: string
           image_path: string | null
           image_url: string
           is_active: boolean
-          link: string
+          link: string | null
+          slide_no: number
           sort_order: number
-          title: string
+          title: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           created_by?: string | null
-          description: string
+          description?: string | null
           id?: string
           image_path?: string | null
           image_url: string
           is_active?: boolean
-          link: string
+          link?: string | null
+          slide_no?: never
           sort_order?: number
-          title: string
+          title?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           created_by?: string | null
-          description?: string
+          description?: string | null
           id?: string
           image_path?: string | null
           image_url?: string
           is_active?: boolean
-          link?: string
+          link?: string | null
+          slide_no?: never
           sort_order?: number
-          title?: string
+          title?: string | null
           updated_at?: string
         }
         Relationships: []
