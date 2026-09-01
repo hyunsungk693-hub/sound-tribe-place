@@ -95,7 +95,7 @@ const row = (label, value) => ({
     style: { display: "flex", alignItems: "center", gap: 14 },
     children: [
       { type: "div", props: { style: { display: "flex", fontSize: 20, color: SOFT, width: 96, fontWeight: 700 }, children: label } },
-      { type: "div", props: { style: { display: "flex", fontSize: 22, color: INK, fontWeight: 400, flex: 1 }, children: value } },
+      { type: "div", props: { style: { display: "flex", fontSize: 22, color: INK, fontWeight: 400, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: value } },
     ],
   },
 });
@@ -106,14 +106,25 @@ export async function renderProfileCard({ profile, stats }) {
   const name = profile.display_name || "instrut 음악인";
   const handle = profile.handle ? `@${profile.handle}` : "";
   const purpose = profile.purpose === "pro" ? "프로" : profile.purpose === "hobby" ? "취미" : null;
-  const instruments = (profile.instruments || []).slice(0, 4);
-  const genres = (profile.genres || []).slice(0, 4);
+  // 칩이 두 줄로 넘어가면 그만큼 본문이 길어져 카드가 넘친다.
+  // 3개까지만 보이고 나머지는 +N으로 접는다.
+  const clipChips = (arr) => {
+    const all = arr || [];
+    const shown = all.slice(0, 3);
+    return all.length > 3 ? [...shown, `+${all.length - 3}`] : shown;
+  };
+  const instruments = clipChips(profile.instruments);
+  const genres = clipChips(profile.genres);
   const loc = profile.location || null;
   // 정형 슬롯(20260901000020)을 우선 쓰고, 아직 프로필을 다시 저장하지 않은
   // 사용자만 예전 자유 텍스트로 되돌아간다. ProfileCard와 같은 순서다.
   const slotGroups = formatSlotGroups(profile.available_slots);
-  const times =
+  const timesRaw =
     (slotGroups.length ? slotGroups : profile.available_times || []).slice(0, 3).join(" · ") || null;
+  // 카드가 750x1050 고정이라 한 줄을 넘기면 본문이 넘쳐 아래 요소와 겹친다.
+  // CSS(nowrap/ellipsis)에만 기대지 않고 문자열도 함께 잘라 둔다 —
+  // satori 버전에 따라 텍스트 처리가 달라질 수 있다.
+  const times = timesRaw && timesRaw.length > 26 ? timesRaw.slice(0, 26) + "…" : timesRaw;
   const hasVideo = !!profile.video_url;
   // 링크 표시용: 프로토콜 제거 + 40자 말줄임, 플랫폼 라벨 감지
   const rawUrl = (profile.video_url || "").replace(/^https?:\/\//, "").replace(/^www\./, "");
@@ -132,7 +143,7 @@ export async function renderProfileCard({ profile, stats }) {
   const allText =
     `${name}${handle}${purpose || ""}${instruments.join("")}${genres.join("")}` +
     `${loc || ""}${times || ""}${badges.join("")}악기장르지역가능 시간응답률신뢰등급신뢰안정주의산정 전` +
-    `새로 시작하는 음악인연주영상♪ instrut${siteUrl}${initial}${videoDisplay}${videoPlatform}링크` +
+    `새로 시작하는 음악인연주영상♪ instrut${siteUrl}${initial}${videoDisplay}${videoPlatform}링크…+` +
     (showRate ? `${Math.round(stats.response_rate * 100)}%` : "");
 
   const [bold, regular] = await Promise.all([
@@ -202,7 +213,7 @@ export async function renderProfileCard({ profile, stats }) {
                         children: initial,
                       },
                     },
-                { type: "div", props: { style: { display: "flex", fontSize: 52, fontWeight: 700, color: "#ffffff", marginTop: 24 }, children: name } },
+                { type: "div", props: { style: { display: "flex", fontSize: 52, fontWeight: 700, color: "#ffffff", marginTop: 24, maxWidth: 640, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: name } },
                 {
                   type: "div",
                   props: {
@@ -221,7 +232,8 @@ export async function renderProfileCard({ profile, stats }) {
           {
             type: "div",
             props: {
-              style: { display: "flex", flexDirection: "column", flex: 1, padding: "44px 52px", gap: 30 },
+              // overflow:hidden은 최후의 안전장치다. 그래도 넘치면 겹치는 대신 잘린다.
+              style: { display: "flex", flexDirection: "column", flex: 1, padding: "40px 52px", gap: 22, overflow: "hidden" },
               children: [
                 instruments.length
                   ? { type: "div", props: { style: { display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" },
@@ -241,13 +253,13 @@ export async function renderProfileCard({ profile, stats }) {
                 times ? row("가능 시간", times) : null,
                 hasVideo ? row("연주영상", videoDisplay) : null,
                 // 신뢰 영역 / 신규 뱃지
-                showRate
+                trustChildren.length > 0
                   ? {
                       type: "div",
                       props: {
                         style: {
-                          display: "flex", flexDirection: "column", gap: 18,
-                          backgroundColor: "#f2f8fd", borderRadius: 24, padding: "30px 24px", marginTop: 8,
+                          display: "flex", flexDirection: "column", gap: 14,
+                          backgroundColor: "#f2f8fd", borderRadius: 24, padding: "24px 24px", marginTop: 4,
                         },
                         children: [
                           { type: "div", props: { style: { display: "flex" }, children: trustChildren } },
