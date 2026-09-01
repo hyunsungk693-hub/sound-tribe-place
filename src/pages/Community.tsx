@@ -1,14 +1,12 @@
-import { Heart, MessageSquare, Share2, TrendingUp, ArrowLeft, Send, Search, X, Mail, Pencil, Trash2, ArrowUpDown } from "lucide-react";
+import { Heart, MessageSquare, Share2, TrendingUp, Search, X, ArrowUpDown } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { addRecentView } from "@/lib/recentViews";
 import { toast } from "sonner";
 import { PostCardSkeleton } from "@/components/skeletons/PostSkeleton";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
-import ProfileCard, { ProfileCardData } from "@/components/ProfileCard";
 
 const tabs = ["전체", "자유", "질문", "거래"];
 
@@ -32,13 +30,6 @@ type PostItem = {
   liked: boolean;
 };
 
-type Comment = {
-  id: string;
-  author_name: string;
-  content: string;
-  created_at: string;
-  user_id: string;
-};
 
 // E3: "같이 할 사람 찾기" 성격의 글 감지 (규칙 기반 키워드 매칭)
 const isRecruitPost = (title: string, content: string) =>
@@ -60,36 +51,9 @@ const Community = () => {
   const [selectedTab, setSelectedTab] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<PostItem | null>(null);
-  const [authorProfile, setAuthorProfile] = useState<ProfileCardData | null>(null);
-  const [authorStats, setAuthorStats] = useState<any>(undefined);
   const [sortBy, setSortBy] = useState<"latest" | "likes" | "comments">("latest");
   // MOST LIKED 배너 — 불러온 페이지가 아니라 전체 기준 1위여야 하므로 별도 단건 조회
   const [topPost, setTopPost] = useState<{ id: string; title: string; likeCount: number; commentCount: number } | null>(null);
-
-  // 상세 열람 시 최근 본 게시물 기록
-  useEffect(() => {
-    if (selectedPost?.id) addRecentView({ id: selectedPost.id, title: selectedPost.title, type: "community" });
-  }, [selectedPost?.id]);
-
-  // 상세의 작성자 프로필 카드(D1·E2) 데이터 로드
-  useEffect(() => {
-    setAuthorProfile(null);
-    if (!selectedPost?.user_id) return;
-    supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", selectedPost.user_id)
-      .maybeSingle()
-      .then(({ data }) => { if (data) setAuthorProfile(data as ProfileCardData); });
-    // 등급 배지용 집계 (단건 조회 — 목록이 아니므로 N+1 아님)
-    supabase
-      .from("user_stats" as any)
-      .select("*")
-      .eq("user_id", selectedPost.user_id)
-      .maybeSingle()
-      .then(({ data }) => setAuthorStats(data ?? null));
-  }, [selectedPost?.user_id]);
 
   // Like/comment counts from DB
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
@@ -97,16 +61,6 @@ const Community = () => {
   const [userLikes, setUserLikes] = useState<Set<string>>(new Set());
 
   // Detail modal state
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState("");
-  const [submittingComment, setSubmittingComment] = useState(false);
-
-  // Edit state
-  const [editing, setEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState("");
-  const [editContent, setEditContent] = useState("");
-  const [editCategory, setEditCategory] = useState("");
-  const [savingEdit, setSavingEdit] = useState(false);
 
   /** 서버 사이드 페이지네이션 — 탭·검색·최신순을 쿼리로 내린다 */
   const fetchPosts = useCallback(async (pageIndex = 0) => {
@@ -315,22 +269,8 @@ const Community = () => {
     // Refresh counts
     const ids = dbPosts.map((p) => p.id);
     await fetchLikesAndComments(ids);
-
-    // Update selected post if open
-    if (selectedPost?.id === post.id) {
-      setSelectedPost((prev) => prev ? { ...prev, liked: !prev.liked, likeCount: prev.liked ? prev.likeCount - 1 : prev.likeCount + 1 } : null);
-    }
   };
 
-  // Fetch comments for detail view
-  const fetchComments = async (postId: string) => {
-    const { data } = await supabase
-      .from("post_comments")
-      .select("*")
-      .eq("post_id", postId)
-      .order("created_at", { ascending: true });
-    setComments((data || []) as Comment[]);
-  };
 
   // 카드 공유 — Web Share API가 있으면 OS 공유 시트, 없으면(주로 데스크톱) 링크 복사로 대체한다.
   // 공유 대상은 App.tsx의 /post/:postId 라우트다.
@@ -358,88 +298,10 @@ const Community = () => {
     }
   };
 
-  const openPost = (post: PostItem) => {
+  const goPost = (post: PostItem) => {
     if (!user) { toast.error("자세히 보려면 로그인이 필요합니다"); navigate("/auth"); return; }
-    setSelectedPost(post);
-    setComments([]);
-    setNewComment("");
-    if (post.id) fetchComments(post.id);
-  };
-
-  const handleSubmitComment = async () => {
-    if (!user) { toast.error("로그인이 필요합니다"); return; }
-    if (!selectedPost?.id) { toast("샘플 게시물에는 댓글을 달 수 없습니다"); return; }
-    if (!newComment.trim()) { toast.error("댓글 내용을 입력해주세요"); return; }
-
-    setSubmittingComment(true);
-    const { error } = await supabase.from("post_comments").insert({
-      post_id: selectedPost.id,
-      user_id: user.id,
-      author_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "익명",
-      content: newComment.trim(),
-    } as any);
-
-    if (error) {
-      toast.error("댓글 작성에 실패했습니다");
-    } else {
-      toast.success("댓글이 등록되었습니다");
-      setNewComment("");
-      await fetchComments(selectedPost.id);
-      const ids = dbPosts.map((p) => p.id);
-      await fetchLikesAndComments(ids);
-      setSelectedPost((prev) => prev ? { ...prev, commentCount: prev.commentCount + 1 } : null);
-      // Send notification to post owner
-      const ownerPost = dbPosts.find((p) => p.id === selectedPost.id);
-      if (ownerPost && ownerPost.user_id !== user.id) {
-        const actor = user.user_metadata?.full_name || user.email?.split("@")[0] || "익명";
-        await supabase.from("notifications").insert({
-          user_id: ownerPost.user_id,
-          actor_name: actor,
-          type: "comment",
-          post_id: selectedPost.id,
-          post_title: selectedPost.title,
-        } as any);
-        const { sendPushTo } = await import("@/lib/push");
-        sendPushTo({ type: "comment", userId: ownerPost.user_id, postId: String(selectedPost.id) });
-      }
-    }
-    setSubmittingComment(false);
-  };
-
-  const startEditing = () => {
-    if (!selectedPost) return;
-    setEditTitle(selectedPost.title);
-    setEditContent(selectedPost.content);
-    setEditCategory(selectedPost.tab);
-    setEditing(true);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!user || !selectedPost?.id) return;
-    if (!editTitle.trim() || !editContent.trim()) {
-      toast.error("제목과 내용을 입력해주세요");
-      return;
-    }
-    setSavingEdit(true);
-    const { error } = await supabase
-      .from("posts")
-      .update({
-        title: editTitle.trim(),
-        content: editContent.trim(),
-        category: editCategory,
-      } as any)
-      .eq("id", selectedPost.id)
-      .eq("user_id", user.id);
-
-    if (error) {
-      toast.error("수정에 실패했습니다");
-    } else {
-      toast.success("게시물이 수정되었습니다");
-      setEditing(false);
-      setSelectedPost(null);
-      await fetchPosts();
-    }
-    setSavingEdit(false);
+    if (!post.id) { toast.info("샘플 게시물입니다"); return; }
+    navigate(`/post/${post.id}`);
   };
 
   return (
@@ -492,7 +354,7 @@ const Community = () => {
         <div
           className="glass-card p-4 mb-5 flex items-center gap-3 cursor-pointer hover:border-primary active:scale-[0.99] transition-colors"
           style={{ animation: "reveal 0.6s cubic-bezier(0.16,1,0.3,1) both" }}
-          onClick={() => { const p = allPosts.find((x) => x.id === topPost.id); if (p) openPost(p); else navigate(`/post/${topPost.id}`); }}
+          onClick={() => { const p = allPosts.find((x) => x.id === topPost.id); if (p) goPost(p); else navigate(`/post/${topPost.id}`); }}
         >
           <TrendingUp className="w-4 h-4 text-primary shrink-0" />
           <div className="overflow-hidden flex-1">
@@ -524,7 +386,9 @@ const Community = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 items-start">
+      {/* 게시판 형식 — 카드 그리드 대신 구분선으로 끊은 목록.
+          항목을 누르면 상세 모달이 아니라 /post/{id} 페이지로 이동한다. */}
+      <div className="border-y border-border divide-y divide-border">
         {loadingPosts ? (
           [...Array(6)].map((_, i) => <PostCardSkeleton key={i} />)
         ) : sorted.length === 0 ? (
@@ -533,50 +397,52 @@ const Community = () => {
           </div>
         ) : null}
         {!loadingPosts && sorted.map((post, i) => (
-          <div key={post.id || `sample-${i}`} onClick={() => openPost(post)} className="glass-card p-4 hover:border-primary transition-colors duration-200 cursor-pointer active:scale-[0.99]" style={{ animation: `reveal 0.5s cubic-bezier(0.16,1,0.3,1) ${0.06 + Math.min(i, 8) * 0.05}s both` }}>
-            <div className="flex items-center gap-2 mb-2.5">
-              <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold text-secondary-foreground">{post.author[0]}</div>
-              <span className="text-[13px] font-semibold cursor-pointer hover:text-primary transition-colors truncate" onClick={(e) => { e.stopPropagation(); if (post.user_id) navigate(`/profile/${post.user_id}`); }}>{post.author}</span>
-              <span className="text-[10px] text-muted-foreground font-mono shrink-0">{post.time}</span>
-              <span className="ml-auto font-mono text-[10px] font-bold tracking-wide px-2 py-0.5 rounded bg-secondary text-secondary-foreground shrink-0">{post.tab}</span>
-            </div>
-            {/* 사진은 고정 크기 썸네일로 — 사진 유무와 무관하게 카드 높이를 맞춘다 */}
-            <div className="flex items-start gap-3 min-h-[72px]">
+          <div
+            key={post.id || `sample-${i}`}
+            onClick={() => goPost(post)}
+            className="py-3.5 cursor-pointer hover:bg-surface-hover transition-colors active:scale-[0.995]"
+          >
+            <div className="flex items-start gap-3">
               <div className="min-w-0 flex-1">
-                <h3 className="text-[15px] font-bold tracking-tight leading-snug mb-1.5">{post.title}</h3>
-                <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-2">{post.content}</p>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="font-mono text-[10px] font-bold tracking-wide px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground shrink-0">{post.tab}</span>
+                  <h3 className="text-[14.5px] font-bold tracking-tight truncate">{post.title}</h3>
+                </div>
+                <p className="text-[12.5px] text-muted-foreground line-clamp-1">{post.content}</p>
+                <div className="flex items-center gap-2 mt-1.5 text-[11px] text-muted-foreground min-w-0">
+                  <span
+                    className="truncate hover:text-primary transition-colors"
+                    onClick={(e) => { e.stopPropagation(); if (post.user_id) navigate(`/profile/${post.user_id}`); }}
+                  >
+                    {post.author}
+                  </span>
+                  <span className="font-mono shrink-0">{post.time}</span>
+                  <button
+                    onClick={(e) => handleLike(post, e)}
+                    className={`flex items-center gap-0.5 font-mono tabular-nums shrink-0 transition-colors active:scale-95 ${post.liked ? "text-red-500" : "hover:text-primary"}`}
+                  >
+                    <Heart className={`w-3 h-3 ${post.liked ? "fill-red-500" : ""}`} /> {post.likeCount}
+                  </button>
+                  <span className="flex items-center gap-0.5 font-mono tabular-nums shrink-0">
+                    <MessageSquare className="w-3 h-3" /> {post.commentCount}
+                  </span>
+                  <button
+                    onClick={(e) => handleShare(post, e)}
+                    aria-label="공유"
+                    className="ml-auto shrink-0 hover:text-primary transition-colors active:scale-95"
+                  >
+                    <Share2 className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
               {post.image_url && (
                 <img
                   src={post.image_url}
                   alt=""
-                  className="w-[72px] h-[72px] rounded-lg object-cover shrink-0 bg-secondary"
+                  className="w-14 h-14 rounded-lg object-cover shrink-0 bg-secondary"
                   loading="lazy"
                 />
               )}
-            </div>
-            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border">
-              <button
-                onClick={(e) => handleLike(post, e)}
-                className={`flex items-center gap-1 text-xs font-mono tabular-nums transition-colors active:scale-95 ${post.liked ? "text-red-500" : "text-muted-foreground hover:text-primary"}`}
-              >
-                <Heart className={`w-3.5 h-3.5 ${post.liked ? "fill-red-500" : ""}`} /> {post.likeCount}
-              </button>
-              {/* 카드 클릭과 동작이 같지만, 버블링에 기대지 않고 의도를 드러낸다 */}
-              <button
-                onClick={(e) => { e.stopPropagation(); openPost(post); }}
-                aria-label="댓글 보기"
-                className="flex items-center gap-1 text-xs font-mono tabular-nums text-muted-foreground hover:text-primary transition-colors active:scale-95"
-              >
-                <MessageSquare className="w-3.5 h-3.5" /> {post.commentCount}
-              </button>
-              <button
-                onClick={(e) => handleShare(post, e)}
-                aria-label="공유"
-                className="ml-auto text-muted-foreground hover:text-primary transition-colors active:scale-95"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-              </button>
             </div>
           </div>
         ))}
@@ -594,238 +460,6 @@ const Community = () => {
 
       
 
-      {/* Post Detail Modal */}
-      {selectedPost && (
-        <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center" onClick={() => setSelectedPost(null)}>
-          <div
-            className="w-full max-w-lg bg-background rounded-t-2xl lg:rounded-lg lg:border lg:border-border max-h-sheet flex flex-col animate-in slide-in-from-bottom duration-300"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="p-5 pb-3 shrink-0">
-              <div className="flex items-center justify-between mb-4">
-                <button onClick={() => { setSelectedPost(null); setEditing(false); }} className="p-1 rounded-full hover:bg-secondary">
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-                <div className="flex items-center gap-2">
-                  {selectedPost.id && selectedPost.user_id === user?.id && !editing && (
-                    <>
-                      <button
-                        onClick={startEditing}
-                        className="p-1.5 rounded-full hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={async () => {
-                          if (!confirm("게시물을 삭제하시겠습니까?")) return;
-                          await supabase.from("posts").delete().eq("id", selectedPost.id!).eq("user_id", user!.id);
-                          toast.success("게시물이 삭제되었습니다");
-                          setSelectedPost(null);
-                          fetchPosts();
-                        }}
-                        className="p-1.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </>
-                  )}
-                  <span className="font-mono text-[10px] font-bold tracking-wide px-2.5 py-1 rounded bg-secondary text-secondary-foreground">{editing ? editCategory : selectedPost.tab}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 본문 + 댓글을 하나의 스크롤 영역으로 묶는다.
-               사진을 원본 비율로 보여주므로 세로로 긴 이미지에서는 본문·댓글이
-               모달 밖으로 밀려나는데, 여기서 스크롤을 받아 전부 볼 수 있게 한다. */}
-            <div className="flex-1 min-h-0 overflow-y-auto px-5">
-              <div className="flex items-center gap-2 mb-4">
-                {authorProfile ? (
-                  <ProfileCard
-                    profile={authorProfile}
-                    stats={authorStats}
-                    variant="compact"
-                    onBeforeNavigate={() => setSelectedPost(null)}
-                    className="flex-1"
-                  />
-                ) : (
-                  <div className="flex items-center gap-2.5 flex-1">
-                    <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-xs font-bold text-secondary-foreground">{selectedPost.author[0]}</div>
-                    <p className="text-sm font-semibold">{selectedPost.author}</p>
-                  </div>
-                )}
-                <p className="text-[10px] text-muted-foreground shrink-0">{selectedPost.time}</p>
-                {selectedPost.user_id && selectedPost.user_id !== user?.id && (
-                  <button
-                    onClick={() => {
-                      setSelectedPost(null);
-                      navigate(`/messages?to=${selectedPost.user_id}`);
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-action text-action-foreground hover:bg-action-hover active:scale-95 transition-all"
-                  >
-                    <Mail className="w-3.5 h-3.5" />
-                    메시지
-                  </button>
-                )}
-              </div>
-
-              {editing ? (
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1 block">카테고리</label>
-                    <select
-                      className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                      value={editCategory}
-                      onChange={(e) => setEditCategory(e.target.value)}
-                    >
-                      {["자유", "질문", "거래"].map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1 block">제목</label>
-                    <input
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                      className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1 block">내용</label>
-                    <textarea
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      rows={5}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-                    />
-                  </div>
-                  <div className="flex gap-2 pb-4">
-                    <button
-                      onClick={() => setEditing(false)}
-                      className="flex-1 h-10 rounded-lg border border-border text-sm font-medium hover:bg-secondary transition-colors"
-                    >
-                      취소
-                    </button>
-                    <button
-                      onClick={handleSaveEdit}
-                      disabled={savingEdit}
-                      className="flex-1 h-10 rounded-lg bg-action text-action-foreground text-sm font-medium hover:bg-action-hover disabled:opacity-50 active:scale-95 transition-all"
-                    >
-                      {savingEdit ? "저장 중..." : "저장"}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <h2 className="text-base font-bold mb-3">{selectedPost.title}</h2>
-                  {selectedPost.image_url && (
-                    <div className="mb-3 rounded-lg overflow-hidden">
-                      <img src={selectedPost.image_url} alt="" className="w-full h-auto" />
-                    </div>
-                  )}
-                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{selectedPost.content}</p>
-                </>
-              )}
-
-              {/* E3: 구인 성격 글 → 구조화 구인글 전환 유도 (작성자 본인에게만) */}
-              {selectedPost.user_id === user?.id && isRecruitPost(selectedPost.title, selectedPost.content) && (
-                <button
-                  onClick={() => { setSelectedPost(null); navigate("/jobs"); }}
-                  className="mt-4 w-full flex items-center justify-between gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors active:scale-[0.98] text-left"
-                >
-                  <span className="text-xs">
-                    <span className="font-semibold text-primary">이 글, 구인구직에 올리면 더 빨리 찾아요</span>
-                    <span className="block text-muted-foreground mt-0.5">포지션·일정이 정리된 공고에 지원이 모입니다</span>
-                  </span>
-                  <span className="text-primary text-sm shrink-0">→</span>
-                </button>
-              )}
-
-              <div className="flex items-center gap-4 mt-5 pt-4 border-t border-border pb-4">
-                <button
-                  onClick={() => handleLike(selectedPost)}
-                  className={`flex items-center gap-1.5 text-sm transition-colors ${selectedPost.liked ? "text-red-500" : "text-muted-foreground hover:text-primary"}`}
-                >
-                  <Heart className={`w-4 h-4 ${selectedPost.liked ? "fill-red-500" : ""}`} /> {selectedPost.likeCount}
-                </button>
-                <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <MessageSquare className="w-4 h-4" /> {selectedPost.commentCount}
-                </span>
-              </div>
-
-              {/* Comments — 부모 스크롤 영역을 공유한다 */}
-              <div className="border-t border-border -mx-5 px-5">
-              <p className="text-xs font-semibold text-muted-foreground mt-4 mb-3">댓글</p>
-              {selectedPost.id ? (
-                comments.length > 0 ? (
-                  <div className="space-y-3 pb-2">
-                    {comments.map((c) => (
-                      <div key={c.id} className="flex gap-2">
-                        <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-[9px] font-bold text-secondary-foreground shrink-0 mt-0.5">
-                          {c.author_name[0]}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium">{c.author_name}</span>
-                            <span className="text-[10px] text-muted-foreground">
-                              {new Date(c.created_at).toLocaleDateString("ko-KR")}
-                            </span>
-                            {user && c.user_id === user.id && (
-                              <button
-                                onClick={async () => {
-                                  if (!confirm("댓글을 삭제하시겠습니까?")) return;
-                                  await supabase.from("post_comments").delete().eq("id", c.id);
-                                  toast.success("댓글이 삭제되었습니다");
-                                  await fetchComments(selectedPost!.id!);
-                                  const ids = dbPosts.map((p) => p.id);
-                                  await fetchLikesAndComments(ids);
-                                  setSelectedPost((prev) => prev ? { ...prev, commentCount: prev.commentCount - 1 } : null);
-                                }}
-                                className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
-                              >
-                                삭제
-                              </button>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">{c.content}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground text-center py-4">아직 댓글이 없습니다.</p>
-                )
-              ) : (
-                <p className="text-xs text-muted-foreground text-center py-4">샘플 게시물의 댓글은 표시되지 않습니다.</p>
-              )}
-            </div>
-
-            </div>
-
-            {/* Comment Input */}
-            {selectedPost.id && (
-              <div className="p-4 border-t border-border flex gap-2 shrink-0">
-                <input
-                  type="text"
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSubmitComment()}
-                  placeholder="댓글을 입력하세요..."
-                  className="flex-1 h-10 px-3 rounded-lg border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-                <button
-                  onClick={handleSubmitComment}
-                  disabled={submittingComment || !newComment.trim()}
-                  className="w-10 h-10 rounded-lg bg-action text-action-foreground flex items-center justify-center disabled:opacity-50 active:scale-95 transition-all"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </PageShell>
   );
 };
