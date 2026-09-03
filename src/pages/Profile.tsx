@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronRight, Edit3, Shield, ScrollText, Handshake, HelpCircle, LogOut, Trash2, Calendar, MapPin, Users, Clock, History, IdCard, Star, CalendarHeart, Flag, CalendarX2 } from "lucide-react";
+import { ChevronRight, Edit3, Shield, ScrollText, Handshake, HelpCircle, Mail, LogOut, Trash2, Calendar, MapPin, Users, Clock, History, IdCard, Star, CalendarHeart, Flag, CalendarX2 } from "lucide-react";
 import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -43,6 +43,39 @@ const menuItems = [
 ] as const;
 
 type MenuKey = (typeof menuItems)[number]["key"];
+
+// 운영 연락 메일. 앱 내 메시지가 닿지 않는 경우 — 로그인이 막혔거나, 앱 밖에서 물어야 할 때 —
+// 를 위한 두 번째 창구다. 제휴 문의와 고객센터가 같은 주소를 쓰므로 한 번만 적는다.
+// 운영에 실제로 닿는 주소여야 한다: 받는 사람이 없는 주소는 답을 기다리게만 만든다.
+const SUPPORT_EMAIL = "instrut123@gmail.com";
+
+// 주소를 링크와 복사 두 가지로 낸다. mailto:가 열리지 않는 기기가 있고, 그때 주소를 손으로
+// 옮겨 적게 두면 오타 하나로 답을 못 받는 쪽은 보낸 사람이다.
+const SupportEmail = () => (
+  <div className="mt-2.5 flex items-center gap-2 rounded-lg bg-secondary px-3 py-2">
+    <Mail className="w-3.5 h-3.5 shrink-0 text-secondary-foreground" />
+    <a
+      href={`mailto:${SUPPORT_EMAIL}`}
+      className="text-xs font-medium text-secondary-foreground underline underline-offset-4 truncate"
+    >
+      {SUPPORT_EMAIL}
+    </a>
+    <button
+      type="button"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(SUPPORT_EMAIL);
+          toast.success("메일 주소를 복사했습니다");
+        } catch {
+          toast.error(`복사에 실패했습니다. 주소: ${SUPPORT_EMAIL}`);
+        }
+      }}
+      className="ml-auto shrink-0 text-[11px] font-semibold text-secondary-foreground hover:text-foreground transition-colors"
+    >
+      복사
+    </button>
+  </div>
+);
 
 const activityTabs = ["내 게시물", "최근 본"];
 
@@ -1502,17 +1535,30 @@ const ProfilePage = () => {
                   >
                     관리자에게 문의하기
                   </button>
+                  <p className="text-[11px] text-muted-foreground mt-3">
+                    메일이 편하시면 같은 운영자에게 닿습니다. 답은 보내신 메일로 옵니다.
+                  </p>
+                  <SupportEmail />
                 </>
               ) : supportAdminId ? (
-                <p className="text-xs text-muted-foreground mt-1">
-                  회원님이 문의를 받는 관리자입니다. 제휴 문의도 &lsquo;메시지&rsquo;로 들어옵니다.
-                </p>
+                <>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    회원님이 문의를 받는 관리자입니다. 제휴 문의도 &lsquo;메시지&rsquo;로 들어옵니다.
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    앱 밖에서 오는 제휴 문의는 이 메일로 들어옵니다.
+                  </p>
+                  <SupportEmail />
+                </>
               ) : (
-                <p className="text-xs text-muted-foreground mt-1">
-                  아직 운영자에게 문의를 접수할 창구가 없습니다. 받는 사람이 없는 주소를 적어두면
-                  답을 기다리게만 되므로 적지 않았습니다. 그동안에도 아래 사장님 콘솔에서 업소를
-                  직접 등록해두실 수 있고, 창구가 열리면 이 화면에 먼저 안내하겠습니다.
-                </p>
+                <>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    앱 내 메시지로 문의를 받을 운영자가 아직 지정되지 않았습니다. 그동안은 메일로
+                    보내주세요 — 업소 이름 · 위치 · 연락처와 원하시는 등급을 함께 적어주시면
+                    확인이 빠릅니다. 아래 사장님 콘솔에서 업소를 직접 등록해두셔도 됩니다.
+                  </p>
+                  <SupportEmail />
+                </>
               )}
             </div>
             <div className="rounded-lg border border-border p-3">
@@ -1541,12 +1587,14 @@ const ProfilePage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* 고객센터 — 새 문의 폼이나 메일 주소는 여전히 만들지 않는다. 접수 백엔드도,
-          받는 사람이 있는 메일 계정도 없기 때문이다. 대신 이미 사람이 읽는 창구인
-          앱 내 메시지로 보낸다: get_support_admin_id RPC(20260901000023 마이그레이션)가
-          문의를 받을 관리자 한 명의 id만 돌려주고, 그 id로 /messages?to= 대화를 연다.
-          관리자가 없으면 RPC가 NULL을 주므로 버튼 없이 "창구가 없다"는 안내만 남는다 —
-          동작하지 않는 버튼은 두지 않는다. */}
+      {/* 고객센터 — 새 문의 폼은 여전히 만들지 않는다. 접수 백엔드가 없기 때문이다.
+          창구는 사람이 실제로 읽는 둘뿐이다.
+          ① 앱 내 메시지: get_support_admin_id RPC(20260901000023 마이그레이션)가 문의를 받을
+             관리자 한 명의 id만 돌려주고, 그 id로 /messages?to= 대화를 연다.
+          ② 메일(SUPPORT_EMAIL): 로그인이 막히면 ①로는 아무것도 보낼 수 없다. 계정 문제야말로
+             문의가 가장 절실한 상황이라 앱 밖에서 닿는 길을 함께 둔다.
+          관리자가 없으면 RPC가 NULL을 주므로 메시지 버튼을 감추고 메일만 남긴다 —
+          동작하지 않는 버튼은 두지 않되, 이제는 안내만 남기지도 않는다. */}
       <Dialog open={menuSheet === "support"} onOpenChange={(o) => { if (!o) setMenuSheet(null); }}>
         <DialogContent>
           <DialogHeader>
@@ -1612,18 +1660,31 @@ const ProfilePage = () => {
                   >
                     관리자에게 문의하기
                   </button>
+                  <p className="text-[11px] text-muted-foreground mt-3">
+                    로그인이 막혀 메시지를 보낼 수 없을 때는 메일로 보내주세요. 같은 운영자가 읽습니다.
+                  </p>
+                  <SupportEmail />
                 </>
               ) : supportAdminId ? (
-                <p className="text-xs text-muted-foreground mt-1">
-                  회원님이 문의를 받는 관리자입니다. 다른 사용자가 보낸 문의는 &lsquo;메시지&rsquo;로 들어옵니다.
-                </p>
+                <>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    회원님이 문의를 받는 관리자입니다. 다른 사용자가 보낸 문의는 &lsquo;메시지&rsquo;로 들어옵니다.
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    로그인하지 못한 사용자가 보내는 문의는 이 메일로 들어옵니다.
+                  </p>
+                  <SupportEmail />
+                </>
               ) : (
-                <p className="text-xs text-muted-foreground mt-1">
-                  아직 운영자에게 문의를 접수할 창구가 없습니다. 받는 사람이 없는 주소를 적어두면
-                  답을 기다리게만 되므로, 준비될 때까지는 적지 않았습니다. 창구가 열리면 이 화면에 먼저 안내하겠습니다.
-                  그때까지 계정 자체를 지우는 것은 앱에서 처리할 수 없습니다. 위 방법으로 프로필과 게시물을 비워두면
-                  다른 사람에게 보이는 내용은 남지 않습니다.
-                </p>
+                <>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    앱 내 메시지로 문의를 받을 운영자가 아직 지정되지 않았습니다. 그동안의 문의와
+                    계정 삭제 요청은 메일로 받습니다 — 앱에서 계정을 바로 지우는 기능은 아직 없어
+                    확인 후 처리합니다. 위 방법으로 프로필과 게시물을 비워두면 그 사이에도 다른
+                    사람에게 보이는 내용은 남지 않습니다.
+                  </p>
+                  <SupportEmail />
+                </>
               )}
             </div>
           </div>
