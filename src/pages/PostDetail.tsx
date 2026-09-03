@@ -1,5 +1,5 @@
 import { ArrowLeft, Heart, MessageSquare, Send, Mail, Pencil, Trash2 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +38,7 @@ const PostDetail = () => {
   // 입력창에 포커스가 있는 동안 = 키보드가 올라와 있는 동안. 이 사실 하나로 탭바를
   // 내리고(useComposing) 입력 바를 키보드 바로 위에 붙인다.
   const [composing, setComposing] = useState(false);
+  const commentInputRef = useRef<HTMLInputElement>(null);
   // 전송 버튼을 누르면 그 순간 입력창의 포커스가 풀린다. 포커스만 보고 자리를 되돌리면
   // 키보드가 아직 닫히는 중인데 입력 바가 먼저 내려가 버려, 손가락 아래에서 버튼이
   // 빠져나가 탭이 빗나간다. 그래서 실측 높이가 0이 될 때까지 — 즉 키보드가 실제로
@@ -112,6 +113,9 @@ const PostDetail = () => {
   const handleSubmitComment = async () => {
     if (!user) { toast.error("로그인이 필요합니다"); return; }
     if (!postId || !newComment.trim()) return;
+    // 포커스를 입력창에 붙들어 둔다 — 연달아 달 때 키보드가 내려가지 않게. await보다
+    // 앞이어야 한다: iOS는 사용자 제스처가 끝난 뒤의 focus()로 키보드를 올려주지 않는다.
+    commentInputRef.current?.focus();
     setSubmitting(true);
     const { error } = await supabase.from("post_comments").insert({
       post_id: postId,
@@ -351,6 +355,7 @@ const PostDetail = () => {
       >
         <div className="max-w-[720px] mx-auto flex gap-2 px-1 lg:px-0">
           <input
+            ref={commentInputRef}
             type="text"
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
@@ -358,10 +363,16 @@ const PostDetail = () => {
             onFocus={() => setComposing(true)}
             onBlur={() => setComposing(false)}
             placeholder="댓글을 입력하세요..."
+            enterKeyHint="send"
             className="flex-1 h-11 px-3.5 rounded-lg border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           <button
             onClick={handleSubmitComment}
+            // 브라우저는 mousedown에서 포커스를 누른 요소로 옮긴다. 그 순간 입력창이
+            // 포커스를 잃어 키보드가 내려가고, 보낸 뒤 입력이 비면 이 버튼은 disabled가
+            // 되어 포커스가 body로 떨어진다. 기본동작만 막으면 포커스는 입력창에 남고
+            // click은 그대로 온다.
+            onMouseDown={(e) => e.preventDefault()}
             disabled={submitting || !newComment.trim()}
             className="w-11 h-11 rounded-lg bg-action text-action-foreground flex items-center justify-center disabled:opacity-50 active:scale-[0.96] transition-transform"
           >

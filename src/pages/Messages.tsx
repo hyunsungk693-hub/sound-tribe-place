@@ -107,6 +107,7 @@ const Messages = () => {
   const [showEmoji, setShowEmoji] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const msgInputRef = useRef<HTMLInputElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
 
   const keyboardInset = useKeyboardInset();
@@ -459,6 +460,13 @@ const Messages = () => {
     if (!user || !selectedConv || sending) return;
     if (!newMsg.trim() && !selectedFile) return;
 
+    // 포커스를 입력창에 붙들어 둔다 — 연속으로 보낼 때 키보드가 내려가지 않게.
+    // 버튼의 mousedown 기본동작(아래 onMouseDown)을 막아 포커스가 옮겨가는 것은 이미
+    // 차단했지만, 그걸 무시하고 포커스를 가져가는 브라우저가 남아 있다. 여기서 되돌리는
+    // 것은 반드시 await보다 앞이어야 한다 — iOS는 사용자 제스처가 끝난 뒤의 focus()로는
+    // 키보드를 다시 올려주지 않는다.
+    msgInputRef.current?.focus();
+
     setSending(true);
     setUploading(!!selectedFile);
 
@@ -746,9 +754,13 @@ const Messages = () => {
             <Smile className="w-5 h-5 text-muted-foreground" />
           </button>
           <input
+            ref={msgInputRef}
             value={newMsg}
             onChange={(e) => setNewMsg(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+            // 모바일 키보드의 확인 키를 '보내기'로 바꾼다. 연속으로 보낼 때 버튼을
+            // 누르러 손을 옮길 필요가 없어 포커스가 흔들릴 일 자체가 줄어든다.
+            enterKeyHint="send"
             // 키보드와 이모지 피커가 동시에 뜨면 입력창이 둘 사이에 끼여 화면 밖으로 밀린다.
             onFocus={() => { setShowEmoji(false); setComposing(true); }}
             onBlur={() => setComposing(false)}
@@ -757,8 +769,13 @@ const Messages = () => {
           />
           <button
             onClick={handleSend}
+            // 브라우저는 mousedown에서 포커스를 누른 요소로 옮긴다. 그 순간 입력창이
+            // 포커스를 잃어 키보드가 내려가고, 보낸 뒤 입력이 비면 이 버튼은 disabled가
+            // 되어 포커스가 body로 떨어진다 — 그래서 한 통 보내면 키보드가 사라졌다.
+            // 기본동작만 막으면 포커스는 입력창에 남고 click은 그대로 온다.
+            onMouseDown={(e) => e.preventDefault()}
             disabled={(!newMsg.trim() && !selectedFile) || sending}
-            className="w-10 h-10 rounded-lg bg-action text-action-foreground flex items-center justify-center disabled:opacity-50 active:scale-95 transition-transform shrink-0"
+            className="w-11 h-11 rounded-lg bg-action text-action-foreground flex items-center justify-center disabled:opacity-50 active:scale-[0.96] transition-transform shrink-0"
           >
             {uploading ? (
               <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
