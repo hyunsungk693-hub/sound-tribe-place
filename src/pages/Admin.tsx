@@ -17,6 +17,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Trash2, Pencil, Plus, X, UserPlus, Shield, AlertTriangle } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar,
@@ -71,6 +72,11 @@ const Admin = () => {
   const [submitting, setSubmitting] = useState(false);
   const [pendingCreds, setPendingCreds] = useState(0);
   const [pendingReports, setPendingReports] = useState(0);
+  // 삭제 확인은 네이티브 confirm 대신 AlertDialog로 받는다. confirm은 iOS에서 도메인이
+  // 박힌 시스템 경고창을 띄워 앱이 아니라 브라우저가 말을 거는 것처럼 보이고(설치형 PWA에서
+  // 특히 이질적이다), 떠 있는 동안 JS를 통째로 멈춘다. 목록 안에서 부르므로 어느 장소인지도
+  // 상태로 들고 있어야 한다 — id만으로는 확인 문구에 이름을 실을 수 없다.
+  const [deletePlaceTarget, setDeletePlaceTarget] = useState<Place | null>(null);
 
   const fetchPlaces = async () => {
     const { data } = await supabase.from("places").select("*").order("created_at", { ascending: false });
@@ -118,9 +124,11 @@ const Admin = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("이 장소를 삭제하시겠습니까?")) return;
-    const { error } = await supabase.from("places").delete().eq("id", id);
+  const handleDelete = async () => {
+    const target = deletePlaceTarget;
+    if (!target) return;
+    setDeletePlaceTarget(null);
+    const { error } = await supabase.from("places").delete().eq("id", target.id);
     if (error) return toast.error("삭제 실패");
     toast.success("삭제되었습니다");
     fetchPlaces();
@@ -315,7 +323,7 @@ const Admin = () => {
                 </div>
                 <div className="flex gap-1">
                   <Button size="icon" variant="ghost" onClick={() => handleEdit(p)}><Pencil className="w-4 h-4" /></Button>
-                  <Button size="icon" variant="ghost" onClick={() => handleDelete(p.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => setDeletePlaceTarget(p)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                 </div>
               </div>
             </Card>
@@ -327,6 +335,27 @@ const Admin = () => {
           <AdminsManager />
         </TabsContent>
       </Tabs>
+
+      {/* 장소 삭제 확인 — 목록의 카드들이 서로 닮아 있어 어느 것을 눌렀는지 이름으로 못박는다 */}
+      <AlertDialog open={!!deletePlaceTarget} onOpenChange={(o) => { if (!o) setDeletePlaceTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>이 장소를 삭제할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deletePlaceTarget && (
+                <span className="block font-medium text-foreground">
+                  [{typeLabel[deletePlaceTarget.type]}] {deletePlaceTarget.name}
+                </span>
+              )}
+              <span className="block mt-1">지도와 목록에서 바로 사라지고, 삭제한 장소는 되돌릴 수 없습니다.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>돌아가기</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); handleDelete(); }}>삭제하기</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <BottomNav />
     </div>
@@ -484,6 +513,9 @@ const AdminsManager = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+  // 권한 해제도 같은 이유로 AlertDialog. 되돌리려면 상대가 다시 로그인할 수 있는 상태에서
+  // 이메일로 재추가해야 하므로, 확인 문구에 대상 이메일을 그대로 실어 오조작을 막는다.
+  const [removeTarget, setRemoveTarget] = useState<AdminEntry | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -506,9 +538,10 @@ const AdminsManager = () => {
     load();
   };
 
-  const remove = async (targetEmail: string | null) => {
+  const remove = async () => {
+    const targetEmail = removeTarget?.email;
+    setRemoveTarget(null);
     if (!targetEmail) return toast.error("이메일 정보가 없습니다");
-    if (!confirm(`${targetEmail}의 관리자 권한을 해제하시겠습니까?`)) return;
     const { data, error } = await supabase.functions.invoke("manage-admins", { body: { action: "remove", email: targetEmail } });
     if (error || (data as any)?.error) return toast.error((data as any)?.error || "해제 실패");
     toast.success("권한이 해제되었습니다");
@@ -542,12 +575,31 @@ const AdminsManager = () => {
               <p className="font-medium truncate">{a.email || "(이메일 없음)"}</p>
               <p className="text-xs text-muted-foreground">{new Date(a.created_at).toLocaleDateString("ko-KR")}</p>
             </div>
-            <Button size="icon" variant="ghost" onClick={() => remove(a.email)}>
+            <Button size="icon" variant="ghost" onClick={() => setRemoveTarget(a)}>
               <Trash2 className="w-4 h-4 text-destructive" />
             </Button>
           </Card>
         ))}
       </div>
+
+      {/* 관리자 권한 해제 확인 */}
+      <AlertDialog open={!!removeTarget} onOpenChange={(o) => { if (!o) setRemoveTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>관리자 권한을 해제할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <span className="block font-medium text-foreground">{removeTarget?.email || "(이메일 없음)"}</span>
+              <span className="block mt-1">
+                이 계정은 관리자 화면에 더 이상 들어올 수 없게 됩니다. 다시 주려면 같은 이메일로 추가하면 됩니다.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>돌아가기</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); remove(); }}>해제하기</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

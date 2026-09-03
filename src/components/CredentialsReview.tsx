@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { BadgeCheck, Eye, ShieldQuestion, X } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // 작업 8 후속: 관리자 증빙 검토 화면.
 // 원본 이미지는 비공개 버킷에만 있고, 여기서도 5분짜리 서명 URL로만 연다.
@@ -40,6 +41,13 @@ const CredentialsReview = ({ onPendingCount }: { onPendingCount?: (n: number) =>
   const [openId, setOpenId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // 판정 확인은 네이티브 confirm 대신 AlertDialog로 받는다. confirm은 iOS에서 도메인이 박힌
+  // 시스템 경고창을 띄워 앱이 아니라 브라우저가 말을 거는 것처럼 보이고, 떠 있는 동안 JS를
+  // 통째로 멈춘다. 게다가 확인창 한 줄로는 "무슨 일이 일어나는지"를 제대로 못 적는다 —
+  // 여기서 누른 한 번이 상대의 프로필 공개 여부와 구인 활동 가능 여부를 바꾸고, 원본이
+  // 파기되고 나면 같은 근거로 다시 판단할 수도 없다. 대상과 결과를 상태로 들고 있다가
+  // 다이얼로그에 그대로 풀어 쓴다.
+  const [decideTarget, setDecideTarget] = useState<{ row: CredRow; status: "verified" | "rejected" } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,14 +101,11 @@ const CredentialsReview = ({ onPendingCount }: { onPendingCount?: (n: number) =>
     setOpenId(r.id);
   };
 
-  const decide = async (r: CredRow, status: "verified" | "rejected") => {
-    const who = nameOf(r.user_id);
-    const ok = confirm(
-      status === "verified"
-        ? `${who}의 ${kindLabel[r.kind]}을 인증 처리할까요?\n프로필이 공개되고 구인글 작성·지원이 열립니다.`
-        : `${who}의 ${kindLabel[r.kind]}을 반려할까요?\n프로필은 계속 비공개로 유지됩니다.`
-    );
-    if (!ok) return;
+  const decide = async () => {
+    const target = decideTarget;
+    if (!target) return;
+    const { row: r, status } = target;
+    setDecideTarget(null);
     setBusyId(r.id);
     const { error } = await supabase
       .from("profile_credentials" as any)
@@ -181,13 +186,13 @@ const CredentialsReview = ({ onPendingCount }: { onPendingCount?: (n: number) =>
           <div className="flex gap-2">
             <Button
               className="flex-1 bg-action text-action-foreground hover:bg-action-hover"
-              onClick={() => decide(r, "verified")}
+              onClick={() => setDecideTarget({ row: r, status: "verified" })}
               disabled={busyId === r.id}
             >
               <BadgeCheck className="w-4 h-4 mr-1.5" />
               인증 완료
             </Button>
-            <Button variant="ghost" className="text-destructive" onClick={() => decide(r, "rejected")} disabled={busyId === r.id}>
+            <Button variant="ghost" className="text-destructive" onClick={() => setDecideTarget({ row: r, status: "rejected" })} disabled={busyId === r.id}>
               반려
             </Button>
           </div>
@@ -217,6 +222,40 @@ const CredentialsReview = ({ onPendingCount }: { onPendingCount?: (n: number) =>
           ))}
         </div>
       )}
+
+      {/* 인증 · 반려 확인. 두 결정 모두 되돌리기 어렵다 — 원본은 처리 후 30일이면 파기되어
+          같은 근거로 다시 볼 수 없다. 그래서 누구의 무슨 서류인지와, 그 결과 상대의 앱이
+          어떻게 달라지는지를 한 화면에 모두 적는다. */}
+      <AlertDialog open={!!decideTarget} onOpenChange={(o) => { if (!o) setDecideTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {decideTarget?.status === "rejected" ? "이 증빙을 반려할까요?" : "이 증빙을 인증 처리할까요?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {decideTarget && (
+                <span className="block font-medium text-foreground">
+                  {nameOf(decideTarget.row.user_id)} · {kindLabel[decideTarget.row.kind]}
+                </span>
+              )}
+              <span className="block mt-1">
+                {decideTarget?.status === "rejected"
+                  ? "프로필은 계속 비공개로 유지되고, 구인글 작성·지원도 막힌 채로 남습니다."
+                  : "프로필이 공개되고 구인글 작성·지원이 열립니다."}
+              </span>
+              <span className="block mt-1">
+                처리하면 원본은 30일 뒤 자동 파기되어 같은 서류를 다시 확인할 수 없습니다.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>돌아가기</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); decide(); }}>
+              {decideTarget?.status === "rejected" ? "반려하기" : "인증 완료"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

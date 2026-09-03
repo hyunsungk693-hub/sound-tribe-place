@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { supabase } from "@/integrations/supabase/client";
 import PlaceSearchInput from "@/components/PlaceSearchInput";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Studio, Room, Slot, Booking, fmtWon, decideBookingRequest } from "@/lib/bookings";
 import { sendPushTo } from "@/lib/push";
 
@@ -23,6 +24,8 @@ const Partner = () => {
   const [slots, setSlots] = useState<Record<string, Slot[]>>({});
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [pins, setPins] = useState<any[]>([]);
+  const [rejectTarget, setRejectTarget] = useState<Booking | null>(null);
+  const [rejecting, setRejecting] = useState(false);
 
   // 좌표는 장소 검색으로만 채운다. NULL이면 Studios 화면의 길찾기가 이름·주소 검색으로 떨어진다.
   const [sForm, setSForm] = useState<{
@@ -141,7 +144,6 @@ const Partner = () => {
 
   // B(요청예약) 등급 예약 요청 처리. 승인하면 confirmed가 되지만 결제 연동 전이라 PIN은 나가지 않는다.
   const decideRequest = async (b: Booking, approve: boolean) => {
-    if (!approve && !confirm("예약 요청을 거절하시겠습니까?")) return;
     try {
       await decideBookingRequest(b.id, approve);
       // 인앱 알림은 트리거가 발행한다(20260901000022). 푸시는 사용자 JWT가 있어야
@@ -152,6 +154,15 @@ const Partner = () => {
     } catch (e: any) {
       toast.error(e.message || "처리에 실패했습니다");
     }
+  };
+
+  // 거절은 되돌릴 수 없고 상대에게 곧바로 알림이 나가므로 한 번 더 묻는다.
+  const confirmReject = async () => {
+    if (!rejectTarget) return;
+    setRejecting(true);
+    await decideRequest(rejectTarget, false);
+    setRejecting(false);
+    setRejectTarget(null);
   };
 
   const addPin = async () => {
@@ -350,7 +361,7 @@ const Partner = () => {
                   {b.status === "requested" && (
                     <div className="flex gap-1 shrink-0">
                       <button onClick={() => decideRequest(b, true)} className="text-[11px] px-2 py-1 rounded bg-primary/10 text-primary font-semibold flex items-center gap-1"><Check className="w-3 h-3" />승인</button>
-                      <button onClick={() => decideRequest(b, false)} className="text-[11px] px-2 py-1 rounded bg-destructive/10 text-destructive font-semibold flex items-center gap-1"><X className="w-3 h-3" />거절</button>
+                      <button onClick={() => setRejectTarget(b)} className="text-[11px] px-2 py-1 rounded bg-destructive/10 text-destructive font-semibold flex items-center gap-1"><X className="w-3 h-3" />거절</button>
                     </div>
                   )}
                   {b.status === "confirmed" && (
@@ -367,6 +378,29 @@ const Partner = () => {
           </div>
         )}
       </div>
+
+      {/* 예약 요청 거절 확인 — iOS에서 네이티브 confirm은 도메인이 박힌 시스템 경고창을 띄워
+          앱이 아니라 브라우저가 말을 거는 것처럼 보인다 */}
+      <AlertDialog open={!!rejectTarget} onOpenChange={(o) => { if (!o && !rejecting) setRejectTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>예약 요청을 거절할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              거절하면 되돌릴 수 없고 예약자에게 바로 알림이 갑니다. 해당 시간대는 다시 열립니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={rejecting}>돌아가기</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmReject(); }}
+              disabled={rejecting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {rejecting ? "처리 중..." : "거절하기"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   );
 };

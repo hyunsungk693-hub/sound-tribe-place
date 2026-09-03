@@ -1,4 +1,4 @@
-import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useSheet } from "@/hooks/useSheet";
 import { Search, ArrowUpDown, ArrowLeft, Pencil, Trash2, MessageCircle, Check, Navigation, Star, CalendarHeart } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -134,6 +134,9 @@ const Jobs = () => {
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
   const [closing, setClosing] = useState(false);
+  /** 게시물 삭제 확인 — 되돌릴 수 없는 동작이라 확인을 받는다 */
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // 지원 취소: 작성한 지원 메시지는 복구할 수 없으므로 내용이 있을 때만 확인을 받는다.
   const discardApply = () => {
@@ -495,8 +498,17 @@ const Jobs = () => {
   // 필터·검색·정렬은 서버에서 끝나므로 여기서 다시 거르지 않는다
   const filtered = allJobs;
 
-  // 상세 시트·영상 게이트가 열려 있는 동안 뒤 목록 스크롤을 잠근다.
-  useBodyScrollLock(!!selectedJob || videoGateOpen);
+  // 상세 시트와 그 위에 겹쳐 뜨는 영상 게이트를 useSheet 하나로 묶는다. 열림 상태를
+  // 합쳐 두고 뒤로가기는 맨 위 한 겹만 닫는다 — 이력을 몇 개 쌓고 걷을지는 훅이 맞춘다.
+  const closeTopSheet = () => {
+    if (videoGateOpen) {
+      setVideoGateOpen(false);
+      return;
+    }
+    setSelectedJob(null);
+    setEditing(false);
+  };
+  const { overlayStyle } = useSheet(!!selectedJob || videoGateOpen, closeTopSheet);
 
   const startEditing = () => {
     if (!selectedJob) return;
@@ -547,8 +559,10 @@ const Jobs = () => {
 
   const handleDelete = async () => {
     if (!selectedJob?.id || !user) return;
-    if (!confirm("게시물을 삭제하시겠습니까?")) return;
+    setDeleting(true);
     const { error } = await supabase.from("posts").delete().eq("id", selectedJob.id).eq("user_id", user.id);
+    setDeleting(false);
+    setConfirmDeleteOpen(false);
     if (error) { toast.error("삭제에 실패했습니다"); return; }
     toast.success("게시물이 삭제되었습니다");
     setSelectedJob(null);
@@ -571,7 +585,7 @@ const Jobs = () => {
       <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-1 items-center">
         <button
           onClick={() => setSortOrder((o) => (o === "latest" ? "oldest" : "latest"))}
-          className="shrink-0 flex items-center gap-1 rounded-lg px-3 py-1.5 text-[13px] font-semibold border border-border text-muted-foreground hover:border-primary transition-colors active:scale-95"
+          className="shrink-0 flex items-center gap-1 rounded-lg px-3 py-2.5 text-[13px] font-semibold border border-border text-muted-foreground hover:border-primary transition-colors active:scale-95"
         >
           <ArrowUpDown className="w-3 h-3" />
           {sortOrder === "latest" ? "최신순" : "오래된순"}
@@ -580,7 +594,7 @@ const Jobs = () => {
           <button
             key={cat}
             onClick={() => setSelectedCat(cat)}
-            className={`shrink-0 rounded-lg px-3.5 py-1.5 text-[13px] font-semibold transition-colors active:scale-95 ${
+            className={`shrink-0 rounded-lg px-3.5 py-2.5 text-[13px] font-semibold transition-colors active:scale-95 ${
               cat === selectedCat ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:border-primary"
             }`}
           >
@@ -596,7 +610,7 @@ const Jobs = () => {
           <button
             key={pos}
             onClick={() => setSelectedPosition(pos)}
-            className={`shrink-0 rounded-lg px-3 py-1 text-[12px] font-semibold transition-colors active:scale-95 ${
+            className={`shrink-0 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition-colors active:scale-95 ${
               pos === selectedPosition
                 ? "border border-primary text-primary"
                 : "border border-border text-muted-foreground hover:border-primary"
@@ -736,23 +750,25 @@ const Jobs = () => {
 
       {/* Detail Modal */}
       {selectedJob && (
-        <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center" onClick={() => { setSelectedJob(null); setEditing(false); }}>
+        <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center" style={overlayStyle} onClick={() => { setSelectedJob(null); setEditing(false); }}>
           <div
             className="w-full max-w-lg bg-background rounded-t-2xl lg:rounded-xl max-h-sheet flex flex-col animate-in slide-in-from-bottom duration-300 overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-5">
               <div className="flex items-center justify-between mb-4">
-                <button onClick={() => { setSelectedJob(null); setEditing(false); }} className="p-1 rounded-full hover:bg-secondary">
+                <button onClick={() => { setSelectedJob(null); setEditing(false); }} className="tap-44 p-1 rounded-full hover:bg-secondary">
                   <ArrowLeft className="w-5 h-5" />
                 </button>
-                <div className="flex items-center gap-2">
+                {/* 수정·삭제는 나란히 붙어 있어 tap-44로 넓히면 닿는 영역이 서로 겹친다.
+                    대신 버튼 자체를 키우고(32px) gap-3으로 벌려 중심 간 44px를 만든다 */}
+                <div className="flex items-center gap-3">
                   {selectedJob.id && selectedJob.user_id === user?.id && !editing && (
                     <>
-                      <button onClick={startEditing} className="p-1.5 rounded-full hover:bg-secondary text-muted-foreground hover:text-primary transition-colors">
+                      <button onClick={startEditing} className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-primary transition-colors">
                         <Pencil className="w-4 h-4" />
                       </button>
-                      <button onClick={handleDelete} className="p-1.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                      <button onClick={() => setConfirmDeleteOpen(true)} className="p-2 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </>
@@ -854,7 +870,9 @@ const Jobs = () => {
                 <>
                   {selectedJob.image_url && (
                     <div className="rounded-lg overflow-hidden mb-4 -mt-1">
-                      <img src={selectedJob.image_url} alt={selectedJob.title} className="w-full h-auto" />
+                      {/* 서버가 원본 비율을 알려주지 않아 h-auto면 로드되는 순간 아래 본문이 밀린다.
+                          4:3으로 자리를 먼저 잡아 레이아웃이 튀지 않게 한다 */}
+                      <img src={selectedJob.image_url} alt={selectedJob.title} className="w-full aspect-[4/3] object-cover" />
                     </div>
                   )}
                   {authorProfile && (
@@ -1184,6 +1202,28 @@ const Jobs = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* 게시물 삭제 확인 — 되돌릴 수 없고, 시스템 경고창은 앱이 아니라 브라우저가 말을 거는 느낌이 된다 */}
+      <AlertDialog open={confirmDeleteOpen} onOpenChange={(o) => { if (!deleting) setConfirmDeleteOpen(o); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>게시물을 삭제할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              삭제하면 공고와 받은 지원 내역이 함께 사라지고 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>돌아가기</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDelete(); }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "삭제 중..." : "삭제하기"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* 작업 8: 프로 증빙 미인증 게이트 */}
       <AlertDialog open={proGateOpen} onOpenChange={setProGateOpen}>
         <AlertDialogContent>
@@ -1241,7 +1281,7 @@ const Jobs = () => {
 
       {/* A1: 연주영상 등록 유도 게이트 */}
       {videoGateOpen && (
-        <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center" onClick={() => setVideoGateOpen(false)}>
+        <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center" style={overlayStyle} onClick={() => setVideoGateOpen(false)}>
           <div
             className="w-full max-w-sm bg-background rounded-t-2xl lg:rounded-2xl p-6 animate-in slide-in-from-bottom duration-300"
             onClick={(e) => e.stopPropagation()}

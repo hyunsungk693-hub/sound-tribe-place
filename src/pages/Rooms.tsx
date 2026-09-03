@@ -1,4 +1,5 @@
-import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useSheet } from "@/hooks/useSheet";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Search, MapPin, Clock, Music, ArrowLeft, Pencil, Trash2, MessageCircle, Navigation, ChevronRight, Phone } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -67,6 +68,8 @@ const Rooms = () => {
   const [editPhone, setEditPhone] = useState("");
   const [editInstruments, setEditInstruments] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   /** 서버 사이드 페이지네이션 — 검색·정렬을 쿼리로 내린다 */
   const fetchRooms = async (m: Mode, pageIndex = 0) => {
@@ -151,9 +154,17 @@ const Rooms = () => {
   ];
   // 검색·정렬은 서버에서 끝난다
 
-  // 상세 시트가 열려 있는 동안 뒤 목록이 스크롤되지 않게 잠근다.
-  // 시트 안 입력칸에 포커스가 가면 iOS가 키보드를 띄우며 뒤 문서를 끌어올린다.
-  useBodyScrollLock(!!selectedRoom);
+  const closeDetail = () => {
+    setSelectedRoom(null);
+    setEditing(false);
+    // 시트가 뒤로가기로 닫히면 삭제 확인창만 대상 없이 남을 수 있어 함께 접는다
+    setConfirmDeleteOpen(false);
+  };
+
+  // 상세 시트가 열려 있는 동안 뒤 목록이 스크롤되지 않게 잠그고, 뒤로가기를 시트 닫기로 받는다.
+  // 잠금이 없으면 시트 안 입력칸에 포커스가 갈 때 iOS가 키보드를 띄우며 뒤 문서를 끌어올린다.
+  // 뒤로가기를 받지 않으면 수정 중에 눌렀을 때 시트가 아니라 화면 자체가 닫혀 입력이 날아간다.
+  const { overlayStyle } = useSheet(!!selectedRoom, closeDetail);
 
   const openDetail = (item: RoomItem) => {
     setSelectedRoom(item);
@@ -205,10 +216,12 @@ const Rooms = () => {
 
   const handleDelete = async () => {
     if (!selectedRoom?.id || !user) return;
-    if (!confirm("게시물을 삭제하시겠습니까?")) return;
+    setDeleting(true);
     const { error } = await supabase.from("posts").delete().eq("id", selectedRoom.id).eq("user_id", user.id);
+    setDeleting(false);
     if (error) { toast.error("삭제에 실패했습니다"); return; }
     toast.success("게시물이 삭제되었습니다");
+    setConfirmDeleteOpen(false);
     setSelectedRoom(null);
     fetchRooms(mode);
   };
@@ -341,23 +354,24 @@ const Rooms = () => {
 
       {/* Detail Modal */}
       {selectedRoom && (
-        <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center" onClick={() => { setSelectedRoom(null); setEditing(false); }}>
+        <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center" style={overlayStyle} onClick={closeDetail}>
           <div
             className="w-full max-w-lg bg-background rounded-t-2xl lg:rounded-2xl max-h-sheet flex flex-col animate-in slide-in-from-bottom duration-300 overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-5">
               <div className="flex items-center justify-between mb-4">
-                <button onClick={() => { setSelectedRoom(null); setEditing(false); }} className="p-1 rounded-full hover:bg-secondary">
+                <button onClick={closeDetail} className="tap-44 p-1 rounded-full hover:bg-secondary">
                   <ArrowLeft className="w-5 h-5" />
                 </button>
-                <div className="flex items-center gap-2">
+                {/* 수정·삭제는 서로 붙어 있어 tap-44를 쓰면 닿는 영역이 겹친다 — 대신 여백으로 키운다 */}
+                <div className="flex items-center gap-3">
                   {selectedRoom.id && selectedRoom.user_id === user?.id && !editing && (
                     <>
-                      <button onClick={startEditing} className="p-1.5 rounded-full hover:bg-secondary text-muted-foreground hover:text-primary transition-colors">
+                      <button onClick={startEditing} className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-primary transition-colors">
                         <Pencil className="w-4 h-4" />
                       </button>
-                      <button onClick={handleDelete} className="p-1.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                      <button onClick={() => setConfirmDeleteOpen(true)} className="p-2 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </>
@@ -408,7 +422,12 @@ const Rooms = () => {
                 <>
                   {selectedRoom.image_url && (
                     <div className="rounded-xl overflow-hidden mb-4 -mt-1">
-                      <img src={selectedRoom.image_url} alt={selectedRoom.name} className="w-full max-h-56 object-cover" />
+                      {/* max-h는 시프트의 상한만 정할 뿐 자리를 잡아두지 않는다 — 비율도 height도
+                          없으면 로드 전 높이가 0이라 사진이 뜨는 순간 아래 본문이 224px까지 밀린다.
+                          이미 상한이던 224px(h-56)로 높이를 고정해 자리를 미리 비워 둔다.
+                          그 높이를 채우던 이미지는 보이는 모습이 그대로고, 더 작던 이미지만
+                          object-cover로 프레임을 채우게 된다. */}
+                      <img src={selectedRoom.image_url} alt={selectedRoom.name} className="w-full h-56 object-cover" />
                     </div>
                   )}
                   <h2 className="text-base font-bold mb-2">{selectedRoom.name}</h2>
@@ -481,6 +500,29 @@ const Rooms = () => {
           </div>
         </div>
       )}
+
+      {/* 게시물 삭제 확인 — iOS에서 네이티브 confirm은 도메인이 박힌 시스템 경고창을 띄워
+          앱이 아니라 브라우저가 말을 거는 것처럼 보인다 */}
+      <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>게시물을 삭제할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              삭제하면 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>돌아가기</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDelete(); }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "삭제 중..." : "삭제하기"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   );
 };

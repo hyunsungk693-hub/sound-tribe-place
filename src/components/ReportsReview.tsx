@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Flag, ExternalLink } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
 
 // 평가 신고 검토. 신고가 들어오면 해당 평가는 즉시 산정에서 빠지므로(20260901000004),
@@ -54,6 +55,12 @@ const ReportsReview = ({ onPendingCount }: { onPendingCount?: (n: number) => voi
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // 판정 확인은 네이티브 confirm 대신 AlertDialog로 받는다. confirm은 iOS에서 도메인이 박힌
+  // 시스템 경고창을 띄워 앱이 아니라 브라우저가 말을 거는 것처럼 보이고, 떠 있는 동안 JS를
+  // 통째로 멈춘다. 여기서 누른 한 번은 남의 등급이 걸린 판정이고 RPC 한 번으로 신고 상태와
+  // disputed·지표가 함께 확정되므로 화면에서 되돌릴 방법이 없다. 무엇이 달라지는지 두 줄로
+  // 풀어 쓰려면 confirm의 한 덩어리 문자열보다 다이얼로그가 맞다.
+  const [decideTarget, setDecideTarget] = useState<{ report: Report; decision: "upheld" | "dismissed" } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -109,14 +116,11 @@ const ReportsReview = ({ onPendingCount }: { onPendingCount?: (n: number) => voi
   const nameOf = (uid: string | undefined) =>
     (uid && people[uid]?.display_name) || (uid ? `(닉네임 없음 · ${uid.slice(0, 8)})` : "(알 수 없음)");
 
-  const decide = async (r: Report, decision: "upheld" | "dismissed") => {
-    const rating = ratings[r.rating_id];
-    const ok = confirm(
-      decision === "upheld"
-        ? `신고를 인정할까요?\n이 평가는 ${nameOf(rating?.ratee_id)}님의 등급 산정에서 계속 제외됩니다.`
-        : `신고를 기각할까요?\n이 평가가 ${nameOf(rating?.ratee_id)}님의 등급 산정에 다시 포함됩니다.`,
-    );
-    if (!ok) return;
+  const decide = async () => {
+    const target = decideTarget;
+    if (!target) return;
+    const { report: r, decision } = target;
+    setDecideTarget(null);
     setBusyId(r.id);
     const { error } = await supabase.rpc("resolve_rating_report" as any, {
       p_report_id: r.id,
@@ -225,12 +229,12 @@ const ReportsReview = ({ onPendingCount }: { onPendingCount?: (n: number) => voi
             <div className="flex gap-2">
               <Button
                 className="flex-1 bg-action text-action-foreground hover:bg-action-hover"
-                onClick={() => decide(r, "upheld")}
+                onClick={() => setDecideTarget({ report: r, decision: "upheld" })}
                 disabled={busyId === r.id}
               >
                 신고 인정 · 산정 제외 유지
               </Button>
-              <Button variant="outline" onClick={() => decide(r, "dismissed")} disabled={busyId === r.id}>
+              <Button variant="outline" onClick={() => setDecideTarget({ report: r, decision: "dismissed" })} disabled={busyId === r.id}>
                 기각 · 다시 포함
               </Button>
             </div>
@@ -261,6 +265,40 @@ const ReportsReview = ({ onPendingCount }: { onPendingCount?: (n: number) => voi
           ))}
         </div>
       )}
+
+      {/* 신고 인정 · 기각 확인. 어느 쪽이든 그 평가가 상대의 등급에 반영될지가 그 자리에서
+          확정되고, 화면에서 되돌릴 수단이 없다. 그래서 누구의 등급이 걸린 판정인지 이름을
+          박고, 결과가 산정에 어떻게 작용하는지까지 적는다. */}
+      <AlertDialog open={!!decideTarget} onOpenChange={(o) => { if (!o) setDecideTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {decideTarget?.decision === "upheld" ? "신고를 인정할까요?" : "신고를 기각할까요?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {decideTarget && (
+                <span className="block font-medium text-foreground">
+                  {nameOf(ratings[decideTarget.report.rating_id]?.ratee_id)}님이 받은 평가
+                </span>
+              )}
+              <span className="block mt-1">
+                {decideTarget?.decision === "upheld"
+                  ? "이 평가는 등급 산정에서 계속 제외된 채로 확정됩니다."
+                  : "이 평가가 등급 산정에 다시 포함됩니다."}
+              </span>
+              {decideTarget && (notes[decideTarget.report.id]?.trim()
+                ? <span className="block mt-1">적어둔 처리 메모가 함께 기록됩니다.</span>
+                : <span className="block mt-1">처리 메모 없이 기록됩니다.</span>)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>돌아가기</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); decide(); }}>
+              {decideTarget?.decision === "upheld" ? "인정하기" : "기각하기"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

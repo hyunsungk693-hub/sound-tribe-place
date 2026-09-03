@@ -1,4 +1,4 @@
-import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useSheet } from "@/hooks/useSheet";
 import { useState } from "react";
 import { Plus, X, Briefcase, Music2, Store, Users } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -89,7 +89,10 @@ const CreatePostFab = () => {
   const [chooserOpen, setChooserOpen] = useState(false);
   const [selected, setSelected] = useState<PostType | null>(null);
 
-  useBodyScrollLock(chooserOpen);
+  // 고르는 시트에는 입력이 없어 키보드 여백은 쓸 일이 없다. 뒤로가기가 문제다 —
+  // 시트만 닫히길 기대하고 누른 건데 그대로 앱을 떠나 보던 목록이 사라진다.
+  // (조기 반환보다 앞에 있어야 훅 순서가 안 깨진다)
+  const { overlayStyle } = useSheet(chooserOpen, () => setChooserOpen(false));
 
   if (!user) return null;
   // 글 상세(/post/:id)에서도 숨긴다. 하단에 댓글 입력 바가 있어 FAB가 전송 버튼 바로
@@ -119,10 +122,13 @@ const CreatePostFab = () => {
 
   return (
     <>
+      {/* 누를 때 0.9까지 꺼지는 건 앱의 다른 버튼(0.98/0.95)보다 혼자 크게 튀어 눌린 게
+          아니라 밀려 들어간 것처럼 보인다. transition-all은 hover 배경색까지 같이 물고
+          늘어지므로 실제로 움직이는 속성만 지정한다. */}
       <button
         onClick={() => setChooserOpen(true)}
         aria-label="게시물 작성"
-        className="fab-pos fixed right-4 lg:right-8 z-[1990] w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-action text-action-foreground shadow-lg flex items-center justify-center hover:bg-action-hover active:scale-90 transition-all"
+        className="fab-pos fixed right-4 lg:right-8 z-[1990] w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-action text-action-foreground shadow-lg flex items-center justify-center hover:bg-action-hover active:scale-[0.96] transition-transform"
       >
         <Plus className="w-5 h-5" />
       </button>
@@ -130,6 +136,7 @@ const CreatePostFab = () => {
       {chooserOpen && (
         <div
           className="fixed inset-0 z-[9999] flex items-end lg:items-center justify-center bg-black/40"
+          style={overlayStyle}
           onClick={() => setChooserOpen(false)}
         >
           <div
@@ -138,7 +145,7 @@ const CreatePostFab = () => {
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-bold">어떤 게시물을 작성할까요?</h2>
-              <button onClick={() => setChooserOpen(false)} className="p-1 rounded-full hover:bg-secondary">
+              <button onClick={() => setChooserOpen(false)} className="tap-44 p-1 rounded-full hover:bg-secondary">
                 <X className="w-5 h-5" />
               </button>
             </div>

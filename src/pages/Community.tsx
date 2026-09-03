@@ -318,9 +318,12 @@ const Community = () => {
               placeholder="게시물 검색 (제목, 내용, 작성자)"
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
+            {/* 아이콘 16px + p-1이라 실제로 닿는 면이 24px밖에 안 돼 빗맞기 쉽다.
+                이 줄에서 유일한 버튼이라 이웃과 겹칠 일이 없으므로, 검색줄이 뚱뚱해지지 않게
+                보이는 크기는 두고 닿는 영역만 넓힌다. */}
             <button
               onClick={() => { setSearchQuery(""); setShowSearch(false); }}
-              className="p-1 rounded-full hover:bg-secondary"
+              className="tap-44 p-1 rounded-full hover:bg-secondary"
             >
               <X className="w-4 h-4 text-muted-foreground" />
             </button>
@@ -336,13 +339,17 @@ const Community = () => {
         )}
       </div>
 
+      {/* 가로 스크롤 안의 버튼은 빗맞으면 그냥 안 눌리는 게 아니라 스크롤 제스처로 먹혀
+          아무 일도 일어나지 않는다. 그래서 높이를 30px에서 44px 가까이 끌어올린다.
+          선택된 칩에도 투명 테두리를 두는 이유: 선택 상태만 테두리가 없으면 칩 높이가 2px
+          달라져 탭할 때마다 줄 전체가 들썩인다. */}
       <div className="flex gap-2 mb-5 overflow-x-auto no-scrollbar pb-1">
         {tabs.map((tab) => (
           <button
             key={tab}
             onClick={() => setSelectedTab(tab)}
-            className={`shrink-0 px-3.5 py-1.5 rounded-lg text-[13px] font-semibold tracking-tight transition-colors active:scale-95 ${
-              tab === selectedTab ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:border-primary hover:text-foreground"
+            className={`shrink-0 px-3.5 py-2.5 rounded-lg border text-[13px] font-semibold tracking-tight transition-colors active:scale-95 ${
+              tab === selectedTab ? "border-transparent bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:border-primary hover:text-foreground"
             }`}
           >
             {tab}

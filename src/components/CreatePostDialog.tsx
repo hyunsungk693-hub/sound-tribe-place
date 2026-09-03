@@ -1,4 +1,4 @@
-import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useSheet } from "@/hooks/useSheet";
 import { useState, useRef } from "react";
 import { X, ImagePlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -208,20 +208,24 @@ const CreatePostDialog = ({ postType, fields, onCreated, open: openProp, onOpenC
   };
 
   // 작성 버튼은 CreatePostFab(우측 하단 플로팅)이 전담한다
-  // 시트가 열려 있는 동안 뒤 문서 스크롤을 잠근다 (조기 반환보다 앞에 있어야 훅 순서가 안 깨진다)
-  useBodyScrollLock(open);
+  // 입력이 열 개가 넘고 제출 버튼은 시트 바닥에 붙어 있다. 키보드가 올라오면 그 버튼이
+  // 통째로 가려져 다 써놓고도 올릴 수가 없다. 오버레이 아래에 키보드만큼 여백을 두면
+  // .max-h-sheet가 상한을 같이 줄여 시트가 키보드 위 남은 공간에 들어간다.
+  // 쓰던 내용을 통째로 날리는 뒤로가기와 뒤 문서 스크롤도 useSheet가 함께 막는다.
+  // (조기 반환보다 앞에 있어야 훅 순서가 안 깨진다)
+  const { overlayStyle } = useSheet(open, () => setOpen(false));
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-end lg:items-center justify-center bg-black/40" onClick={() => setOpen(false)}>
+    <div className="fixed inset-0 z-[9999] flex items-end lg:items-center justify-center bg-black/40" style={overlayStyle} onClick={() => setOpen(false)}>
       <div
         className="w-full max-w-lg bg-background rounded-t-2xl lg:rounded-2xl p-5 pb-8 max-h-sheet overflow-y-auto animate-in slide-in-from-bottom duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-bold">게시물 작성</h2>
-          <button onClick={() => setOpen(false)} className="p-1 rounded-full hover:bg-secondary">
+          <button onClick={() => setOpen(false)} className="tap-44 p-1 rounded-full hover:bg-secondary">
             <X className="w-5 h-5" />
           </button>
         </div>

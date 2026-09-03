@@ -1,4 +1,4 @@
-import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useSheet } from "@/hooks/useSheet";
 import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { X, Camera, Search, Plus, Link as LinkIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -254,11 +254,14 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
 
   const initials = (displayName || "U").charAt(0).toUpperCase();
 
-  // 부모가 조건부로 마운트하므로 열려 있는 동안만 이 컴포넌트가 산다
-  useBodyScrollLock(true);
+  // 부모가 조건부로 마운트하므로 열려 있는 동안만 이 컴포넌트가 산다 — 그래서 open은 늘 true다.
+  // 소개·닉네임을 고치는 동안 키보드가 올라오면 스크롤 영역 아래 저장 버튼이 가려진다.
+  // 오버레이 아래에 키보드만큼 여백을 두면 .max-h-sheet-lg가 상한을 같이 줄여 시트가
+  // 키보드 위로 들어온다. 고치던 내용을 날리는 뒤로가기도 여기서 닫기로 바꾼다.
+  const { overlayStyle } = useSheet(true, onClose);
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center" style={overlayStyle} onClick={onClose}>
       <div
         className="w-full max-w-lg bg-background rounded-t-2xl lg:rounded-2xl max-h-sheet-lg flex flex-col animate-in slide-in-from-bottom duration-300"
         onClick={(e) => e.stopPropagation()}
@@ -266,7 +269,7 @@ const ProfileEditModal = ({ userId, profile, onClose, onSaved }: Props) => {
         {/* Header */}
         <div className="flex items-center justify-between p-5 pb-3 border-b border-border/30">
           <h3 className="text-base font-bold">프로필 수정</h3>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-secondary">
+          <button onClick={onClose} className="tap-44 p-1.5 rounded-full hover:bg-secondary">
             <X className="w-5 h-5" />
           </button>
         </div>

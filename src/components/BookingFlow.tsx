@@ -1,4 +1,4 @@
-import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useSheet } from "@/hooks/useSheet";
 import { useState, useEffect } from "react";
 import { X, CreditCard, KeyRound, MapPin, Clock, CheckCircle2, Hourglass, Info, AlarmClock } from "lucide-react";
 import { toast } from "sonner";
@@ -65,9 +65,7 @@ const BookingFlow = ({ studio, room, slot, originApplicationId, onClose, onBooke
         return r - 1;
       });
     }, 1000);
-    useBodyScrollLock(true);
-
-  return () => clearInterval(t);
+    return () => clearInterval(t);
   }, [phase]);
 
   const startHold = async () => {
@@ -116,13 +114,18 @@ const BookingFlow = ({ studio, room, slot, originApplicationId, onClose, onBooke
     onClose();
   };
 
+  // 이 컴포넌트는 열려 있는 동안에만 마운트되므로 open은 항상 true다.
+  // 닫기 경로를 onClose가 아니라 abandon으로 잡아야 뒤로가기로 나가도 잡아둔 5분 홀드가
+  // 함께 풀린다. 그냥 닫으면 결제하지 않은 슬롯이 5분간 남에게 잠긴 채 남는다.
+  const { overlayStyle } = useSheet(true, abandon);
+
   const mm = String(Math.floor(remain / 60)).padStart(1, "0");
   const ss = String(remain % 60).padStart(2, "0");
   const isSummaryPhase = phase === "review" || phase === "paying";
   const slotRange = `${fmt(slot.start_at)} ~ ${new Date(slot.end_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}`;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center" onClick={abandon}>
+    <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center" style={overlayStyle} onClick={abandon}>
       <div
         className="w-full max-w-md bg-background rounded-t-2xl lg:rounded-2xl p-5 pb-8 max-h-sheet overflow-y-auto animate-in slide-in-from-bottom duration-300"
         onClick={(e) => e.stopPropagation()}
@@ -132,7 +135,7 @@ const BookingFlow = ({ studio, room, slot, originApplicationId, onClose, onBooke
             <h2 className="text-base font-bold">
               {phase === "paying" ? "결제" : isRequest ? "예약 요청" : "예약 확인"}
             </h2>
-            <button onClick={abandon} className="p-1 rounded-full hover:bg-secondary"><X className="w-5 h-5" /></button>
+            <button onClick={abandon} className="tap-44 p-1 rounded-full hover:bg-secondary"><X className="w-5 h-5" /></button>
           </div>
         )}
 

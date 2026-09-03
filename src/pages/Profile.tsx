@@ -12,6 +12,7 @@ import { GradeBadge, ResponseBadge, TrustBadges, GRADE_LABEL } from "@/component
 import { getRecentViews, RecentView } from "@/lib/recentViews";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
@@ -112,6 +113,11 @@ const ProfilePage = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [activeTab, setActiveTab] = useState("내 게시물");
   const [myPosts, setMyPosts] = useState<any[]>([]);
+  // 내 게시물 삭제 확인 대상. 목록 안에서 확인창을 띄우므로 어느 글인지 상태로 들고 있는다.
+  // 네이티브 confirm은 iOS에서 도메인이 박힌 시스템 경고창을 띄워 앱이 아니라 브라우저가
+  // 말을 거는 것처럼 보이고, 떠 있는 동안 JS를 통째로 멈춘다. 홈 화면에 설치한 PWA에서는
+  // 특히 이질적이라 AlertDialog로 받는다.
+  const [deletePostTarget, setDeletePostTarget] = useState<(typeof myPosts)[number] | null>(null);
   const [myReservations, setMyReservations] = useState<any[]>([]);
   const [myBookings, setMyBookings] = useState<any[]>([]);
   const [myApplications, setMyApplications] = useState<any[]>([]);
@@ -272,6 +278,16 @@ const ProfilePage = () => {
 
   const typeLabel = (t: string) =>
     t === "job" ? "구인" : t === "room" ? "연습실" : t === "shop" ? "악기사" : "커뮤니티";
+
+  const deleteMyPost = async () => {
+    const target = deletePostTarget;
+    if (!target) return;
+    setDeletePostTarget(null);
+    const { error } = await supabase.from("posts").delete().eq("id", target.id);
+    if (error) { toast.error("삭제에 실패했습니다"); return; }
+    toast.success("게시물이 삭제되었습니다");
+    setMyPosts((prev) => prev.filter((p) => p.id !== target.id));
+  };
 
   const fetchMyRatings = async () => {
     if (!user) return;
@@ -686,10 +702,14 @@ const ProfilePage = () => {
                       <span className="text-[10px] text-muted-foreground ml-auto">
                         {s.toLocaleDateString("ko-KR")}
                       </span>
+                      {/* 카드 자체가 상세를 여는 탭 영역이라 .tap-44로 44px 원을 그리면
+                          카드 쪽 탭까지 이 버튼이 가로챈다 — 상세를 보려다 취소창이 뜬다.
+                          보이는 여백을 키워 실제 버튼을 넓히고, 부모의 gap-2로 왼쪽 날짜
+                          텍스트와 떨어뜨린다. */}
                       {upcoming && (
                         <button
                           onClick={(e) => { e.stopPropagation(); setCancelTarget(r); setCancelReason(""); }}
-                          className="p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                          className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -834,16 +854,11 @@ const ProfilePage = () => {
                     <span className="text-[10px] text-muted-foreground ml-auto">
                       {new Date(post.created_at).toLocaleDateString("ko-KR")}
                     </span>
+                    {/* 위 예약 카드와 같은 이유 — 카드 전체가 목록으로 이동하는 탭 영역이라
+                        .tap-44는 카드 탭을 삼킨다. padding으로 키우고 gap-2로 떼어 놓는다. */}
                     <button
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        if (!confirm("정말 삭제하시겠습니까?")) return;
-                        const { error } = await supabase.from("posts").delete().eq("id", post.id);
-                        if (error) { toast.error("삭제에 실패했습니다"); return; }
-                        toast.success("게시물이 삭제되었습니다");
-                        setMyPosts((prev) => prev.filter((p) => p.id !== post.id));
-                      }}
-                      className="p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                      onClick={(e) => { e.stopPropagation(); setDeletePostTarget(post); }}
+                      className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -1698,6 +1713,29 @@ const ProfilePage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 내 게시물 삭제 확인 — 원래 문구는 "정말 삭제하시겠습니까?"라 무엇이 사라지는지
+          알 수 없었다. 목록에는 여러 글이 나란히 있어 어느 글을 눌렀는지도 확실치 않다.
+          그래서 글 제목을 그대로 보여주고, 함께 사라지는 것까지 적는다. */}
+      <AlertDialog open={!!deletePostTarget} onOpenChange={(o) => { if (!o) setDeletePostTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>이 게시물을 삭제할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deletePostTarget && (
+                <span className="block font-medium text-foreground line-clamp-2">{deletePostTarget.title}</span>
+              )}
+              <span className="block mt-1">
+                달린 댓글과 좋아요도 함께 사라지고, 삭제한 글은 되돌릴 수 없습니다.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>돌아가기</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); deleteMyPost(); }}>삭제하기</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   );
 };

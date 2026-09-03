@@ -1,4 +1,4 @@
-import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useSheet } from "@/hooks/useSheet";
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
@@ -126,7 +126,10 @@ const NotificationsPanel = ({ open, onClose }: Props) => {
     setPushBusy(false);
   };
 
-  useBodyScrollLock(open);
+  // 입력이 없는 패널이라 스크롤 잠금만으로 충분해 보이지만, 안드로이드에서 뒤로가기를
+  // 누르면 패널이 닫히는 대신 보고 있던 페이지를 떠난다 — 알림을 훑어보려던 사람이
+  // 화면 밖으로 튕겨 나간다. useSheet가 이력 한 칸을 쌓아 그 뒤로가기를 여기서 받아낸다.
+  const { overlayStyle } = useSheet(open, onClose);
 
   if (!open) return null;
 
@@ -134,7 +137,7 @@ const NotificationsPanel = ({ open, onClose }: Props) => {
   // 컨테이닝 블록이 그 조상 박스(높이 64px)가 되어 패널이 잘린다.
   // 어디서 호출되든 안전하도록 오버레이를 body로 포털한다.
   return createPortal(
-    <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center lg:p-8" onClick={onClose}>
+    <div className="fixed inset-0 z-[9999] bg-black/40 flex items-end lg:items-center justify-center lg:p-8" style={overlayStyle} onClick={onClose}>
       <div
         className="w-full max-w-lg bg-background rounded-t-2xl lg:rounded-2xl flex flex-col animate-in slide-in-from-bottom lg:zoom-in-95 lg:slide-in-from-bottom-0 duration-300 max-h-sheet lg:max-h-[calc(100dvh-8rem)] lg:shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}

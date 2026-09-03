@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 import { useComposing } from "@/hooks/useComposing";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 type Comment = {
   id: string;
@@ -48,6 +49,16 @@ const PostDetail = () => {
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+
+  // 삭제 확인은 네이티브 confirm 대신 AlertDialog로 받는다. confirm은 iOS에서 도메인이
+  // 박힌 시스템 경고창을 띄워, 앱을 쓰던 사람에게 갑자기 브라우저가 말을 거는 꼴이 된다.
+  // 홈 화면에 설치한 PWA에서는 특히 이질적이다. 게다가 confirm이 떠 있는 동안 JS가
+  // 통째로 멈춰 화면 뒤의 모든 것이 굳는다.
+  const [confirmDeletePost, setConfirmDeletePost] = useState(false);
+  // 댓글 삭제는 목록 안에서 부르므로 "어느 댓글인지"를 상태로 들고 있어야 한다.
+  // 다이얼로그는 목록 바깥에 하나만 두고 대상만 갈아 끼운다 — 댓글마다 하나씩 두면
+  // 댓글 수만큼 포털이 늘어난다.
+  const [deleteCommentTarget, setDeleteCommentTarget] = useState<Comment | null>(null);
 
   const fetchPost = useCallback(async () => {
     if (!postId) return;
@@ -142,10 +153,21 @@ const PostDetail = () => {
 
   const handleDelete = async () => {
     if (!user || !postId) return;
-    if (!confirm("게시물을 삭제하시겠습니까?")) return;
+    setConfirmDeletePost(false);
     await supabase.from("posts").delete().eq("id", postId).eq("user_id", user.id);
     toast.success("삭제되었습니다");
     navigate(-1);
+  };
+
+  const handleDeleteComment = async () => {
+    const target = deleteCommentTarget;
+    if (!target) return;
+    // 먼저 닫아둔다. 삭제 후 fetchMeta로 목록이 갈릴 때까지 다이얼로그가 남아 있으면
+    // 이미 사라진 댓글을 가리킨 채 떠 있게 된다.
+    setDeleteCommentTarget(null);
+    await supabase.from("post_comments").delete().eq("id", target.id);
+    toast.success("댓글이 삭제되었습니다");
+    await fetchMeta();
   };
 
   const postTypeLabel = (type: string) => {
@@ -192,10 +214,14 @@ const PostDetail = () => {
           <div className="flex items-center gap-2">
             {post.user_id === user?.id && !editing && (
               <>
-                <button onClick={() => { setEditTitle(post.title); setEditContent(post.content); setEditing(true); }} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-primary transition-colors">
+                {/* 수정·삭제가 바로 옆에 붙어 있어 .tap-44를 쓰면 44px 원이 서로 겹쳐
+                    가장자리를 누를 때 어느 쪽이 눌리는지 알 수 없게 된다. 잘못 눌리면
+                    글이 지워지는 쪽이라, 여기서는 padding으로 실제 크기를 키우고
+                    부모의 gap-2로 두 버튼 사이를 벌려 둔다. */}
+                <button onClick={() => { setEditTitle(post.title); setEditContent(post.content); setEditing(true); }} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-primary transition-colors">
                   <Pencil className="w-4 h-4" />
                 </button>
-                <button onClick={handleDelete} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                <button onClick={() => setConfirmDeletePost(true)} className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </>
@@ -245,7 +271,10 @@ const PostDetail = () => {
             <h1 className="text-2xl lg:text-[28px] font-extrabold tracking-tight leading-tight mb-4">{post.title}</h1>
             {post.image_url && (
               <div className="mb-4 rounded-lg overflow-hidden border border-border">
-                <img src={post.image_url} alt="" className="w-full h-auto" />
+                {/* 서버가 원본 비율을 알려주지 않아 h-auto로 두면 이미지가 도착하기 전 높이가
+                    0이다. 그림이 뜨는 순간 본문과 댓글이 통째로 아래로 밀려 읽던 줄을 놓치고,
+                    그 사이 누른 탭은 엉뚱한 곳에 떨어진다. 4:3으로 자리를 미리 잡아 둔다. */}
+                <img src={post.image_url} alt="" className="w-full aspect-[4/3] object-cover" />
               </div>
             )}
             {/* Extra fields for jobs/rooms */}
@@ -291,12 +320,7 @@ const PostDetail = () => {
                       <span className="text-[10.5px] text-muted-foreground font-mono tabular-nums">{new Date(c.created_at).toLocaleDateString("ko-KR")}</span>
                       {user && c.user_id === user.id && (
                         <button
-                          onClick={async () => {
-                            if (!confirm("댓글을 삭제하시겠습니까?")) return;
-                            await supabase.from("post_comments").delete().eq("id", c.id);
-                            toast.success("댓글이 삭제되었습니다");
-                            await fetchMeta();
-                          }}
+                          onClick={() => setDeleteCommentTarget(c)}
                           className="text-[10.5px] text-muted-foreground hover:text-destructive transition-colors ml-auto"
                         >
                           삭제
@@ -345,6 +369,42 @@ const PostDetail = () => {
           </button>
         </div>
       </div>
+
+      {/* 게시물 삭제 확인 — 되돌릴 수 없고 달린 댓글까지 함께 사라진다 */}
+      <AlertDialog open={confirmDeletePost} onOpenChange={setConfirmDeletePost}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>게시물을 삭제할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              달린 댓글과 좋아요도 함께 사라지고, 삭제한 글은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>돌아가기</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); handleDelete(); }}>삭제하기</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 댓글 삭제 확인 — 목록에서 부르므로 어느 댓글인지 본문을 함께 보여준다.
+          댓글은 서로 비슷해 보여서 확인 문구만으로는 잘못 지웠는지 알 수 없다. */}
+      <AlertDialog open={!!deleteCommentTarget} onOpenChange={(o) => { if (!o) setDeleteCommentTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>댓글을 삭제할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              삭제한 댓글은 되돌릴 수 없습니다.
+              {deleteCommentTarget && (
+                <span className="block mt-2 text-foreground line-clamp-3">{deleteCommentTarget.content}</span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>돌아가기</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); handleDeleteComment(); }}>삭제하기</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   );
 };

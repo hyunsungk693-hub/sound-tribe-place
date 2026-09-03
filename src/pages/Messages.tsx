@@ -8,6 +8,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useKeyboardInset } from "@/hooks/useKeyboardInset";
+import { useComposing } from "@/hooks/useComposing";
 
 type Conversation = {
   id: string;
@@ -106,6 +108,19 @@ const Messages = () => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
+
+  const keyboardInset = useKeyboardInset();
+  // 메시지 입력창에 포커스가 있는 동안 = 키보드가 올라와 있는 동안.
+  const [composing, setComposing] = useState(false);
+  // 전송 버튼을 누르면 그 순간 입력창의 포커스가 풀린다. 포커스만 보고 자리를 되돌리면
+  // 키보드가 아직 닫히는 중인데 입력 바가 먼저 내려가 버려, 손가락 아래에서 버튼이
+  // 빠져나가 탭이 빗나간다. 그래서 실측 높이가 0이 될 때까지 — 키보드가 실제로 사라질
+  // 때까지 — 열린 것으로 본다. 연속으로 여러 통을 보낼 때 특히 중요하다.
+  const keyboardOpen = composing || keyboardInset > 0;
+  // 대화방은 탭바(z-2000)를 덮는 오버레이(z-2500)라 지금은 탭바가 보이지 않지만,
+  // 오버레이가 문서에 붙어 있어 스크롤 위치에 따라 아래쪽이 드러날 수 있다.
+  // 하단 입력에 포커스가 가면 탭바를 내린다는 앱 전체의 약속을 여기서도 지킨다.
+  useComposing(keyboardOpen);
 
   /** @param silent realtime 갱신처럼 사용자가 요청하지 않은 재조회는 스켈레톤을 띄우지 않는다 */
   const fetchConversations = useCallback(async ({ silent }: { silent?: boolean } = {}) => {
@@ -591,8 +606,19 @@ const Messages = () => {
   );
 
   // 대화 스레드 (모바일: 전체화면 오버레이 / 데스크톱: 우측 페인)
+  //
+  // 키보드가 가린 높이는 이 컨테이너의 padding-bottom으로 비워 둔다.
+  // PostDetail의 입력 바는 fixed라 bottom 하나만 덮어쓰면 끝이지만, 여기는 absolute
+  // inset-0로 높이가 이미 정해진 flex 기둥이고 입력 바는 그 바닥 칸일 뿐이다.
+  // 입력 바에만 margin을 주면 위쪽 메시지 목록은 제 높이를 그대로 유지한 채 아래가
+  // 키보드에 덮여, 방금 보낸 메시지가 보이지 않는다. padding으로 content box를 줄이면
+  // flex-1인 목록이 함께 줄어들어 입력 바와 마지막 메시지가 같이 키보드 위로 올라온다.
+  // 이모지 피커·파일 미리보기도 같은 기둥의 칸이라 따로 손댈 필요 없이 함께 밀려 올라간다.
   const threadPane = selectedConv && (
-    <div className="absolute inset-0 z-[2500] lg:static lg:inset-auto lg:z-auto flex flex-col bg-background lg:flex-1 lg:min-w-0 lg:h-full">
+    <div
+      className="absolute inset-0 z-[2500] lg:static lg:inset-auto lg:z-auto flex flex-col bg-background lg:flex-1 lg:min-w-0 lg:h-full"
+      style={keyboardOpen ? { paddingBottom: keyboardInset } : undefined}
+    >
       {/* Header */}
       <div
         className="flex items-center gap-3 p-4 border-b border-border bg-card/80 backdrop-blur-lg shrink-0"
@@ -695,8 +721,10 @@ const Messages = () => {
         </div>
       )}
 
-      {/* Input */}
-      <div className="p-3 border-t border-border bg-card/80 backdrop-blur-lg pb-safe shrink-0">
+      {/* Input.
+          키보드가 올라온 동안에는 홈 인디케이터 안전영역이 키보드에 덮여 지킬 것이 없다.
+          그대로 두면 실측 인셋 위에 안전영역만큼 빈 띠가 더 얹혀 입력 바가 키보드에서 떠 보인다. */}
+      <div className={`p-3 border-t border-border bg-card/80 backdrop-blur-lg shrink-0 ${keyboardOpen ? "" : "pb-safe"}`}>
         <div className="flex items-center gap-2">
           <input
             type="file"
@@ -721,7 +749,9 @@ const Messages = () => {
             value={newMsg}
             onChange={(e) => setNewMsg(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-            onFocus={() => setShowEmoji(false)}
+            // 키보드와 이모지 피커가 동시에 뜨면 입력창이 둘 사이에 끼여 화면 밖으로 밀린다.
+            onFocus={() => { setShowEmoji(false); setComposing(true); }}
+            onBlur={() => setComposing(false)}
             placeholder="메시지를 입력하세요..."
             className="flex-1 min-w-0 bg-secondary rounded-lg px-4 py-2.5 text-sm outline-none placeholder:text-muted-foreground"
           />

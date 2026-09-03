@@ -246,8 +246,10 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
               return (
                 <li key={r.id} className={`flex items-center justify-between text-xs px-3 py-2 rounded-lg ${mine ? "bg-primary/10 text-primary" : "bg-secondary text-secondary-foreground"}`}>
                   <span className="font-medium">{fmtTime(r.start_at)} - {fmtTime(r.end_at)} {mine && "(내 예약)"}</span>
+                  {/* 목록 행 간격이 44px보다 좁아 tap-44를 쓰면 윗줄·아랫줄 취소 버튼과 닿는 영역이
+                      겹쳐 엉뚱한 예약을 지우게 된다. 여백만 키워 오탭을 줄인다. */}
                   {(mine || isHost) && (
-                    <button onClick={() => { setCancelTarget({ id: r.id, mine }); setCancelReason(""); }} className="p-1 rounded hover:bg-destructive/10 text-destructive">
+                    <button onClick={() => { setCancelTarget({ id: r.id, mine }); setCancelReason(""); }} className="p-2 rounded hover:bg-destructive/10 text-destructive">
                       <Trash2 className="w-3 h-3" />
                     </button>
                   )}

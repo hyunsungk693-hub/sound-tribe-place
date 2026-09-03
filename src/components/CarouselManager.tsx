@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, Eye, EyeOff, ImagePlus, Pencil, Plus, Trash2, X } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // 홈 배너 캐러셀 관리 화면 (20260901000027 · 20260901000028).
 // 배너가 코드에 박혀 있어 문구 한 줄 바꾸는 데도 재배포가 필요했다. 여기서 직접 올린다.
@@ -57,6 +58,17 @@ const CarouselManager = () => {
   const [preview, setPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // 삭제 확인은 네이티브 confirm 대신 AlertDialog로 받는다. confirm은 iOS에서 도메인이 박힌
+  // 시스템 경고창을 띄워 앱이 아니라 브라우저가 말을 거는 것처럼 보이고(설치형 PWA에서 특히
+  // 이질적이다), 떠 있는 동안 JS를 통째로 멈춘다. 목록 안에서 부르므로 어느 슬라이드인지는
+  // 상태로 들고 있는다.
+  const [deleteTarget, setDeleteTarget] = useState<Slide | null>(null);
+
+  // 문구가 없는 슬라이드도 있으므로, 목록과 같은 방식으로 관리 번호를 앞세워 가리킨다.
+  const labelOf = (s: Slide) => {
+    const label = s.title || s.description;
+    return `#${s.slide_no}${label ? ` "${label}"` : ""}`;
+  };
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -229,11 +241,10 @@ const CarouselManager = () => {
     setSlides((prev) => prev.map((x) => (x.id === s.id ? { ...x, is_active: !x.is_active } : x)));
   };
 
-  const remove = async (s: Slide) => {
-    // 문구가 없는 슬라이드도 있으므로, 목록과 같은 방식으로 번호를 앞세워 가리킨다.
-    const label = s.title || s.description;
-    const named = `#${s.slide_no}${label ? ` "${label}"` : ""}`;
-    if (!confirm(`${named} 슬라이드를 삭제할까요?\n이미지 원본도 함께 지워집니다.`)) return;
+  const remove = async () => {
+    const s = deleteTarget;
+    if (!s) return;
+    setDeleteTarget(null);
     setBusyId(s.id);
     // 행을 먼저 지운다. 파일을 먼저 지우면 삭제가 중간에 끊겼을 때
     // 홈에 이미지 깨진 배너가 남는다.
@@ -447,7 +458,7 @@ const CarouselManager = () => {
                 size="sm"
                 variant="ghost"
                 className="text-xs text-destructive ml-auto"
-                onClick={() => remove(s)}
+                onClick={() => setDeleteTarget(s)}
                 disabled={busyId === s.id}
               >
                 <Trash2 className="w-3.5 h-3.5 mr-1.5" />
@@ -457,6 +468,29 @@ const CarouselManager = () => {
           </Card>
         ))}
       </div>
+
+      {/* 슬라이드 삭제 확인 — 행만 지우는 것이 아니라 스토리지의 이미지 원본까지 함께
+          지운다(고아 파일이 쌓이지 않게 하려고). 원본은 다시 올리지 않으면 되돌릴 수
+          없으므로 그 사실을 확인 문구에 반드시 남긴다. */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>슬라이드를 삭제할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget && (
+                <span className="block font-medium text-foreground">{labelOf(deleteTarget)}</span>
+              )}
+              <span className="block mt-1">
+                이미지 원본도 함께 지워집니다. 되돌리려면 이미지를 다시 올려야 합니다.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>돌아가기</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); remove(); }}>삭제하기</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

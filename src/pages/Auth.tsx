@@ -78,6 +78,8 @@ const Auth = () => {
                 placeholder="이름"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                autoComplete="name"
+                enterKeyHint="next"
                 className="pl-10 h-12"
                 required={!isLogin}
               />
@@ -90,6 +92,8 @@ const Auth = () => {
               placeholder="이메일"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              enterKeyHint="next"
               className="pl-10 h-12"
               required
             />
@@ -101,6 +105,12 @@ const Auth = () => {
               placeholder="비밀번호"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              // 로그인과 가입을 한 화면에서 오가므로 모드에 따라 값을 바꾼다. 가입인데
+              // current-password면 비밀번호 관리자가 "저장할까요"를 띄우지 않고, 로그인인데
+              // new-password면 이미 저장된 비밀번호를 채워주지 않는다.
+              autoComplete={isLogin ? "current-password" : "new-password"}
+              // 비밀번호는 폼의 마지막 칸이라 다음 칸이 아니라 제출로 이어진다.
+              enterKeyHint="go"
               className="pl-10 h-12"
               required
               minLength={6}
