@@ -13,7 +13,9 @@ import { useComposing } from "@/hooks/useComposing";
 
 type Conversation = {
   id: string;
-  otherUserId: string;
+  // 탈퇴한 상대는 null이다. 대화는 남기고 신원만 끊는 방식이라(계정 삭제 시 sender_id·
+  // user1_id/user2_id를 NULL로 돌린다) 남은 사람의 기록이 반쪽이 되지 않는다.
+  otherUserId: string | null;
   otherUserName: string;
   otherUserAvatar: string | null;
   lastMessage: string;
@@ -140,9 +142,11 @@ const Messages = () => {
       return;
     }
 
-    const otherIds = convs.map((c: any) =>
-      c.user1_id === user.id ? c.user2_id : c.user1_id
-    );
+    // 탈퇴한 상대는 null이라 물어볼 프로필이 없다. 그대로 넘기면 in() 필터가 null을
+    // 만나 쿼리 전체가 빈 결과를 낸다 — 멀쩡한 대화 상대의 이름까지 사라진다.
+    const otherIds = convs
+      .map((c: any) => (c.user1_id === user.id ? c.user2_id : c.user1_id))
+      .filter((id: string | null): id is string => !!id);
 
     const { data: profiles } = await supabase
       .from("profiles")
@@ -173,8 +177,8 @@ const Messages = () => {
     });
 
     const mapped: Conversation[] = convs.map((c: any) => {
-      const otherId = c.user1_id === user.id ? c.user2_id : c.user1_id;
-      const profile = profileMap[otherId];
+      const otherId: string | null = c.user1_id === user.id ? c.user2_id : c.user1_id;
+      const profile = otherId ? profileMap[otherId] : null;
       const lastMsg = lastMsgMap[c.id];
       const lastContent = lastMsg?.file_url
         ? lastMsg?.file_type?.startsWith("image/") ? "📷 사진" : lastMsg?.file_type?.startsWith("video/") ? "🎬 영상" : "📎 파일"
@@ -182,7 +186,8 @@ const Messages = () => {
       return {
         id: c.id,
         otherUserId: otherId,
-        otherUserName: profile?.display_name || "사용자",
+        // 탈퇴한 상대를 그냥 "사용자"로 두면 왜 답이 없는지 알 수 없어 계속 기다리게 된다.
+        otherUserName: otherId ? profile?.display_name || "사용자" : "탈퇴한 사용자",
         otherUserAvatar: profile?.avatar_url || null,
         lastMessage: lastContent,
         lastMessageAt: lastMsg?.created_at || c.created_at,
@@ -733,6 +738,16 @@ const Messages = () => {
           키보드가 올라온 동안에는 홈 인디케이터 안전영역이 키보드에 덮여 지킬 것이 없다.
           그대로 두면 실측 인셋 위에 안전영역만큼 빈 띠가 더 얹혀 입력 바가 키보드에서 떠 보인다. */}
       <div className={`p-3 border-t border-border bg-card/80 backdrop-blur-lg shrink-0 ${keyboardOpen ? "" : "pb-safe"}`}>
+        {/* 상대가 탈퇴했으면 보낼 곳이 없다. 입력창을 그대로 두면 보낸 줄 알고 답을
+            기다리게 된다 — 받는 사람이 없다는 사실을 먼저 알려야 한다.
+            지난 대화는 위에 그대로 남는다. 기능을 닫는 것과 이미 나눈 말을 지우는 것은
+            다른 일이다. */}
+        {!selectedConv.otherUserId ? (
+          <p className="text-xs text-muted-foreground text-center py-2.5 leading-relaxed">
+            상대가 탈퇴해 더 이상 메시지를 보낼 수 없습니다.<br />
+            지난 대화는 그대로 남아 있습니다.
+          </p>
+        ) : (
         <div className="flex items-center gap-2">
           <input
             type="file"
@@ -784,6 +799,7 @@ const Messages = () => {
             )}
           </button>
         </div>
+        )}
       </div>
     </div>
   );
