@@ -15,3 +15,21 @@ additional_redirect_urls = ["http://localhost:8080", "https://instrut.vercel.app
 enable_signup = true
 # 훅 검증 단계: 인증 메일 없이 즉시 가입 (기본 SMTP는 시간당 2건 제한이라 켜면 실가입이 막힘)
 enable_confirmations = false
+
+# 카카오 로그인.
+#
+# enabled를 true로 올리기 전에 카카오 개발자 콘솔에서 앱을 먼저 만들어야 한다. 키가 없는
+# 채로 켜면 provider는 등록되지만 인증이 실패하고, 화면에는 원인을 알 수 없는 오류만 남는다.
+#
+# 키는 이 파일에 적지 않는다. env()로 참조만 하고 값은 셸 환경변수로 넘긴다 —
+# config.toml은 저장소에 올라가는 파일이고, client_secret은 한 번 새면 되돌릴 수 없다.
+#   export KAKAO_CLIENT_ID=<REST API 키>
+#   export KAKAO_CLIENT_SECRET=<보안 - Client Secret 코드>
+#   npx supabase config push --project-ref syxodrmnukybnnlgttuw
+#
+# 카카오 쪽 Redirect URI에는 Supabase의 콜백 주소를 넣는다(우리 도메인이 아니다):
+#   https://syxodrmnukybnnlgttuw.supabase.co/auth/v1/callback
+[auth.external.kakao]
+enabled = false
+client_id = "env(KAKAO_CLIENT_ID)"
+secret = "env(KAKAO_CLIENT_SECRET)"

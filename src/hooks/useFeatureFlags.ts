@@ -12,7 +12,8 @@ export type FeatureKey =
   | "shops"
   | "bookings"
   | "payments"
-  | "first_rehearsal";
+  | "first_rehearsal"
+  | "kakao_login";
 
 export type FeatureFlag = {
   key: string;
