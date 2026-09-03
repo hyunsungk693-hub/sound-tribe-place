@@ -8,6 +8,7 @@ import { addRecentView } from "@/lib/recentViews";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 
 type Comment = {
   id: string;
@@ -31,6 +32,7 @@ const PostDetail = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const keyboardInset = useKeyboardInset();
 
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
@@ -302,8 +304,15 @@ const PostDetail = () => {
         </div>
       </div>
 
-      {/* Fixed comment input */}
-      <div className="fixed bottom-16 lg:bottom-0 left-0 right-0 z-50 p-3 bg-background/95 backdrop-blur-sm border-t border-border">
+      {/* 하단 고정 댓글 입력.
+          키보드가 올라오면 이 바가 키보드 뒤로 들어가 자기가 무엇을 쓰는지 볼 수 없었다.
+          fixed는 레이아웃 뷰포트에 붙는데 키보드는 그 뷰포트를 줄이지 않기 때문이다.
+          가려진 높이를 실측해(useKeyboardInset) 그만큼 bottom을 올린다 — 인라인 style이
+          .composer-pos를 이기므로 키보드가 없을 때만 탭바 위 위치가 쓰인다. */}
+      <div
+        className="fixed composer-pos left-0 right-0 z-50 p-3 bg-background/95 backdrop-blur-sm border-t border-border"
+        style={keyboardInset ? { bottom: keyboardInset } : undefined}
+      >
         <div className="max-w-[720px] mx-auto flex gap-2 px-1 lg:px-0">
           <input
             type="text"

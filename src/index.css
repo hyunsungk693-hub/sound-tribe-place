@@ -245,6 +245,18 @@
     .page-main-pb { padding-bottom: 2.5rem; }
   }
 
+  /* 하단 고정 입력 바(댓글 등) 위치: 모바일은 탭바 위, 데스크톱은 화면 바닥.
+     탭바는 h-16(64px)에 pb-safe가 더 붙어 실제로는 64px보다 두껍다. 64px만 띄우면
+     설치형(PWA)에서 안전영역만큼 입력 바 아래가 탭바에 덮인다.
+     소프트 키보드가 올라온 동안에는 이 값을 쓰지 않는다 — 그때는 가려진 높이를 실측해
+     인라인 style의 bottom으로 덮어쓴다(useKeyboardInset). */
+  .composer-pos {
+    bottom: calc(64px + var(--safe-bottom, 0px));
+  }
+  @media (min-width: 1024px) {
+    .composer-pos { bottom: 0; }
+  }
+
   /* 글쓰기 FAB 위치: 모바일은 탭바(64px) 위, 데스크톱은 우측 하단.
      홈 탭 평탄화로 탭바 위로 튀어나온 원형 버튼이 사라져 12px만 띄운다. */
   .fab-pos {
