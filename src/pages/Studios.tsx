@@ -3,6 +3,7 @@ import { MapPin, ArrowLeft, CalendarClock, Navigation, Info, Phone } from "lucid
 import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useFeature } from "@/hooks/useFeatureFlags";
 import BookingFlow from "@/components/BookingFlow";
 import { naverDirectionsUrl, googleDirectionsUrl, hasDirections } from "@/lib/directions";
 import {
@@ -27,6 +28,10 @@ const tierLevel = (tier?: string) => (tier === "A" ? 1 : tier === "B" ? 0.7 : ti
 const Studios = () => {
   const navigate = useNavigate();
   useDocumentTitle("제휴 연습실 예약");
+  // 예약을 닫아도 이 화면 자체는 닫지 않는다. 마이그레이션(20260904000001)의 bookings 설명대로
+  // "정보만 보인다" — 어디에 어떤 업소가 있고 전화번호가 무엇인지는 예약과 무관하게 쓸모가 있고,
+  // 화면을 통째로 막으면 길찾기·전화 걸기까지 같이 사라진다. 잠그는 것은 슬롯 선택 이후뿐이다.
+  const bookingsOn = useFeature("bookings").on;
   const [studios, setStudios] = useState<Studio[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Studio | null>(null);
@@ -44,7 +49,8 @@ const Studios = () => {
   const openStudio = async (s: Studio) => {
     setSelected(s);
     // C(정보) 업소는 예약을 받지 않는다 — 슬롯을 불러올 이유도, 보여줄 이유도 없다.
-    if (s.tier === "C") {
+    // 예약 자체가 닫혀 있을 때도 마찬가지다(합주실 수만큼 요청이 나가는 조회라 더 아깝다).
+    if (s.tier === "C" || !bookingsOn) {
       setRooms([]);
       setSlotsByRoom({});
       return;
@@ -77,14 +83,24 @@ const Studios = () => {
       <div>
         {!selected ? (
           <>
-            <p className="text-[13px] text-muted-foreground mb-2 leading-relaxed">
-              <span className="text-primary font-semibold">A 즉시예약</span>은 바로 확정,
-              <span className="text-foreground font-semibold"> B 요청예약</span>은 사장님 승인 후 확정,
-              <span className="text-foreground font-semibold"> C</span>는 정보만 제공합니다.
-            </p>
-            <p className="text-[11.5px] text-muted-foreground mb-5 leading-relaxed">
-              실제 결제(PG) 연동 전이라 결제는 이뤄지지 않으며, 출입 PIN도 발급되지 않습니다.
-            </p>
+            {bookingsOn ? (
+              <>
+                <p className="text-[13px] text-muted-foreground mb-2 leading-relaxed">
+                  <span className="text-primary font-semibold">A 즉시예약</span>은 바로 확정,
+                  <span className="text-foreground font-semibold"> B 요청예약</span>은 사장님 승인 후 확정,
+                  <span className="text-foreground font-semibold"> C</span>는 정보만 제공합니다.
+                </p>
+                <p className="text-[11.5px] text-muted-foreground mb-5 leading-relaxed">
+                  실제 결제(PG) 연동 전이라 결제는 이뤄지지 않으며, 출입 PIN도 발급되지 않습니다.
+                </p>
+              </>
+            ) : (
+              // 등급 설명을 그대로 두면 "A는 바로 확정"이라고 읽고 들어가 슬롯이 없는 걸 보게 된다.
+              <p className="text-[13px] text-muted-foreground mb-5 leading-relaxed">
+                앱에서의 예약은 지금 준비 중입니다.<br />
+                지금은 업소 정보만 보여드립니다 — 이용 문의는 업소로 직접 연락해주세요.
+              </p>
+            )}
             {loading ? (
               <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
             ) : studios.length === 0 ? (
@@ -101,11 +117,12 @@ const Studios = () => {
                   >
                     <div className="flex items-start justify-between gap-2 mb-1.5">
                       <h3 className="text-[15px] font-bold tracking-tight">{s.name}</h3>
-                      {s.tier === "A" ? (
+                      {/* 등급 표식은 곧 예약 방식(즉시/요청)이라, 예약이 닫혀 있으면 지킬 수 없는 말이 된다 */}
+                      {bookingsOn && (s.tier === "A" ? (
                         <span className="shrink-0 font-mono text-[10px] font-bold tracking-wide text-signal bg-signal/10 rounded px-2 py-1">즉시예약</span>
                       ) : (
                         <span className="shrink-0 font-mono text-[10px] font-bold tracking-wide text-secondary-foreground bg-secondary rounded px-2 py-1">{TIER_LABEL[s.tier]}</span>
-                      )}
+                      ))}
                     </div>
                     {s.address && <p className="flex items-center gap-1 text-[12.5px] text-muted-foreground"><MapPin className="w-3 h-3 shrink-0" />{s.address}</p>}
                     {s.description && <p className="text-[12.5px] text-muted-foreground mt-1.5 line-clamp-2">{s.description}</p>}
@@ -126,7 +143,7 @@ const Studios = () => {
             <div className="glass-card p-4 mb-5">
               <div className="flex items-center gap-2 mb-1.5">
                 <h2 className="text-lg font-extrabold tracking-tight">{selected.name}</h2>
-                {selected.tier === "A" && <span className="font-mono text-[10px] font-bold tracking-wide text-signal bg-signal/10 rounded px-2 py-0.5">즉시예약</span>}
+                {bookingsOn && selected.tier === "A" && <span className="font-mono text-[10px] font-bold tracking-wide text-signal bg-signal/10 rounded px-2 py-0.5">즉시예약</span>}
               </div>
               {selected.address && <p className="flex items-center gap-1 text-[12.5px] text-muted-foreground"><MapPin className="w-3 h-3 shrink-0" />{selected.address}</p>}
               {selected.phone && <p className="text-[12.5px] text-muted-foreground mt-1 font-mono">☎ {selected.phone}</p>}
@@ -166,8 +183,18 @@ const Studios = () => {
               )}
             </div>
 
-            {/* C(정보) 등급은 예약 UI를 아예 노출하지 않는다. DB의 create_booking_hold도 같이 거부한다. */}
-            {selected.tier === "C" ? (
+            {/* 예약이 닫혀 있으면 등급과 무관하게 슬롯을 내주지 않는다. 위 정보 카드(주소·전화·길찾기)는
+                그대로 남아 있어, 손님이 헛걸음하지 않고 업소로 바로 연락할 수 있다. */}
+            {!bookingsOn ? (
+              <div className="glass-card p-5 text-center">
+                <Info className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm font-semibold mb-1">예약은 지금 준비 중입니다</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  앱에서 예약을 받는 기능은 곧 다시 열립니다. 그때까지는 업소로 직접 문의해주세요.
+                  {selected.phone ? ` (${selected.phone})` : ""}
+                </p>
+              </div>
+            ) : selected.tier === "C" ? (
               <div className="glass-card p-5 text-center">
                 <Info className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-sm font-semibold mb-1">정보만 제공하는 업소입니다</p>

@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { PostCardSkeleton } from "@/components/skeletons/PostSkeleton";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useFeature } from "@/hooks/useFeatureFlags";
 
 const tabs = ["전체", "자유", "질문", "거래"];
 
@@ -37,6 +38,9 @@ const isRecruitPost = (title: string, content: string) =>
 
 const Community = () => {
   useDocumentTitle("커뮤니티");
+  const communityOn = useFeature("community").on;
+  // 아래 "구인글 쓰기" 유도 토스트가 보낼 곳. 구인구직이 닫혀 있으면 권하지 않는다.
+  const jobsOn = useFeature("jobs").on;
   const { user } = useAuth();
   const navigate = useNavigate();
   const [dbPosts, setDbPosts] = useState<any[]>([]);
@@ -156,7 +160,7 @@ const Community = () => {
         .limit(1)
         .maybeSingle()
         .then(({ data }) => {
-          if (data && isRecruitPost(data.title || "", data.content || "")) {
+          if (data && jobsOn && isRecruitPost(data.title || "", data.content || "")) {
             toast("멤버를 찾고 계신가요?", {
               description: "구인구직에 올리면 더 빨리 찾을 수 있어요",
               duration: 8000,
@@ -167,7 +171,7 @@ const Community = () => {
     };
     window.addEventListener("post-created", handler);
     return () => window.removeEventListener("post-created", handler);
-  }, [fetchPosts, user, navigate]);
+  }, [fetchPosts, user, navigate, jobsOn]);
 
   useEffect(() => {
     const ids = dbPosts.map((p) => p.id);
@@ -303,6 +307,18 @@ const Community = () => {
     if (!post.id) { toast.info("샘플 게시물입니다"); return; }
     navigate(`/post/${post.id}`);
   };
+
+  // 주소로 직접 들어온 경우. 목록을 비워 보여주면 "글이 하나도 없는 서비스"로 읽히고,
+  // 404로 보내면 없어진 게시판이 된다. 둘 다 사실이 아니라 닫아뒀다고 그대로 말한다.
+  if (!communityOn) {
+    return (
+      <PageShell title="커뮤니티">
+        <div className="text-center py-16 text-sm text-muted-foreground">
+          커뮤니티는 지금 준비 중입니다.<br />곧 다시 열립니다.
+        </div>
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell title="커뮤니티">

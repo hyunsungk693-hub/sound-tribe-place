@@ -8,6 +8,7 @@ import TopNav from "@/components/TopNav";
 import CredentialsReview from "@/components/CredentialsReview";
 import ReportsReview from "@/components/ReportsReview";
 import CarouselManager from "@/components/CarouselManager";
+import FeatureFlagsPanel from "@/components/FeatureFlagsPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -181,7 +182,9 @@ const Admin = () => {
       </header>
 
       <Tabs defaultValue="metrics" className="p-4">
-        {/* 탭이 6개가 되면서 한 줄에 다 넣으면 라벨이 서로 밀려 잘린다. 3열 2행으로 접는다. */}
+        {/* 탭이 7개라 한 줄에 다 넣으면 라벨이 서로 밀려 잘린다. 3열로 접는다.
+            마지막 줄이 한 칸만 차는 것은 감수한다 — 4열로 늘리면 "관리자 권한"처럼 네 글자
+            라벨이 좁은 화면에서 두 줄로 접히고, 그러면 탭 높이가 줄마다 달라진다. */}
         <TabsList className="grid w-full grid-cols-3 h-auto gap-1 mb-4">
           <TabsTrigger value="metrics">지표</TabsTrigger>
           <TabsTrigger value="credentials" className="gap-1">
@@ -201,6 +204,7 @@ const Admin = () => {
             )}
           </TabsTrigger>
           <TabsTrigger value="carousel">캐러셀</TabsTrigger>
+          <TabsTrigger value="flags">기능 토글</TabsTrigger>
           <TabsTrigger value="admins">관리자 권한</TabsTrigger>
           {/* 지도가 없어 상시 운영 업무가 아니다. 맨 뒤로 밀고 라벨도 지도용 데이터임이 드러나게 둔다. */}
           <TabsTrigger
@@ -225,6 +229,10 @@ const Admin = () => {
 
         <TabsContent value="carousel" className="mt-0">
           <CarouselManager />
+        </TabsContent>
+
+        <TabsContent value="flags" className="mt-0">
+          <FeatureFlagsPanel />
         </TabsContent>
 
         <TabsContent value="places" className="space-y-4 mt-0">

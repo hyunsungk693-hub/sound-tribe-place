@@ -1,4 +1,5 @@
 import { useSheet } from "@/hooks/useSheet";
+import { FeatureKey, useFeature } from "@/hooks/useFeatureFlags";
 import { useState } from "react";
 import { Plus, X, Briefcase, Music2, Store, Users } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -75,11 +76,13 @@ const communityFields: Field[] = [
   { key: "author_name", label: "닉네임", placeholder: "닉네임" },
 ];
 
-const TYPE_CONFIG: Record<PostType, { label: string; desc: string; icon: typeof Briefcase; fields: Field[]; color: string }> = {
-  job: { label: "구인구직", desc: "공연·녹음·레슨 모집", icon: Briefcase, fields: jobFields, color: "bg-blue-500/10 text-blue-600" },
-  room: { label: "연습실", desc: "합주·개인 연습실 등록", icon: Music2, fields: roomFields, color: "bg-green-500/10 text-green-600" },
-  shop: { label: "악기사", desc: "악기·장비 매장 등록", icon: Store, fields: shopFields, color: "bg-orange-500/10 text-orange-600" },
-  community: { label: "커뮤니티", desc: "자유 글·질문·거래", icon: Users, fields: communityFields, color: "bg-purple-500/10 text-purple-600" },
+// flag: 이 글이 올라갈 게시판을 여닫는 스위치. 글 종류와 게시판은 1:1이라
+// 게시판이 닫혀 있으면 그 글은 아무도 볼 수 없는 곳으로 들어간다.
+const TYPE_CONFIG: Record<PostType, { label: string; desc: string; icon: typeof Briefcase; fields: Field[]; color: string; flag: FeatureKey }> = {
+  job: { label: "구인구직", desc: "공연·녹음·레슨 모집", icon: Briefcase, fields: jobFields, color: "bg-blue-500/10 text-blue-600", flag: "jobs" },
+  room: { label: "연습실", desc: "합주·개인 연습실 등록", icon: Music2, fields: roomFields, color: "bg-green-500/10 text-green-600", flag: "rooms" },
+  shop: { label: "악기사", desc: "악기·장비 매장 등록", icon: Store, fields: shopFields, color: "bg-orange-500/10 text-orange-600", flag: "shops" },
+  community: { label: "커뮤니티", desc: "자유 글·질문·거래", icon: Users, fields: communityFields, color: "bg-purple-500/10 text-purple-600", flag: "community" },
 };
 
 const CreatePostFab = () => {
@@ -94,7 +97,20 @@ const CreatePostFab = () => {
   // (조기 반환보다 앞에 있어야 훅 순서가 안 깨진다)
   const { overlayStyle } = useSheet(chooserOpen, () => setChooserOpen(false));
 
+  // 닫아둔 게시판의 글 종류는 고르는 자리에서 지운다. 남겨두면 손님이 글을 다 써서
+  // 올린 뒤에야 그 글이 어디에도 보이지 않는다는 걸 알게 된다.
+  // (조기 반환보다 앞 — 훅 순서)
+  const flagOn: Partial<Record<FeatureKey, boolean>> = {
+    jobs: useFeature("jobs").on,
+    rooms: useFeature("rooms").on,
+    shops: useFeature("shops").on,
+    community: useFeature("community").on,
+  };
+  const postTypes = (Object.keys(TYPE_CONFIG) as PostType[]).filter((t) => flagOn[TYPE_CONFIG[t].flag]);
+
   if (!user) return null;
+  // 쓸 수 있는 게시판이 하나도 없으면 버튼 자체가 갈 곳이 없다.
+  if (postTypes.length === 0) return null;
   // 글 상세(/post/:id)에서도 숨긴다. 하단에 댓글 입력 바가 있어 FAB가 전송 버튼 바로
   // 위(둘 다 오른쪽 아래, bottom 76px 대 76px)에 겹쳐 앉는다. z-index도 FAB가 위라
   // 전송 버튼을 눌러도 FAB가 열렸다. 읽는 화면에서 새 글쓰기는 주된 행동도 아니다.
@@ -150,7 +166,7 @@ const CreatePostFab = () => {
               </button>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              {(Object.keys(TYPE_CONFIG) as PostType[]).map((t) => {
+              {postTypes.map((t) => {
                 const cfg = TYPE_CONFIG[t];
                 const Icon = cfg.icon;
                 return (

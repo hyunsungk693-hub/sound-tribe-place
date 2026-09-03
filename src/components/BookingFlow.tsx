@@ -4,6 +4,7 @@ import { X, CreditCard, KeyRound, MapPin, Clock, CheckCircle2, Hourglass, Info, 
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useFeature } from "@/hooks/useFeatureFlags";
 import {
   Slot, Room, Studio, fmtWon, slotDuration,
   createHold, confirmBooking, cancelBooking,
@@ -31,6 +32,16 @@ const REQUEST_TTL_MS = 24 * 60 * 60 * 1000;
 // 어느 경우든 실제 PG 연동 전이라 결제는 이뤄지지 않고, 따라서 도어락 PIN도 발급되지 않는다.
 const BookingFlow = ({ studio, room, slot, originApplicationId, onClose, onBooked }: Props) => {
   const { user } = useAuth();
+  // 결제 스위치. 마이그레이션(20260904000001)의 설명대로 "끄면 예약을 만들 수 없다" —
+  // A는 hold 뒤 곧장 결제로 가고, B도 승인 뒤 결제로 이어지므로 둘 다 여기서 막는다.
+  //
+  // 막는 자리가 중요하다. 결제 버튼에서 막으면 이미 createHold로 5분 홀드를 잡은 뒤라
+  // 아무도 쓰지 못하는 채로 슬롯만 잠긴다(B는 아예 'requested' 예약이 남는다).
+  // 그래서 hold를 잡기 전, 시작 버튼 자체를 닫는다.
+  //
+  // 로딩 중 on은 true다. 돈이 오가는 자리에서 그 낙관을 그대로 쓰면 잠깐 열린 문으로
+  // 예약이 들어올 수 있으므로, 판단이 끝날 때까지 버튼은 눌리지 않게 둔다.
+  const payments = useFeature("payments");
   const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase>("review");
   const [bookingId, setBookingId] = useState<string | null>(null);
@@ -70,6 +81,8 @@ const BookingFlow = ({ studio, room, slot, originApplicationId, onClose, onBooke
 
   const startHold = async () => {
     if (!user) { navigate("/auth"); return; }
+    // 버튼을 숨겨도 이전 렌더의 클릭이 남아 들어올 수 있다. 홀드를 잡기 전 마지막 방벽.
+    if (!payments.on || payments.loading) return;
     setBusy(true);
     try {
       const id = await createHold(slot.id, originApplicationId);
@@ -168,6 +181,17 @@ const BookingFlow = ({ studio, room, slot, originApplicationId, onClose, onBooke
                 <p className="text-xs text-muted-foreground mb-4">예약은 업소로 직접 문의해주세요.{studio.phone ? ` (${studio.phone})` : ""}</p>
                 <button onClick={onClose} className="w-full h-11 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium">닫기</button>
               </div>
+            ) : !payments.on ? (
+              // on은 읽는 중일 때 true이므로, 이 분기는 값을 확인한 뒤에만 들어온다.
+              // 위 요약(시간·금액)은 그대로 둔다 — 얼마짜리 시간이었는지는 알고 닫는 편이 낫다.
+              <div className="text-center py-6">
+                <Info className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm font-semibold mb-1">지금은 예약을 받지 않습니다</p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  결제 준비가 끝나면 다시 열립니다. 그때까지는 업소로 직접 문의해주세요.{studio.phone ? ` (${studio.phone})` : ""}
+                </p>
+                <button onClick={onClose} className="w-full h-11 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium">닫기</button>
+              </div>
             ) : (
               <>
                 <div className="text-[11px] text-muted-foreground bg-secondary/50 rounded-lg p-3 mb-4 leading-relaxed">
@@ -189,7 +213,7 @@ const BookingFlow = ({ studio, room, slot, originApplicationId, onClose, onBooke
                 </div>
                 <button
                   onClick={startHold}
-                  disabled={busy}
+                  disabled={busy || payments.loading}
                   className="w-full h-12 rounded-xl bg-action text-action-foreground text-sm font-semibold flex items-center justify-center gap-2 hover:bg-action-hover active:scale-[0.98] transition-all disabled:opacity-50"
                 >
                   {isRequest ? <Hourglass className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}

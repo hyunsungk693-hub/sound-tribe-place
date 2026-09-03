@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { HomeSkeleton } from "@/components/skeletons/PostSkeleton";
 import NotificationsPanel, { useUnreadCount } from "@/components/NotificationsPanel";
+import { FeatureKey, useFeature } from "@/hooks/useFeatureFlags";
 import banner1 from "@/assets/banner-1.png";
 import banner3 from "@/assets/banner-3.jpg";
 import banner4 from "@/assets/banner-4.jpg";
@@ -13,14 +14,16 @@ import banner4 from "@/assets/banner-4.jpg";
 // 카테고리 — 라인 픽토그램 + EN 라벨 + 볼드 타이포
 // 채널 스트립 모티프: 채널마다 hue만 다른 밝고 연한 파스텔 아이콘.
 // 색은 아이콘과 hover 테두리에만 쓰고, mono 라벨은 중립 톤으로 둔다.
+// flag: 이 타일이 여는 기능. 닫아둔 기능의 타일은 아예 그리지 않는다 —
+// 홈은 대부분의 손님이 처음 만나는 화면이라, 여기 남아 있는 타일은 곧 "지금 되는 것"의 목록이다.
 const categories = [
-  { icon: Briefcase, en: "Jobs", label: "구인구직", path: "/jobs",
+  { icon: Briefcase, en: "Jobs", label: "구인구직", path: "/jobs", flag: "jobs" as FeatureKey,
     tint: "text-ch-jobs", hoverBorder: "hover:border-ch-jobs", hoverText: "group-hover:text-ch-jobs" },
-  { icon: Music2, en: "Rooms", label: "연습실", path: "/rooms",
+  { icon: Music2, en: "Rooms", label: "연습실", path: "/rooms", flag: "rooms" as FeatureKey,
     tint: "text-ch-rooms", hoverBorder: "hover:border-ch-rooms", hoverText: "group-hover:text-ch-rooms" },
-  { icon: Store, en: "Shops", label: "악기사", path: "/shops",
+  { icon: Store, en: "Shops", label: "악기사", path: "/shops", flag: "shops" as FeatureKey,
     tint: "text-ch-shops", hoverBorder: "hover:border-ch-shops", hoverText: "group-hover:text-ch-shops" },
-  { icon: MessageCircle, en: "Community", label: "커뮤니티", path: "/community",
+  { icon: MessageCircle, en: "Community", label: "커뮤니티", path: "/community", flag: "community" as FeatureKey,
     tint: "text-ch-community", hoverBorder: "hover:border-ch-community", hoverText: "group-hover:text-ch-community" },
 ];
 
@@ -87,6 +90,21 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [notiOpen, setNotiOpen] = useState(false);
   const { count: unreadCount } = useUnreadCount();
+  // 홈은 각 기능으로 들어가는 문이 한데 모인 화면이다. 닫아둔 기능은 타일·섹션·지표에서
+  // 모두 빼야 앞뒤가 맞는다 — 타일만 지우고 "급구 구인글" 목록을 남겨두면 그 글을 눌러
+  // 결국 같은 곳에 도착한다. 조회 자체는 그대로 둔다(플래그는 언제든 다시 켜지고,
+  // 켜진 순간 새로고침 없이 채워져 있어야 한다).
+  const jobsOn = useFeature("jobs").on;
+  const communityOn = useFeature("community").on;
+  const bookingsOn = useFeature("bookings").on;
+  const flagOn: Partial<Record<FeatureKey, boolean>> = {
+    jobs: jobsOn,
+    rooms: useFeature("rooms").on,
+    shops: useFeature("shops").on,
+    community: communityOn,
+  };
+  const showMetrics = jobsOn || communityOn || bookingsOn;
+  const visibleCategories = categories.filter((c) => flagOn[c.flag]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -279,7 +297,8 @@ const Index = () => {
 
       {loading ? <HomeSkeleton /> : <>
       {/* 히어로: 배너(1fr) + 지표 카드(340px) */}
-      <section className="mb-9 lg:mb-14 grid gap-4 lg:grid-cols-[1fr_340px] lg:gap-5" style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) both" }}>
+      {/* 지표가 하나도 안 남으면 오른쪽 칸을 아예 없앤다 — 열만 남기면 배너 옆이 빈 채로 벌어진다 */}
+      <section className={`mb-9 lg:mb-14 grid gap-4 lg:gap-5 ${showMetrics ? "lg:grid-cols-[1fr_340px]" : ""}`} style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) both" }}>
         <div
           className="relative overflow-hidden rounded-lg h-[210px] lg:h-auto lg:min-h-[300px] touch-pan-y select-none"
           onPointerDown={onBannerPointerDown}
@@ -343,29 +362,44 @@ const Index = () => {
           </div>
         </div>
 
-        {/* 지표 카드 — 오버사이즈 수치 (실측). 모바일에서는 숨김(데스크톱 전용) */}
+        {/* 지표 카드 — 오버사이즈 수치 (실측). 모바일에서는 숨김(데스크톱 전용)
+            닫아둔 기능의 수치는 지운다. "지금 열린 구인 공고 128"을 크게 띄워놓고 정작
+            들어갈 문이 없으면, 손님은 기능이 닫힌 게 아니라 앱이 고장 났다고 읽는다. */}
+        {showMetrics && (
         <div className="glass-card px-6 py-6 lg:py-7 hidden lg:flex flex-col justify-center">
-          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.09em] text-primary mb-2">지금 열린 구인 공고</p>
-          <span className="text-[64px] lg:text-[92px] font-extrabold leading-[0.82] tracking-tighter text-foreground tabular-nums">
-            {openJobCount ?? "—"}
-          </span>
-          <p className="text-[13.5px] text-muted-foreground mt-4 leading-relaxed">지원부터 첫 합주까지, 지금 멤버를 기다리는 공고</p>
-          <div className="h-px bg-border my-5" />
-          <div className="flex justify-between items-baseline mb-2.5">
-            <span className="text-[13px] text-muted-foreground font-medium">커뮤니티 글</span>
-            <b className="font-bold text-base tabular-nums">{communityCount ?? "—"}</b>
-          </div>
-          <div className="flex justify-between items-baseline">
-            <span className="text-[13px] text-muted-foreground font-medium">제휴 연습실</span>
-            <b className="font-bold text-base tabular-nums">{studioCount ?? "—"}</b>
-          </div>
+          {jobsOn && (
+            <>
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.09em] text-primary mb-2">지금 열린 구인 공고</p>
+              <span className="text-[64px] lg:text-[92px] font-extrabold leading-[0.82] tracking-tighter text-foreground tabular-nums">
+                {openJobCount ?? "—"}
+              </span>
+              <p className="text-[13.5px] text-muted-foreground mt-4 leading-relaxed">지원부터 첫 합주까지, 지금 멤버를 기다리는 공고</p>
+            </>
+          )}
+          {/* 구분선은 위아래 양쪽에 내용이 있을 때만 — 한쪽만 남으면 카드 끝에 선만 떠 있다 */}
+          {jobsOn && (communityOn || bookingsOn) && <div className="h-px bg-border my-5" />}
+          {communityOn && (
+            <div className="flex justify-between items-baseline mb-2.5">
+              <span className="text-[13px] text-muted-foreground font-medium">커뮤니티 글</span>
+              <b className="font-bold text-base tabular-nums">{communityCount ?? "—"}</b>
+            </div>
+          )}
+          {bookingsOn && (
+            <div className="flex justify-between items-baseline">
+              <span className="text-[13px] text-muted-foreground font-medium">제휴 연습실</span>
+              <b className="font-bold text-base tabular-nums">{studioCount ?? "—"}</b>
+            </div>
+          )}
         </div>
+        )}
       </section>
 
-      {/* 카테고리 — 픽토그램 + EN + 볼드 타이포 카드 */}
+      {/* 카테고리 — 픽토그램 + EN + 볼드 타이포 카드.
+          한 장도 안 남으면 섹션째 뺀다 — 빈 그리드만 남기면 아래위 여백이 이유 없이 벌어진다. */}
+      {visibleCategories.length > 0 && (
       <section className="mb-10 lg:mb-14" style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) 0.06s both" }}>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 lg:gap-3">
-          {categories.map(({ icon: Icon, en, label, path, tint, hoverBorder, hoverText }) => (
+          {visibleCategories.map(({ icon: Icon, en, label, path, tint, hoverBorder, hoverText }) => (
             <button
               key={path}
               onClick={() => navigate(path)}
@@ -379,9 +413,14 @@ const Index = () => {
           ))}
         </div>
       </section>
+      )}
 
-      {/* 급구 구인글 + 커뮤니티 인기글 — 2단 배치 */}
-      <div className="grid gap-9 lg:grid-cols-2 lg:gap-11 mb-10 lg:mb-14">
+      {/* 급구 구인글 + 커뮤니티 인기글 — 2단 배치.
+          한쪽 기능이 닫혀 있으면 2단을 풀어 1단으로 둔다. 열만 남겨두면 데스크톱에서
+          남은 목록이 화면 절반만 쓰고 옆이 비어, 뭔가 못 불러온 것처럼 보인다. */}
+      {(jobsOn || communityOn) && (
+      <div className={`grid gap-9 lg:gap-11 mb-10 lg:mb-14 ${jobsOn && communityOn ? "lg:grid-cols-2" : ""}`}>
+        {jobsOn && (
         <section style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) 0.1s both" }}>
           <SectionHead title="급구 구인글" onMore={() => navigate("/jobs")} />
           {recentJobs.length === 0 ? (
@@ -407,7 +446,9 @@ const Index = () => {
             </div>
           )}
         </section>
+        )}
 
+        {communityOn && (
         <section style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) 0.14s both" }}>
           <SectionHead title="커뮤니티 인기글" onMore={() => navigate("/community")} />
           {popularPosts.length === 0 ? (
@@ -428,10 +469,14 @@ const Index = () => {
             </div>
           )}
         </section>
+        )}
       </div>
+      )}
 
-      {/* 제휴 연습실 · 즉시예약 — 3단 배치 (신뢰 등급 = VU 게이지) */}
-      {studios.length > 0 && (
+      {/* 제휴 연습실 · 즉시예약 — 3단 배치 (신뢰 등급 = VU 게이지)
+          예약을 닫아두면 이 섹션은 통째로 뺀다. 카드마다 "즉시예약"이라고 적혀 있는데
+          눌러 들어가 보면 슬롯이 없다 — 지키지 못할 약속을 홈에 걸어두는 셈이다. */}
+      {bookingsOn && studios.length > 0 && (
         <section className="mb-6" style={{ animation: "reveal 0.5s cubic-bezier(0.16,1,0.3,1) 0.18s both" }}>
           <SectionHead title="제휴 연습실 · 즉시예약" onMore={() => navigate("/studios")} />
           <div className="grid gap-2.5 lg:grid-cols-3 lg:gap-3.5 mt-4">

@@ -4,6 +4,7 @@ import { ArrowLeft, CalendarHeart, MapPin, Zap, Clock } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useAuth } from "@/contexts/AuthContext";
+import { useFeature } from "@/hooks/useFeatureFlags";
 import { supabase } from "@/integrations/supabase/client";
 import BookingFlow from "@/components/BookingFlow";
 import { Studio, Room, Slot, fmtWon, slotDuration, suggestSlots } from "@/lib/bookings";
@@ -26,6 +27,11 @@ const FirstRehearsal = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   useDocumentTitle("첫 합주 잡기");
+  const firstRehearsalOn = useFeature("first_rehearsal").on;
+  // 이 화면이 잡는 것은 결국 제휴 연습실 슬롯이다. 예약이 닫혀 있으면 첫 합주 잡기가
+  // 켜져 있어도 잡을 수 있는 것이 없다 — 대신 아래 "공통 가능 시간"은 남겨둔다.
+  // 언제 만날지 정하는 데는 그 정보만으로도 쓸모가 있고, 연습실은 각자 잡으면 된다.
+  const bookingsOn = useFeature("bookings").on;
 
   const [loading, setLoading] = useState(true);
   const [valid, setValid] = useState(false);
@@ -90,7 +96,13 @@ const FirstRehearsal = () => {
           <ArrowLeft className="w-4 h-4" /> 뒤로
         </button>
 
-        {loading ? (
+        {/* 주소로 직접 들어온 경우. 404로 보내지 않는다 — 합격 알림에 실린 링크라
+            며칠 뒤에도 눌리고, 그때 "없는 페이지"가 뜨면 합격 자체를 의심하게 된다. */}
+        {!firstRehearsalOn ? (
+          <div className="text-center py-16 text-sm text-muted-foreground">
+            첫 합주 잡기는 지금 준비 중입니다.<br />곧 다시 열립니다.
+          </div>
+        ) : loading ? (
           <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : !valid ? (
           <div className="text-center py-16 text-sm text-muted-foreground">
@@ -149,7 +161,11 @@ const FirstRehearsal = () => {
                 </button>
               )}
             </div>
-            {candidates.length === 0 ? (
+            {!bookingsOn ? (
+              <div className="glass-card p-6 text-center text-sm text-muted-foreground leading-relaxed">
+                제휴 연습실 예약이 지금 준비 중이라<br />여기서 바로 시간을 잡을 수는 없습니다.
+              </div>
+            ) : candidates.length === 0 ? (
               <div className="glass-card p-6 text-center text-sm text-muted-foreground">
                 지금 예약 가능한 제휴 연습실 슬롯이 없습니다.<br />
                 <button onClick={() => navigate("/studios")} className="mt-2 text-primary font-medium">제휴 연습실 전체 보기</button>

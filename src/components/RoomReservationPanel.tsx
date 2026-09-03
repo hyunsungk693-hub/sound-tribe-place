@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { useFeature } from "@/hooks/useFeatureFlags";
 import { Textarea } from "@/components/ui/textarea";
 
 interface Reservation {
@@ -28,6 +29,10 @@ const todayStr = () => {
 };
 
 const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
+  // 아래 조기 반환(!roomId)보다 앞에 둔다 — 훅 순서.
+  // 예약을 닫아도 이 패널을 통째로 지우지는 않는다. 이미 잡혀 있는 시간은 남아 있고,
+  // 그 사람들은 자기 예약을 확인하고 취소할 수 있어야 한다. 닫는 것은 새로 잡는 문뿐이다.
+  const bookingsOn = useFeature("bookings").on;
   const { user } = useAuth();
   const [date, setDate] = useState<string>(todayStr());
   // Slots: 0..47 representing 00:00, 00:30, ... 23:30. End slot can be 1..48 (=24:00)
@@ -36,6 +41,13 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // 취소 확인용 상태. 원래는 파일 중간, `if (!roomId) return` 아래에 있었다.
+  // 그 자리에서는 roomId가 있고 없고에 따라 이 컴포넌트가 부르는 훅 개수가 달라진다 —
+  // 한 번이라도 그 사이를 오가면 React가 "Rendered fewer hooks than expected"로 던지고
+  // 화면이 통째로 사라진다. 훅은 조기 반환보다 위에 있어야 한다.
+  const [cancelTarget, setCancelTarget] = useState<{ id: string; mine: boolean } | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
 
   const fetchReservations = useCallback(async () => {
     if (!roomId) return;
@@ -139,10 +151,6 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
     fetchReservations();
   };
 
-  const [cancelTarget, setCancelTarget] = useState<{ id: string; mine: boolean } | null>(null);
-  const [cancelReason, setCancelReason] = useState("");
-  const [cancelling, setCancelling] = useState(false);
-
   // 방 주인(isHost)은 자기 방의 남의 예약도 정리할 수 있다.
   // DELETE 정책도 20260901000018에서 함께 열었다 — 화면 조건만 고치면 RLS에 막힌다.
   const isHost = !!ownerId && user?.id === ownerId;
@@ -174,9 +182,11 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
   return (
     <div className="mt-5 pt-5 border-t border-border space-y-4">
       <h3 className="text-sm font-bold flex items-center gap-1.5">
-        <Calendar className="w-4 h-4 text-primary" /> 예약하기
+        <Calendar className="w-4 h-4 text-primary" /> {bookingsOn ? "예약하기" : "예약"}
       </h3>
 
+      {/* 날짜는 예약이 닫혀 있어도 남긴다 — 아래 "예약 현황"이 이 날짜로 필터링되므로,
+          이것까지 감추면 오늘 하루 말고는 아무것도 확인할 수 없다. */}
       <div>
         <label className="text-xs font-medium text-muted-foreground mb-1 block">날짜</label>
         <input
@@ -188,6 +198,12 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
         />
       </div>
 
+      {!bookingsOn ? (
+        <div className="p-4 rounded-xl bg-secondary/40 text-center text-xs text-muted-foreground leading-relaxed">
+          연습실 예약은 지금 준비 중입니다.<br />지금은 잡혀 있는 시간만 보여드립니다.
+        </div>
+      ) : (
+      <>
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-1 block">시작 시간</label>
@@ -230,6 +246,8 @@ const RoomReservationPanel = ({ roomId, ownerId }: Props) => {
       >
         {submitting ? "예약 중..." : `${slotToHM(startSlot)} - ${endSlot === 48 ? "24:00" : slotToHM(endSlot)} 예약하기`}
       </button>
+      </>
+      )}
 
       <div>
         <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">

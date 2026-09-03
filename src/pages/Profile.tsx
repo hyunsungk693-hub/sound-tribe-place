@@ -15,6 +15,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { SUPPORT_EMAIL } from "@/lib/support";
+import { useFeature } from "@/hooks/useFeatureFlags";
 
 interface Profile {
   display_name: string | null;
@@ -44,11 +46,6 @@ const menuItems = [
 ] as const;
 
 type MenuKey = (typeof menuItems)[number]["key"];
-
-// 운영 연락 메일. 앱 내 메시지가 닿지 않는 경우 — 로그인이 막혔거나, 앱 밖에서 물어야 할 때 —
-// 를 위한 두 번째 창구다. 제휴 문의와 고객센터가 같은 주소를 쓰므로 한 번만 적는다.
-// 운영에 실제로 닿는 주소여야 한다: 받는 사람이 없는 주소는 답을 기다리게만 만든다.
-const SUPPORT_EMAIL = "instrut123@gmail.com";
 
 // 주소를 링크와 복사 두 가지로 낸다. mailto:가 열리지 않는 기기가 있고, 그때 주소를 손으로
 // 옮겨 적게 두면 오타 하나로 답을 못 받는 쪽은 보낸 사람이다.
@@ -122,6 +119,10 @@ const ProfilePage = () => {
   const [myBookings, setMyBookings] = useState<any[]>([]);
   const [myApplications, setMyApplications] = useState<any[]>([]);
   const [instrutTab, setInstrutTab] = useState<"apply" | "reserve">("apply");
+  // 이 화면에도 꺼질 수 있는 두 갈래가 있다. 진입점만 감추고 이미 잡혀 있는 예약은
+  // 계속 보여준다 — 기능을 닫는 것과 이미 한 약속을 감추는 것은 다른 일이다.
+  const firstRehearsal = useFeature("first_rehearsal");
+  const bookings = useFeature("bookings");
   // 작업 2 이의 제기: 내가 받은 평가와 신고 폼
   const [myRatings, setMyRatings] = useState<any[]>([]);
   const [reportTarget, setReportTarget] = useState<any>(null);
@@ -634,12 +635,14 @@ const ProfilePage = () => {
 
                     {a.status === "accepted" && (
                       <div className="mt-2 flex flex-col gap-1.5">
+                        {firstRehearsal.on && (
                         <button
                           onClick={(e) => { e.stopPropagation(); navigate(`/first-rehearsal/${a.id}`); }}
                           className="w-full h-9 rounded-lg bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-primary/15 active:scale-[0.98] transition-all"
                         >
                           <CalendarHeart className="w-3.5 h-3.5" /> 첫 합주 잡기
                         </button>
+                        )}
                         {a.job?.user_id && (
                           <button
                             onClick={(e) => { e.stopPropagation(); setRatingTarget({ id: a.job.user_id, name: a.job?.author_name || "공고 작성자", appId: a.id }); }}
@@ -657,7 +660,16 @@ const ProfilePage = () => {
               <p className="text-xs text-muted-foreground text-center py-6">지원 내역이 없습니다.</p>
             )
           ) : (
-            (myBookings.length > 0 || myReservations.length > 0) ? (
+            <>
+            {/* 예약을 닫아도 이 탭은 감추지 않는다. 이미 잡혀 있는 예약을 보고 취소할
+                길까지 막으면, 기능을 닫은 대가를 이미 예약한 사람이 치르게 된다.
+                대신 새로 잡을 수 없다는 사실만 위에 알린다. */}
+            {!bookings.on && !bookings.loading && (
+              <p className="text-[11px] text-muted-foreground bg-secondary rounded-lg px-3 py-2 leading-relaxed">
+                지금은 새 예약을 받지 않습니다. 이미 잡아둔 예약은 아래에 그대로 있고 취소도 됩니다.
+              </p>
+            )}
+            {(myBookings.length > 0 || myReservations.length > 0) ? (
               <>
               {myBookings.map((b) => {
                 const [start] = (b.period || "").replace(/[[)"]/g, "").split(",");
@@ -723,7 +735,8 @@ const ProfilePage = () => {
               </>
             ) : (
               <p className="text-xs text-muted-foreground text-center py-6">예약 내역이 없습니다.</p>
-            )
+            )}
+            </>
           )}
         </div>
       </div>
@@ -1318,6 +1331,26 @@ const ProfilePage = () => {
                 사실과 다르면 신고해 등급 산정에서 빼도록 요청할 수 있습니다.
               </p>
             </section>
+            {/* 정식 방침으로 잇는다. 이 다이얼로그는 "앱이 화면에서 무엇을 하는가"만 다루는데,
+                보관 기간 · 처리 위탁 · 국외 이전 · 권리 행사 창구처럼 법이 방침에 담기를 요구하는
+                항목은 여기 들어가지 않는다. 다이얼로그를 그만큼 키우면 아무도 끝까지 읽지 않으므로,
+                긴 문서는 /privacy에 두고 여기서는 그리로 보낸다. 그 라우트는 로그인 없이 열리므로
+                가입을 고민하는 사람에게 링크를 그대로 건네도 된다. */}
+            <div className="rounded-lg border border-border p-3">
+              <p className="font-semibold text-foreground">정식 개인정보처리방침</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                위 내용은 화면에서 무엇이 보이고 무엇이 저장되는지만 추린 것입니다.
+                보관 기간, 어떤 사업자에게 맡기는지(일부는 국외로 나갑니다), 권리를 어떻게
+                행사하는지는 별도 문서에 정리해 두었습니다. 아직 법률 검토를 받지 않은
+                초안이라는 사실도 그 문서 맨 위에 적어 두었습니다.
+              </p>
+              <button
+                onClick={() => { setMenuSheet(null); navigate("/privacy"); }}
+                className="mt-2 text-xs font-semibold text-primary underline underline-offset-4 hover:text-foreground transition-colors"
+              >
+                개인정보처리방침 전문 보기
+              </button>
+            </div>
           </div>
           <DialogFooter>
             <button

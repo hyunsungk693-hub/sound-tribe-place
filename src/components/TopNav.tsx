@@ -4,13 +4,15 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationsPanel, { useUnreadCount } from "@/components/NotificationsPanel";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { FeatureKey, useFeature } from "@/hooks/useFeatureFlags";
 
-const links = [
+// 홈은 스위치가 없다 — 홈까지 닫으면 앱에 들어올 문이 사라진다.
+const links: { path: string; label: string; flag?: FeatureKey }[] = [
   { path: "/", label: "홈" },
-  { path: "/jobs", label: "구인구직" },
-  { path: "/rooms", label: "연습실" },
-  { path: "/shops", label: "악기사" },
-  { path: "/community", label: "커뮤니티" },
+  { path: "/jobs", label: "구인구직", flag: "jobs" },
+  { path: "/rooms", label: "연습실", flag: "rooms" },
+  { path: "/shops", label: "악기사", flag: "shops" },
+  { path: "/community", label: "커뮤니티", flag: "community" },
 ];
 
 // 데스크톱(lg 이상) 전용 상단 내비게이션. 모바일은 BottomNav가 담당한다.
@@ -18,6 +20,16 @@ const links = [
 const TopNav = () => {
   const { user } = useAuth();
   const location = useLocation();
+  // 모바일은 BottomNav가 같은 일을 한다. 여기를 빠뜨리면 꺼진 기능이 데스크톱 상단에만
+  // 남아, 눌러 들어가면 "준비 중" 안내를 만나는 앞뒤 안 맞는 화면이 된다.
+  const jobs = useFeature("jobs");
+  const rooms = useFeature("rooms");
+  const shops = useFeature("shops");
+  const community = useFeature("community");
+  const flagOn: Partial<Record<FeatureKey, boolean>> = {
+    jobs: jobs.on, rooms: rooms.on, shops: shops.on, community: community.on,
+  };
+  const visibleLinks = links.filter((l) => !l.flag || flagOn[l.flag]);
   const navigate = useNavigate();
   const [notiOpen, setNotiOpen] = useState(false);
   const { count } = useUnreadCount();
@@ -41,7 +53,7 @@ const TopNav = () => {
           </span>
         </button>
         <nav className="flex items-center gap-7 flex-1">
-          {links.map(({ path, label }) => {
+          {visibleLinks.map(({ path, label }) => {
             const active = location.pathname === path;
             return (
               <button

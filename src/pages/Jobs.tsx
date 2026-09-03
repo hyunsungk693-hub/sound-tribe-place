@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useFeature } from "@/hooks/useFeatureFlags";
 import { JOB_CATEGORIES, JOB_CATEGORY_RELIGION, JOB_RELIGION_SUBCATEGORIES } from "@/components/CreatePostDialog";
 
 // 목적 목록은 작성 폼과 같은 정의를 쓴다 — 목록을 따로 적어두면 어긋나 저장이 DB CHECK에 걸린다
@@ -83,6 +84,11 @@ type JobItem = {
 
 const Jobs = () => {
   useDocumentTitle("구인구직");
+  // 목록·상세·지원이 전부 이 화면 안에 있어, jobs를 닫으면 화면 하나가 통째로 닫힌다.
+  const jobsOn = useFeature("jobs").on;
+  // 첫 합주 잡기는 별도 스위치다 — 공고는 열어두고 합주 잡기만 닫는 조합이 실제로 있다
+  // (제휴 연습실 슬롯이 아직 없을 때). 그래서 jobs와 묶지 않는다.
+  const firstRehearsalOn = useFeature("first_rehearsal").on;
   const { user } = useAuth();
   const navigate = useNavigate();
   const [dbJobs, setDbJobs] = useState<any[]>([]);
@@ -568,6 +574,18 @@ const Jobs = () => {
     setSelectedJob(null);
     fetchJobs();
   };
+
+  // 주소를 직접 치거나 예전 링크로 들어온 경우. 404로 보내지 않는다 —
+  // 없어진 게 아니라 잠시 닫아둔 것이고, 그 차이를 손님이 알아야 북마크를 지우지 않는다.
+  if (!jobsOn) {
+    return (
+      <PageShell title="구인구직">
+        <div className="text-center py-16 text-sm text-muted-foreground">
+          구인구직은 지금 준비 중입니다.<br />곧 다시 열립니다.
+        </div>
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell title="구인구직">
@@ -1097,7 +1115,7 @@ const Jobs = () => {
                                     </button>
                                   )}
                                 </div>
-                                {a.status === "accepted" && (
+                                {a.status === "accepted" && firstRehearsalOn && (
                                   <button
                                     onClick={() => { setSelectedJob(null); navigate(`/first-rehearsal/${a.id}`); }}
                                     className="w-full h-8 rounded-md bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center gap-1 hover:bg-primary/15 transition-colors"

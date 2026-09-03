@@ -5,15 +5,20 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { FeatureKey, useFeature } from "@/hooks/useFeatureFlags";
 
 const HOLD_MS = 300;
 
-const holdMenuItems = [
-  { path: "/jobs", icon: Briefcase, label: "구인", lift: 10 },
-  { path: "/rooms", icon: Music2, label: "연습실", lift: 0 },
-  { path: "/shops", icon: Store, label: "악기사", lift: 0 },
-  { path: "/community", icon: MessageCircle, label: "커뮤", lift: 10 },
+const holdMenuItems: { path: string; icon: typeof Briefcase; label: string; flag: FeatureKey }[] = [
+  { path: "/jobs", icon: Briefcase, label: "구인", flag: "jobs" },
+  { path: "/rooms", icon: Music2, label: "연습실", flag: "rooms" },
+  { path: "/shops", icon: Store, label: "악기사", flag: "shops" },
+  { path: "/community", icon: MessageCircle, label: "커뮤", flag: "community" },
 ];
+
+// 양 끝 항목만 띄워 아치를 만든다. 값을 항목에 박아두면 기능이 꺼져 항목 하나가 빠졌을 때
+// 한쪽만 올라간 채로 남으므로, 남은 개수와 자리로 그때그때 계산한다.
+const liftOf = (i: number, n: number) => (n > 2 && (i === 0 || i === n - 1) ? 10 : 0);
 
 const BottomNav = () => {
   const location = useLocation();
@@ -21,6 +26,17 @@ const BottomNav = () => {
   const { user } = useAuth();
   // 메시지 미읽음은 TopNav와 공유하는 전역 단일 구독을 쓴다 (중복 채널·토스트 방지)
   const { count: unreadMessages } = useUnreadMessages();
+  // 홀드 메뉴는 네 기능으로 들어가는 문이다. 관리자가 닫아둔 기능은 항목 자체를 빼야 한다 —
+  // 남겨두면 손님이 눌러본 뒤에야 '준비 중'을 알게 되고, 닫아둔 이유(예: 심사 전)와 무관하게
+  // 서비스가 고장 난 것처럼 읽힌다.
+  const jobs = useFeature("jobs");
+  const rooms = useFeature("rooms");
+  const shops = useFeature("shops");
+  const community = useFeature("community");
+  const flagOn: Partial<Record<FeatureKey, boolean>> = {
+    jobs: jobs.on, rooms: rooms.on, shops: shops.on, community: community.on,
+  };
+  const menuItems = holdMenuItems.filter((it) => flagOn[it.flag]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuClosing, setMenuClosing] = useState(false);
@@ -81,6 +97,9 @@ const BottomNav = () => {
 
   const startHold = () => {
     openedByHold.current = false;
+    // 열 항목이 하나도 없으면 홀드를 아예 잡지 않는다. 빈 오버레이만 덮이면
+    // 화면이 굳은 것처럼 보이고, 탭(홈 이동)만 되던 것보다 나빠진다.
+    if (menuItems.length === 0) return;
     holdTimer.current = setTimeout(() => {
       openedByHold.current = true;
       setMenuOpen(true);
@@ -124,13 +143,13 @@ const BottomNav = () => {
             className="absolute left-1/2 -translate-x-1/2 flex items-end gap-3.5"
             style={{ bottom: "calc(80px + var(--safe-bottom, 0px))" }}
           >
-            {holdMenuItems.map(({ path, icon: Icon, label, lift }, i) => (
+            {menuItems.map(({ path, icon: Icon, label }, i) => (
               <button
                 key={path}
                 onClick={(e) => { e.stopPropagation(); navigate(path); }}
                 onPointerUp={(e) => e.stopPropagation()}
                 className={`hold-menu-item ${menuClosing ? "closing" : ""} flex flex-col items-center gap-1.5`}
-                style={{ animationDelay: menuClosing ? `${i * 20}ms` : `${i * 40}ms`, transform: `translateY(${lift}px)` }}
+                style={{ animationDelay: menuClosing ? `${i * 20}ms` : `${i * 40}ms`, transform: `translateY(${liftOf(i, menuItems.length)}px)` }}
               >
                 <span className="p-3.5 rounded-2xl bg-card border border-border/60 shadow-lg flex items-center justify-center text-primary">
                   <Icon className="w-6 h-6" />
@@ -165,9 +184,12 @@ const BottomNav = () => {
             className={`${tabBtnCls(location.pathname === "/")} select-none ${menuOpen ? "scale-95" : ""}`}
             style={{ touchAction: "manipulation", WebkitUserSelect: "none", WebkitTouchCallout: "none" } as React.CSSProperties}
             aria-label={
-              unreadNotifications > 0
-                ? `홈 (알림 ${unreadNotifications}개, 길게 누르면 바로가기 메뉴)`
-                : "홈 (길게 누르면 바로가기 메뉴)"
+              // 바로가기가 하나도 안 남았으면 홀드 안내를 읽어주지 않는다 — 눌러도 아무 일이 없다.
+              menuItems.length === 0
+                ? (unreadNotifications > 0 ? `홈 (알림 ${unreadNotifications}개)` : "홈")
+                : unreadNotifications > 0
+                  ? `홈 (알림 ${unreadNotifications}개, 길게 누르면 바로가기 메뉴)`
+                  : "홈 (길게 누르면 바로가기 메뉴)"
             }
           >
             <div className="relative">

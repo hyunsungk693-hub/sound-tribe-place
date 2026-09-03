@@ -18,6 +18,7 @@ import RoomReservationPanel from "@/components/RoomReservationPanel";
 import { naverDirectionsUrl, googleDirectionsUrl, hasDirections } from "@/lib/directions";
 import { addRecentView } from "@/lib/recentViews";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useFeature } from "@/hooks/useFeatureFlags";
 
 
 
@@ -45,6 +46,13 @@ const Rooms = () => {
   const location = useLocation();
   const mode: Mode = location.pathname === "/shops" ? "shop" : "room";
   useDocumentTitle(mode === "room" ? "연습실" : "악기사");
+  // 한 화면이 /rooms와 /shops를 mode로 갈라 쓴다. 스위치도 둘이라 지금 보고 있는 쪽만 본다.
+  // (연습실은 닫고 악기사만 열어두는 조합이 실제로 가능해야 한다)
+  const roomsOn = useFeature("rooms").on;
+  const shopsOn = useFeature("shops").on;
+  const listOn = mode === "room" ? roomsOn : shopsOn;
+  // 아래 제휴 연습실 배너가 여는 것은 이 목록이 아니라 예약 흐름이다 — 스위치도 그쪽 것을 본다.
+  const bookingsOn = useFeature("bookings").on;
   const [dbRooms, setDbRooms] = useState<any[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -226,9 +234,21 @@ const Rooms = () => {
     fetchRooms(mode);
   };
 
+  // 주소로 직접 들어온 경우. 404가 아니라 안내를 보여준다 — 목록이 빈 화면으로 보이면
+  // 등록된 곳이 하나도 없는 것과 구분되지 않는다.
+  if (!listOn) {
+    return (
+      <PageShell title={mode === "room" ? "연습실" : "악기사"}>
+        <div className="text-center py-16 text-sm text-muted-foreground">
+          {mode === "room" ? "연습실 정보는" : "악기사 정보는"} 지금 준비 중입니다.<br />곧 다시 열립니다.
+        </div>
+      </PageShell>
+    );
+  }
+
   return (
     <PageShell title={mode === "room" ? "연습실" : "악기사"}>
-      {mode === "room" && (
+      {mode === "room" && bookingsOn && (
         <button
           onClick={() => navigate("/studios")}
           className="w-full mb-5 p-4 rounded-lg bg-primary/[0.06] border border-primary/25 flex items-center justify-between hover:border-primary transition-colors active:scale-[0.99]"
