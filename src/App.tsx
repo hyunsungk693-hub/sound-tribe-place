@@ -32,6 +32,7 @@ const Partner = lazy(() => import("./pages/Partner.tsx"));
 const FirstRehearsal = lazy(() => import("./pages/FirstRehearsal.tsx"));
 const Admin = lazy(() => import("./pages/Admin.tsx"));
 const Privacy = lazy(() => import("./pages/Privacy.tsx"));
+const Notices = lazy(() => import("./pages/Notices.tsx"));
 
 // 화면을 받아오는 동안의 자리. 기존 ProtectedRoute의 대기 표시와 같은 모양이라
 // 로그인 확인에서 화면 로딩으로 넘어갈 때 표시가 바뀌지 않는다.
@@ -90,6 +91,8 @@ const App = () => {
                   <Route path="/profile/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
                   {/* 가입 전에 읽을 수 있어야 하는 문서라 보호하지 않는다 */}
                   <Route path="/privacy" element={<Privacy />} />
+                  {/* 점검·오픈 안내는 로그인이 막힌 사람이 가장 먼저 읽어야 할 글이라 보호하지 않는다 */}
+                  <Route path="/notices" element={<Notices />} />
                   <Route path="/u/:handle" element={<PublicProfile />} />
                   <Route path="/u/:handle/card" element={<CardView />} />
                   <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />

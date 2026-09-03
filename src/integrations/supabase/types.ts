@@ -39,6 +39,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          id: string
+          is_published: boolean
+          level: string
+          starts_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          is_published?: boolean
+          level?: string
+          starts_at?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          is_published?: boolean
+          level?: string
+          starts_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           amount: number
@@ -161,24 +200,24 @@ export type Database = {
           first_response_at: string | null
           id: string
           updated_at: string
-          user1_id: string
-          user2_id: string
+          user1_id: string | null
+          user2_id: string | null
         }
         Insert: {
           created_at?: string
           first_response_at?: string | null
           id?: string
           updated_at?: string
-          user1_id: string
-          user2_id: string
+          user1_id?: string | null
+          user2_id?: string | null
         }
         Update: {
           created_at?: string
           first_response_at?: string | null
           id?: string
           updated_at?: string
-          user1_id?: string
-          user2_id?: string
+          user1_id?: string | null
+          user2_id?: string | null
         }
         Relationships: []
       }
@@ -291,7 +330,7 @@ export type Database = {
           file_url: string | null
           id: string
           is_read: boolean
-          sender_id: string
+          sender_id: string | null
         }
         Insert: {
           content: string
@@ -302,7 +341,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_read?: boolean
-          sender_id: string
+          sender_id?: string | null
         }
         Update: {
           content?: string
@@ -313,7 +352,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_read?: boolean
-          sender_id?: string
+          sender_id?: string | null
         }
         Relationships: [
           {

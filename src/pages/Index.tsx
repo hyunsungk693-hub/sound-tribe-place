@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { HomeSkeleton } from "@/components/skeletons/PostSkeleton";
 import NotificationsPanel, { useUnreadCount } from "@/components/NotificationsPanel";
+import NoticeBanner from "@/components/NoticeBanner";
 import { FeatureKey, useFeature } from "@/hooks/useFeatureFlags";
 import banner1 from "@/assets/banner-1.png";
 import banner3 from "@/assets/banner-3.jpg";
@@ -294,6 +295,11 @@ const Index = () => {
           )}
         </header>
       </div>
+
+      {/* 공지는 홈 데이터(loading)와 별개로 스스로 받아 온다. 아래 스켈레톤 안에 두면
+          구인글·인기글 조회가 늦어질 때 점검 안내처럼 지금 당장 읽어야 할 문장이
+          가장 늦게 나타난다. 공지가 없으면 이 자리에 아무것도 그리지 않는다. */}
+      <NoticeBanner />
 
       {loading ? <HomeSkeleton /> : <>
       {/* 히어로: 배너(1fr) + 지표 카드(340px) */}

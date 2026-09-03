@@ -8,6 +8,7 @@ import TopNav from "@/components/TopNav";
 import CredentialsReview from "@/components/CredentialsReview";
 import ReportsReview from "@/components/ReportsReview";
 import CarouselManager from "@/components/CarouselManager";
+import AnnouncementsPanel from "@/components/AnnouncementsPanel";
 import FeatureFlagsPanel from "@/components/FeatureFlagsPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -182,9 +183,11 @@ const Admin = () => {
       </header>
 
       <Tabs defaultValue="metrics" className="p-4">
-        {/* 탭이 7개라 한 줄에 다 넣으면 라벨이 서로 밀려 잘린다. 3열로 접는다.
-            마지막 줄이 한 칸만 차는 것은 감수한다 — 4열로 늘리면 "관리자 권한"처럼 네 글자
-            라벨이 좁은 화면에서 두 줄로 접히고, 그러면 탭 높이가 줄마다 달라진다. */}
+        {/* 탭이 8개라 한 줄에 다 넣으면 라벨이 서로 밀려 잘린다. 3열로 접는다.
+            4열로 늘리지 않는 이유는 "관리자 권한"처럼 네 글자 라벨이 좁은 화면에서 두 줄로
+            접히고, 그러면 탭 높이가 줄마다 달라지기 때문이다.
+            순서도 3열을 전제로 짰다 — 둘째 줄(공지·캐러셀·기능 토글)은 전부 손님 화면에
+            그대로 나가는 것들이라, 무언가를 밖으로 내보내려는 사람이 한 줄만 보면 된다. */}
         <TabsList className="grid w-full grid-cols-3 h-auto gap-1 mb-4">
           <TabsTrigger value="metrics">지표</TabsTrigger>
           <TabsTrigger value="credentials" className="gap-1">
@@ -203,6 +206,7 @@ const Admin = () => {
               </span>
             )}
           </TabsTrigger>
+          <TabsTrigger value="announcements">공지</TabsTrigger>
           <TabsTrigger value="carousel">캐러셀</TabsTrigger>
           <TabsTrigger value="flags">기능 토글</TabsTrigger>
           <TabsTrigger value="admins">관리자 권한</TabsTrigger>
@@ -225,6 +229,10 @@ const Admin = () => {
 
         <TabsContent value="reports" className="mt-0">
           <ReportsReview onPendingCount={setPendingReports} />
+        </TabsContent>
+
+        <TabsContent value="announcements" className="mt-0">
+          <AnnouncementsPanel />
         </TabsContent>
 
         <TabsContent value="carousel" className="mt-0">
