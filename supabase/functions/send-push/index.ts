@@ -10,7 +10,7 @@ const corsHeaders = {
 
 const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY")!;
 const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
-const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:admin@instrut.app";
+const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:instrut123@gmail.com";
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
 
