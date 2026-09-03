@@ -244,8 +244,9 @@ const Index = () => {
     navigate(path);
   };
 
+  // ownsSafeTop: 아래 sticky 헤더가 안전영역을 직접 떠안는다 — 본문까지 더하면 이중으로 밀린다
   return (
-    <PageShell>
+    <PageShell ownsSafeTop>
       {/* 모바일 상단 헤더: 워드마크 + 알림/로그인 */}
       <div
         className="lg:hidden sticky top-0 z-40 -mx-4 px-4 pb-3 bg-background/95 backdrop-blur-lg border-b border-border mb-5"
