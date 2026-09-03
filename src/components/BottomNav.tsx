@@ -142,7 +142,7 @@ const BottomNav = () => {
         </div>
       )}
 
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[2000] bg-card/95 backdrop-blur-lg border-t border-border/50 pb-safe">
+      <nav className="app-bottom-nav lg:hidden fixed bottom-0 left-0 right-0 z-[2000] bg-card/95 backdrop-blur-lg border-t border-border/50 pb-safe">
         <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
           {/* 메시지 */}
           <button onClick={() => navigate("/messages")} className={tabBtnCls(location.pathname === "/messages")}>

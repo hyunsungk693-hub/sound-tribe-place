@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useKeyboardInset } from "@/hooks/useKeyboardInset";
+import { useComposing } from "@/hooks/useComposing";
 
 type Comment = {
   id: string;
@@ -33,6 +34,15 @@ const PostDetail = () => {
   const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const keyboardInset = useKeyboardInset();
+  // 입력창에 포커스가 있는 동안 = 키보드가 올라와 있는 동안. 이 사실 하나로 탭바를
+  // 내리고(useComposing) 입력 바를 키보드 바로 위에 붙인다.
+  const [composing, setComposing] = useState(false);
+  // 전송 버튼을 누르면 그 순간 입력창의 포커스가 풀린다. 포커스만 보고 자리를 되돌리면
+  // 키보드가 아직 닫히는 중인데 입력 바가 먼저 내려가 버려, 손가락 아래에서 버튼이
+  // 빠져나가 탭이 빗나간다. 그래서 실측 높이가 0이 될 때까지 — 즉 키보드가 실제로
+  // 사라질 때까지 — 열린 것으로 본다.
+  const keyboardOpen = composing || keyboardInset > 0;
+  useComposing(keyboardOpen);
 
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
@@ -305,13 +315,15 @@ const PostDetail = () => {
       </div>
 
       {/* 하단 고정 댓글 입력.
-          키보드가 올라오면 이 바가 키보드 뒤로 들어가 자기가 무엇을 쓰는지 볼 수 없었다.
-          fixed는 레이아웃 뷰포트에 붙는데 키보드는 그 뷰포트를 줄이지 않기 때문이다.
-          가려진 높이를 실측해(useKeyboardInset) 그만큼 bottom을 올린다 — 인라인 style이
-          .composer-pos를 이기므로 키보드가 없을 때만 탭바 위 위치가 쓰인다. */}
+          평소에는 탭바 위(.composer-pos)에 앉고, 키보드가 올라오면 키보드 바로 위로 붙는다.
+          포커스가 있는 동안 bottom을 실측값으로 덮어쓴다 — 인라인 style이 클래스를 이긴다.
+          keyboardInset은 브라우저가 visual viewport만 줄일 때(iOS) 가려진 높이가 되고,
+          레이아웃 뷰포트까지 줄이는 브라우저(안드로이드)에서는 0이 된다. 후자는 이미
+          fixed가 키보드 위로 올라와 있으므로 0이 정답이다 — 그때 .composer-pos의 64px를
+          그대로 두면 키보드와 입력 바 사이에 탭바 자리만큼 빈 틈이 생긴다. */}
       <div
         className="fixed composer-pos left-0 right-0 z-50 p-3 bg-background/95 backdrop-blur-sm border-t border-border"
-        style={keyboardInset ? { bottom: keyboardInset } : undefined}
+        style={keyboardOpen ? { bottom: keyboardInset } : undefined}
       >
         <div className="max-w-[720px] mx-auto flex gap-2 px-1 lg:px-0">
           <input
@@ -319,13 +331,15 @@ const PostDetail = () => {
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSubmitComment()}
+            onFocus={() => setComposing(true)}
+            onBlur={() => setComposing(false)}
             placeholder="댓글을 입력하세요..."
-            className="flex-1 h-10 px-3.5 rounded-lg border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="flex-1 h-11 px-3.5 rounded-lg border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           <button
             onClick={handleSubmitComment}
             disabled={submitting || !newComment.trim()}
-            className="w-10 h-10 rounded-lg bg-action text-action-foreground flex items-center justify-center disabled:opacity-50 active:scale-95 transition-all"
+            className="w-11 h-11 rounded-lg bg-action text-action-foreground flex items-center justify-center disabled:opacity-50 active:scale-[0.96] transition-transform"
           >
             <Send className="w-4 h-4" />
           </button>

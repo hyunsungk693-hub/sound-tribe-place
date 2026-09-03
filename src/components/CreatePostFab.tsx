@@ -92,7 +92,10 @@ const CreatePostFab = () => {
   useBodyScrollLock(chooserOpen);
 
   if (!user) return null;
-  const hideOn = ["/messages", "/profile", "/auth", "/admin"];
+  // 글 상세(/post/:id)에서도 숨긴다. 하단에 댓글 입력 바가 있어 FAB가 전송 버튼 바로
+  // 위(둘 다 오른쪽 아래, bottom 76px 대 76px)에 겹쳐 앉는다. z-index도 FAB가 위라
+  // 전송 버튼을 눌러도 FAB가 열렸다. 읽는 화면에서 새 글쓰기는 주된 행동도 아니다.
+  const hideOn = ["/messages", "/profile", "/auth", "/admin", "/post"];
   if (hideOn.some((p) => location.pathname === p || location.pathname.startsWith(p + "/"))) return null;
 
   const handlePick = async (t: PostType) => {
