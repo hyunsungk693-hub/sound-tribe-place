@@ -2,7 +2,11 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <!-- maximum-scale·user-scalable은 두지 않는다. iOS는 접근성 이유로 어차피 무시하고,
+         안드로이드는 그대로 따라 확대가 막혀 시력이 낮은 사용자가 본문을 키울 수 없다.
+         이 옵션이 원래 막으려던 iOS 자동 확대는 index.css에서 모바일 폼 글자를 16px로
+         못 박는 것으로 이미 해결했다. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>instrut — 음악인 구인구직·연습실·커뮤니티</title>
     <meta name="description" content="믿을 수 있는 밴드·세션 멤버를 찾고, 첫 합주까지 바로 잡는 곳 — 음악인 구인구직·연습실 예약·커뮤니티">
     <meta name="author" content="instrut" />

@@ -137,6 +137,10 @@
     @apply bg-background text-foreground font-outfit antialiased;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: none;
+    /* 탭할 때마다 브라우저가 칠하는 회색 사각형을 끈다. 이 앱은 누름 피드백을
+       active:scale로 직접 주고 있어서 둘이 겹치면 지저분하고, 특히 카드처럼 큰
+       요소에서는 화면 절반이 번쩍인다. 포커스 링은 별개라 접근성에 영향이 없다. */
+    -webkit-tap-highlight-color: transparent;
   }
 
   html, body {
