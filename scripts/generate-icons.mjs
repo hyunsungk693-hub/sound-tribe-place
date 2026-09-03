@@ -17,6 +17,11 @@ const jobs = [
   { out: "public/pwa-icon-512.png", size: 512 },
   { out: "public/pwa-icon-192.png", size: 192 },
   { out: "src/assets/logo-icon.png", size: 512 },
+  // .ico는 브라우저가 탭에 그릴 때 자체적으로 늘리고 줄인다. PNG를 크기별로 함께 주면
+  // 그 계단 현상 없이 또렷하게 나온다. 180은 iOS 홈 화면 아이콘의 권장 크기다.
+  { out: "public/apple-touch-icon.png", size: 180 },
+  { out: "public/favicon-32.png", size: 32 },
+  { out: "public/favicon-16.png", size: 16 },
 ];
 
 for (const { out, size } of jobs) {
