@@ -33,3 +33,21 @@ export function resetAnalytics() {
   if (!enabled) return;
   posthog.reset();
 }
+
+/**
+ * 흰 화면으로 끝난 예외를 남긴다(ErrorBoundary에서 부른다).
+ *
+ * PostHog가 꺼져 있어도 콘솔에는 남긴다 — 개발 중에 조용히 사라지면 원인을 쫓을 수 없다.
+ * 메시지와 스택만 보낸다. 화면에 무엇이 떠 있었는지는 componentStack으로 충분하고,
+ * 사용자가 입력하던 값까지 딸려 보내지 않기 위해서다.
+ */
+export function captureError(error: Error, componentStack?: string) {
+  console.error("[error-boundary]", error, componentStack);
+  if (!enabled) return;
+  posthog.capture("app_error", {
+    message: error.message,
+    stack: error.stack?.slice(0, 4000),
+    component_stack: componentStack?.slice(0, 4000),
+    path: window.location.pathname,
+  });
+}
